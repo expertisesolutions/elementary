@@ -5,33 +5,6 @@
 #include "Eo.h"
 
 /**
- * @def elm_model_list_foreach
- * @since 1.8
- *
- *
- */
-EAPI void elm_model_list_foreach();
-
-
-/**
- * @def elm_model_list_mode_get
- * @since 1.8
- *
- *
- */
-EAPI void elm_model_list_mode_get();
-
-
-/**
- * @def elm_model_list_set_mode
- * @since 1.8
- *
- *
- */
-EAPI void elm_model_list_set_mode();
-
-
-/**
  * @def elm_model_list_item_append
  * @since 1.8
  *
@@ -52,13 +25,24 @@ EAPI void elm_model_list_item_prepend();
 
 
 /**
- * @def elm_model_list_item_insert
+ * @def elm_model_list_item_append_relative
  * @since 1.8
  *
- * insert a new item in list model at position x
+ * append a new item in list model
  *
  */
-EAPI void elm_model_list_item_insert();
+EAPI void elm_model_list_item_append_relative();
+
+
+/**
+ * @def elm_model_list_item_prepend_relative
+ * @since 1.8
+ *
+ * prepend a new item in list model
+ *
+ */
+EAPI void elm_model_list_item_prepend_relative();
+
 
 /**
  * @def elm_model_list_item_delete
@@ -70,22 +54,13 @@ EAPI void elm_model_list_item_insert();
 EAPI void elm_model_list_item_delete();
 
 /**
- * @def elm_model_list_item_seledt
+ * @def elm_model_list_item_select
  * @since 1.8
  *
  * select a item in list model
  *
  */
-EAPI void elm_model_list_item_seledt();
-
-/**
- * @def elm_model_list_item_replace
- * @since 1.8
- *
- * replace a item in list model
- *
- */
-EAPI void elm_model_list_item_replace();
+EAPI void elm_model_list_item_select();
 
 /**
  * @def elm_model_list_value_get
@@ -148,18 +123,15 @@ EAPI void elm_model_list_value_set();
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_LIST_INTERFACE elm_model_list                         \
-   , function(elm_model_list_foreach, void)                             \
-   , function(elm_model_list_get_mode, void)                            \
-   , function(elm_model_list_set_mode, void)                            \
-   , function(elm_model_list_item_append, void)                         \
-   , function(elm_model_list_item_prepend, void)                        \
-   , function(elm_model_list_item_insert, void)                         \
-   , function(elm_model_list_item_delete, void)                         \
-   , function(elm_model_list_item_select, void)                         \
-   , function(elm_model_list_item_replace, void)                        \
-   , function(elm_model_list_value_get, void)                           \
-   , function(elm_model_list_value_set, void)
+#define ELM_MODEL_LIST_INTERFACE elm_model_list                         					\
+   , function(elm_model_list_item_append, elm_model_list_index, eina_value)                         		\
+   , function(elm_model_list_item_prepend, elm_model_list_index, eina_value)                        		\
+   , function(elm_model_list_item_append_relative, elm_model_list_index, elm_model_list_index, eina_value)   	\
+   , function(elm_model_list_item_prepend_relative, elm_model_list_index, elm_model_list_index, eina_value)  	\
+   , function(elm_model_list_item_delete, void, elm_model_list_index)   					\
+   , function(elm_model_list_item_select, void, elm_model_list_index)   					\
+   , function(elm_model_list_value_get, eina_value, elm_model_list_index)					\
+   , function(elm_model_list_value_set, void, elm_model_list_index, eina_value)
    /* , event(elm_model_list_item_inserted)                                \ */
    /* , event(elm_model_list_item_deleted)                                 \ */
    /* , event(elm_model_list_item_selected)                                \ */
