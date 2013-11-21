@@ -3,6 +3,8 @@
 #define ELM_MODEL_LIST_H
 
 #include "Eo.h"
+#include "Eina.h"
+typedef struct _Elm_Model_List_Index Elm_Model_List_Index; // XXX
 
 /**
  * @def elm_model_list_item_append
@@ -11,7 +13,7 @@
  * append a new item in list model
  *
  */
-EAPI void elm_model_list_item_append();
+EAPI Elm_Model_List_Index elm_model_list_item_append(Eina_Value);
 
 
 /**
@@ -21,7 +23,7 @@ EAPI void elm_model_list_item_append();
  * prepend a new item in list model
  *
  */
-EAPI void elm_model_list_item_prepend();
+EAPI Elm_Model_List_Index elm_model_list_item_prepend(Eina_Value);
 
 
 /**
@@ -31,7 +33,7 @@ EAPI void elm_model_list_item_prepend();
  * append a new item in list model
  *
  */
-EAPI void elm_model_list_item_append_relative();
+EAPI Elm_Model_List_Index elm_model_list_item_append_relative(Elm_Model_List_Index, Eina_Value);
 
 
 /**
@@ -41,8 +43,7 @@ EAPI void elm_model_list_item_append_relative();
  * prepend a new item in list model
  *
  */
-EAPI void elm_model_list_item_prepend_relative();
-
+EAPI Elm_Model_List_Index elm_model_list_item_prepend_relative(Elm_Model_List_Index, Eina_Value);
 
 /**
  * @def elm_model_list_item_delete
@@ -51,7 +52,7 @@ EAPI void elm_model_list_item_prepend_relative();
  * delete a item in list model
  *
  */
-EAPI void elm_model_list_item_delete();
+EAPI void elm_model_list_item_delete(Elm_Model_List_Index);
 
 /**
  * @def elm_model_list_item_select
@@ -60,7 +61,7 @@ EAPI void elm_model_list_item_delete();
  * select a item in list model
  *
  */
-EAPI void elm_model_list_item_select();
+EAPI void elm_model_list_item_select(Elm_Model_List_Index);
 
 /**
  * @def elm_model_list_value_get
@@ -69,7 +70,7 @@ EAPI void elm_model_list_item_select();
  * get a item value in list model
  *
  */
-EAPI void elm_model_list_value_get();
+EAPI Eina_Value elm_model_list_value_get(Elm_Model_List_Index);
 
 /**
  * @def elm_model_list_value_set
@@ -78,7 +79,7 @@ EAPI void elm_model_list_value_get();
  * set a item value in list model
  *
  */
-EAPI void elm_model_list_value_set();
+EAPI void elm_model_list_value_set(Elm_Model_List_Index, Eina_Value);
 
 /**
  * @def elm_model_list_item_inserted
@@ -120,18 +121,20 @@ EAPI void elm_model_list_value_set();
  *
  */
 
+
+
 /**
  * @brief EO3 Class Declaration
  */
 #define ELM_MODEL_LIST_INTERFACE elm_model_list                         					\
-   , function(elm_model_list_item_append, elm_model_list_index, eina_value)                         		\
-   , function(elm_model_list_item_prepend, elm_model_list_index, eina_value)                        		\
-   , function(elm_model_list_item_append_relative, elm_model_list_index, elm_model_list_index, eina_value)   	\
-   , function(elm_model_list_item_prepend_relative, elm_model_list_index, elm_model_list_index, eina_value)  	\
-   , function(elm_model_list_item_delete, void, elm_model_list_index)   					\
-   , function(elm_model_list_item_select, void, elm_model_list_index)   					\
-   , function(elm_model_list_value_get, eina_value, elm_model_list_index)					\
-   , function(elm_model_list_value_set, void, elm_model_list_index, eina_value)
+   , function(elm_model_list_item_append, Elm_Model_List_Index, Eina_Value)                         		\
+   , function(elm_model_list_item_prepend, Elm_Model_List_Index, Eina_Value)                        		\
+   , function(elm_model_list_item_append_relative, Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value)   	\
+   , function(elm_model_list_item_prepend_relative, Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value)  	\
+   , function(elm_model_list_item_delete, void, Elm_Model_List_Index)   					\
+   , function(elm_model_list_item_select, void, Elm_Model_List_Index)   					\
+   , function(elm_model_list_value_get, Eina_Value, Elm_Model_List_Index)					\
+   , function(elm_model_list_value_set, void, Elm_Model_List_Index, Eina_Value)
    /* , event(elm_model_list_item_inserted)                                \ */
    /* , event(elm_model_list_item_deleted)                                 \ */
    /* , event(elm_model_list_item_selected)                                \ */
