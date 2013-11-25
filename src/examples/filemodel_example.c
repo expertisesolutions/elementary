@@ -7,35 +7,34 @@
 #include <Eo.h>
 #include <Elementary.h>
 
-typedef Eo Elm_Tree_View_Class;
-typedef Eo Elm_Grid_View_Class;
+#if 0 // XXX TODO: implement
+#include <elm_view_tree.h> 
+#include <elm_view_grid.h>
+#else
+struct _Elm_View_Tree {};
+struct _Elm_View_Grid {};
+#endif
+static Elm_View_Tree *_tree_v = NULL;
+static Elm_View_Grid *_grid_v = NULL;
 
-static Elm_Tree_View_Class *_tree_v = NULL;
-static Elm_Grid_View_Class *_grid_v = NULL;
+#if 0 // XXX TODO: implement
+#include <elm_model_file_tree.h> // XXX TODO: implement
+#include <elm_model_file_grid.h> // XXX TODO: implement
+#else
+struct _Elm_Model_File_Tree {};
+struct _Elm_Model_File_Grid {};
+#endif
+static Eo_Model_File_Tree *_file_m = NULL; //implements file as a tree data model
+static Eo_Model_File_Grid *_grid_m = NULL; //shows the selected group_node content as a grid
 
-typedef Eo Eo_File_Model_Class;
-typedef Eo Eo_Grid_Dir_Model_Class;
+extern Elm_Model_File_Tree* elm_model_file_tree_new(const char *path);
+extern Elm_Model_File_Grid* elm_model_file_grid_new(const char *path);
 
-static Eo_File_Model_Class *_file_m = NULL; //implements file as a tree_data_model
-static Eo_Grid_Dir_Model_Class *_grid_m = NULL; //show the selected group_node content as a grid
+extern Elm_View_Tree* elm_view_tree_add(Evas_Object* parent, Eo_Model_File_Tree* file_model);
+extern Elm_View_Tree* elm_view_grid_add(Evas_Object* parent, Eo_Model_File_Grid* file_model);
 
-Eo_File_Model_Class*
-eo_file_model_class_new(const char* path);
-
-Eo_Grid_Dir_Model_Class*
-eo_grid_dir_model_class_new(Eo_File_Model_Class* file_model);
-
-Elm_Tree_View_Class*
-elm_tree_view_add(Evas_Object* parent, Eo_File_Model_Class* file_model);
-
-Elm_Tree_View_Class*
-elm_tree_view_add(Evas_Object* parent, Eo_File_Model_Class* file_model);
-
-Elm_Grid_View_Class*
-elm_grid_view_add(Evas_Object* parent, Eo_Grid_Dir_Model_Class* grid_model);
-
-#define elm_tree_view_mode_set(mode) 0, EO_TYPECHECK(int, 5)
-#define elm_tree_view_evas_object_get(evas) 0, EO_TYPECHECK(Evas_Object**, evas)
+#define elm_view_tree_mode_set(mode) 0, EO_TYPECHECK(int, 5)
+#define elm_view_tree_value_get(evas) 0, EO_TYPECHECK(Evas_Object**, evas)
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
@@ -49,11 +48,11 @@ elm_main(int argc, char **argv)
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
-   _file_m = eo_file_model_class_new("/tmp");
-   _grid_m = eo_grid_dir_model_class_new(_file_m);
+   _file_m = elm_model_file_tree_new("/tmp");
+   _grid_m = elm_model_file_grid_new(_file_m);
    
-   _tree_v = elm_tree_view_add(win, _file_m);
-   _grid_v = elm_grid_view_add(win, _grid_m);
+   _tree_v = elm_view_tree_add(win, _file_m);
+   _grid_v = elm_view_grid_add(win, _grid_m);
 
    //box init
    box = elm_box_add(win);
@@ -63,8 +62,8 @@ elm_main(int argc, char **argv)
    evas_object_show(box);
 
    //Directories tree widget
-   eo_do(_tree_v, elm_tree_view_mode_set(ELM_TREE_VIEW_VIEWMODE_GROUP)); //hide files, show only directories
-   eo_do(_tree_v, elm_tree_view_evas_object_get(&widget));
+   eo_do(_tree_v, elm_model_tree_set(ELM_TREE_VIEW_VIEWMODE_GROUP)); //hide files, show only directories
+   eo_do(_tree_v, elm_view_tree_evas_object_get(&widget));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
