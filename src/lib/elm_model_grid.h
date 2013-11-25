@@ -14,7 +14,7 @@ typedef struct _Elm_Model_Grid_Column Elm_Model_Grid_Column; //XXX stringshare??
  * append a new row in grid model
  *
  */
-EAPI Elm_Model_Grid_Row elm_model_grid_row_append(Eina_Value);
+EAPI Elm_Model_Grid_Row elm_model_grid_row_append();
 
 
 /**
@@ -24,7 +24,7 @@ EAPI Elm_Model_Grid_Row elm_model_grid_row_append(Eina_Value);
  * prepend a new row in grid model
  *
  */
-EAPI Elm_Model_Grid_Row elm_model_grid_row_prepend(Eina_Value);
+EAPI Elm_Model_Grid_Row elm_model_grid_row_prepend();
 
 
 /**
@@ -34,7 +34,7 @@ EAPI Elm_Model_Grid_Row elm_model_grid_row_prepend(Eina_Value);
  * append a new row in grid model
  *
  */
-EAPI Elm_Model_Grid_Row elm_model_grid_row_append_relative(Elm_Model_Grid_Row, Eina_Value);
+EAPI Elm_Model_Grid_Row elm_model_grid_row_append_relative(Elm_Model_Grid_Row);
 
 
 /**
@@ -44,7 +44,7 @@ EAPI Elm_Model_Grid_Row elm_model_grid_row_append_relative(Elm_Model_Grid_Row, E
  * prepend a new row in grid model
  *
  */
-EAPI Elm_Model_Grid_Row elm_model_grid_row_prepend_relative(Elm_Model_Grid_Row, Eina_Value);
+EAPI Elm_Model_Grid_Row elm_model_grid_row_prepend_relative(Elm_Model_Grid_Row);
 
 /**
  * @def elm_model_grid_row_delete
@@ -65,13 +65,49 @@ EAPI void elm_model_grid_row_delete(Elm_Model_Grid_Row);
 EAPI void elm_model_grid_row_select(Elm_Model_Grid_Row);
 
 /**
+ * @def elm_model_grid_row_select
+ * @since 1.8
+ *
+ * select a cell in grid model
+ *
+ */
+EAPI void elm_model_grid_cell_select(Elm_Model_Grid_Row, Elm_Model_Grid_Column);
+
+/**
+ * @def elm_model_grid_columns_get
+ * @since 1.8
+ *
+ * get a column index list from grid model
+ *
+ */
+EAPI Eina_List elm_model_grid_columns_get();
+
+/**
+ * @def elm_model_grid_rows_count
+ * @since 1.8
+ *
+ * get a numbers of rows in grid model
+ *
+ */
+EAPI int elm_model_grid_rows_count();
+
+/**
+ * @def elm_model_grid_columns_count
+ * @since 1.8
+ *
+ * get a numbers of columns in grid model
+ *
+ */
+EAPI int elm_model_grid_columns_count();
+
+/**
  * @def elm_model_grid_value_get
  * @since 1.8
  *
  * get a row value in grid model
  *
  */
-EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row);
+EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row, Elm_Model_Grid_Column);
 
 /**
  * @def elm_model_grid_value_set
@@ -80,7 +116,7 @@ EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row);
  * set a row value in grid model
  *
  */
-EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row, Eina_Value);
+EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row, Elm_Model_Grid_Column, Eina_Value);
 
 /**
  * @def elm_model_grid_row_inserted
@@ -134,8 +170,9 @@ EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row, Eina_Value);
    , function(elm_model_grid_row_prepend_relative, Elm_Model_Grid_Row, Elm_Model_Grid_Row)  		\
    , function(elm_model_grid_row_delete, void, Elm_Model_Grid_Row)   					\
    , function(elm_model_grid_row_select, void, Elm_Model_Grid_Row)   					\
+   , function(elm_model_grid_rows_count, int) 								\
    , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column)  /* ?? */ 	\
-   , function(elm_model_grid_columns_get, Eina_List<Elm_Model_Grid_Column>)  /*??*/		 	\
+   , function(elm_model_grid_columns_get, Eina_List)  /*??*/		 				\
    , function(elm_model_grid_columns_count, int) 							\
    , function(elm_model_grid_value_get, Eina_Value, Elm_Model_Grid_Row, Elm_Model_Grid_Column)		\
    , function(elm_model_grid_value_set, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column, Eina_Value)
