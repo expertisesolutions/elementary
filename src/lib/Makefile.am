@@ -295,7 +295,9 @@ elm_menu_common.h \
 elm_menu_eo.h \
 elm_menu_legacy.h \
 elm_mirroring.h \
+elm_model_grid.h \
 elm_model_list.h \
+elm_model_tree.h \
 elm_need.h \
 elm_notify.h \
 elm_notify_common.h \
