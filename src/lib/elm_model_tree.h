@@ -10,83 +10,104 @@ typedef struct _Elm_Model_Tree_Path Elm_Model_Tree_Path; // XXX
  * @def elm_model_tree_item_append
  * @since 1.8
  *
- * Append a new child to a tree node.
+ * @param path The path to a node where the new child shall be appended.
+ * @param value The value to append.
+ * @return The path to the newly created node.
  *
+ * Append a new child cointaining @p value to the list of children of
+ * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_append(Eina_Value);
+EAPI Elm_Model_Tree_Path elm_model_tree_child_append(Elm_Model_Tree_Path path, Eina_Value value);
 
 
 /**
  * @def elm_model_tree_item_prepend
  * @since 1.8
  *
- * Prepend a new child to the list of children of the selected tree node.
- *
+ * @param path The path to a node where the new child shall be prepended.
+ * @param value The value to prepend.
+ * @return The path to the newly created node.
+ * 
+ * Prepend a new child cointaining @p value to the list of children of
+ * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend(Eina_Value);
-
+EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend(Elm_Model_Tree_Path path,
+                                                      Eina_Value value);
 
 /**
  * @def elm_model_tree_child_append_relative
  * @since 1.8
  *
- * Append a new child to a tree node on a specific position.
- *
+ * @param path The path to a node where the new child shall be appended.
+ * @param value The value to set to the newly created node, as @ref Eina_Value.
+ * @return The path to the newly created node.
+ * 
+ * Append @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_append_relative(Elm_Model_Tree_Path, Eina_Value);
-
+EAPI Elm_Model_Tree_Path elm_model_tree_child_append_relative(Elm_Model_Tree_Path path,
+                                                              Eina_Value value);
 
 /**
  * @def elm_model_tree_child_prepend_relative
  * @since 1.8
  *
- * Prepend a new child to a tree node.
- *
+ * @param path The path to a sibling node where the new node shall be prepended.
+ * @param value The value to be set in the newly created node, as @ref Eina_Value.
+ * @return The path to the newly created node.
+ * 
+ * Prepend @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend_relative(Elm_Model_Tree_Path, Eina_Value);
+EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend_relative(Elm_Model_Tree_Path path,
+                                                               Eina_Value value);
 
 /**
  * @def elm_model_tree_delete
  * @since 1.8
  *
- * Delete a tree model pointed by @a path, and all its subtrees.
- *
+ * @param path Path to the sub-tree to delete.
+ * 
+ * Delete the sub-tree pointed by @p path and all its children.
  */
-EAPI void elm_model_tree_delete(Elm_Model_Tree_Path);
+EAPI void elm_model_tree_delete(Elm_Model_Tree_Path path);
 
 /**
  * @def elm_model_tree_select
  * @since 1.8
  *
- * Select the tree pointed by @a path.
- *
+ * @param path Path to the node to be selected.
+ * 
+ * Select the node pointed by @p path.
  */
-EAPI void elm_model_tree_select(Elm_Model_Tree_Path);
+EAPI void elm_model_tree_select(Elm_Model_Tree_Path path);
 
 /**
  * @def elm_model_tree_value_get
  * @since 1.8
  *
- * Get the value of the node pointed by @a path.
+ * @param path The node from which @p value is read.
+ * @return The value read from the node, as @ref Eina_Value.
+ * 
+ * Get the value of the node pointed by @p path.
  *
  */
-EAPI Eina_Value elm_model_tree_value_get(Elm_Model_Tree_Path);
+EAPI Eina_Value elm_model_tree_value_get(Elm_Model_Tree_Path path);
 
 /**
  * @def elm_model_tree_value_set
  * @since 1.8
  *
- * Set a value to the node pointed by @a path.
- *
+ * @param path The path to the node to receive the new value.
+ * @param value The value, as @ref Eina_Value.
+ * 
+ * Set @p value to the node pointed by @p path.
  */
-EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path, Eina_Value);
+EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path path, Eina_Value value);
 
 /**
  * @def elm_model_tree_child_inserted
  * @since 1.8
  *
  * Raised when a new child is inserted.
- *
  */
 
 /**
@@ -94,7 +115,6 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path, Eina_Value);
  * @since 1.8
  *
  * Raised when a tree model is deleted.
- *
  */
 
 /**
@@ -102,7 +122,6 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path, Eina_Value);
  * @since 1.8
  *
  * Raised when a tree model is selected.
- *
  */
 
 /**
@@ -110,7 +129,6 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path, Eina_Value);
  * @since 1.8
  *
  * Raised when the tree model is changed.
- *
  */
 
 /**
@@ -118,22 +136,19 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path, Eina_Value);
  * @since 1.8
  *
  * Raised when a three model is reordered.
- *
  */
-
-
 
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_TREE_INTERFACE elm_model_tree                               \
-   , function(elm_model_tree_child_append, Elm_Model_Tree_Path, Eina_Value)   \
-   , function(elm_model_tree_child_prepend, Elm_Model_Tree_Path, Eina_Value)  \
+#define ELM_MODEL_TREE_INTERFACE elm_model_tree                                 \
+   , function(elm_model_tree_child_append, Elm_Model_Tree_Path, Eina_Value)     \
+   , function(elm_model_tree_child_prepend, Elm_Model_Tree_Path, Eina_Value)    \
    , function(elm_model_tree_child_append_relative, Elm_Model_Tree_Path, Elm_Model_Tree_Index, Eina_Value)  \
    , function(elm_model_tree_child_prepend_relative, Elm_Model_Tree_Path, Elm_Model_Tree_Index, Eina_Value) \
-   , function(elm_model_tree_delete, void, Elm_Model_Tree_Path)               \
-   , function(elm_model_tree_select, void, Elm_Model_Tree_Path)   						\
-   , function(elm_model_tree_value_get, Eina_Value, Elm_Model_Tree_Path)			\
+   , function(elm_model_tree_delete, void, Elm_Model_Tree_Path)                 \
+   , function(elm_model_tree_select, void, Elm_Model_Tree_Path)                 \
+   , function(elm_model_tree_value_get, Eina_Value, Elm_Model_Tree_Path)        \
    , function(elm_model_tree_value_set, void, Elm_Model_Tree_Path, Eina_Value)
    /* , event(elm_model_tree_node_inserted)                                \ */
    /* , event(elm_model_tree_node_deleted)                                 \ */
