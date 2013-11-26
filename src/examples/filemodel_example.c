@@ -11,30 +11,27 @@
 #include <elm_view_tree.h> 
 #include <elm_view_grid.h>
 #else
-typedef struct _Elm_View_Tree {} Elm_View_Tree;
-typedef struct _Elm_View_Grid {} Elm_View_Grid;
+#define ELM_VIEW_TREE_CLASS EO_BASE_CLASS
+#define ELM_VIEW_GRID_CLASS EO_BASE_CLASS
+
+extern Eo* elm_view_tree_add(Evas_Object* parent, Eo* file_model) {};
+extern Eo* elm_view_grid_add(Evas_Object* parent, Eo* file_model) {};
+extern Eo* elm_view_tree_evas_object_get(Evas_Object** widget) {};
+extern Eo* elm_view_grid_evas_object_get(Evas_Object** widget) {};
 #endif
-static Elm_View_Tree *_tree_v = NULL;
-static Elm_View_Grid *_grid_v = NULL;
 
 #if 0 // XXX TODO: implement
-#include <elm_model_file_tree.h> // XXX TODO: implement
-#include <elm_model_file_grid.h> // XXX TODO: implement
+#include "model_file_tree.h" // XXX TODO: implement
+#include "model_file_grid.h" // XXX TODO: implement
 #else
-typedef struct _Elm_Model_File_Tree {} Elm_Model_File_Tree;
-typedef struct _Elm_Model_File_Grid {} Elm_Model_File_Grid;
+#define MODEL_FILE_TREE_CLASS EO_BASE_CLASS
+#define MODEL_FILE_GRID_CLASS EO_BASE_CLASS
+
+extern Eo* model_file_grid_constructor(Eo *model) {};
+extern Eo* model_file_tree_root_set(const char * path) {};
+extern void elm_view_tree_model_tree_set(int mode) {};
 #endif
-static Elm_Model_File_Tree *_file_m = NULL; //implements file as a tree data model
-static Elm_Model_File_Grid *_grid_m = NULL; //shows the selected group_node content as a grid
 
-extern Elm_Model_File_Tree* elm_model_file_tree_new(const char *path);
-extern Elm_Model_File_Grid* elm_model_file_grid_new(const char *path);
-
-extern Elm_View_Tree* elm_view_tree_add(Evas_Object* parent, Elm_Model_File_Tree* file_model);
-extern Elm_View_Tree* elm_view_grid_add(Evas_Object* parent, Elm_Model_File_Grid* file_model);
-
-#define elm_view_tree_value_set(mode) 0, EO_TYPECHECK(int, 5)
-#define elm_view_tree_value_get(evas) 0, EO_TYPECHECK(Evas_Object**, evas)
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
@@ -42,6 +39,11 @@ elm_main(int argc, char **argv)
    Evas_Object *win;
    Evas_Object *box;
    Evas_Object *widget;
+   Eo *_file_m; //implements file as a tree data model
+   Eo *_grid_m; //shows the selected group_node content as a grid
+   Eo *_tree_v;
+   Eo *_grid_v;
+
    int i;
 
    enum 
@@ -53,11 +55,12 @@ elm_main(int argc, char **argv)
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
-   _file_m = elm_model_file_tree_new("/tmp");
-   _grid_m = elm_model_file_grid_new(_file_m);
+   _file_m = eo2_add(MODEL_FILE_TREE_CLASS, NULL);
+   _grid_m = eo2_add_custom(MODEL_FILE_GRID_CLASS, NULL, model_file_grid_constructor(_file_m));
+   eo2_do(_file_m, model_file_tree_root_set("/tmp"));
    
-   _tree_v = elm_view_tree_add(win, _file_m);
-   _grid_v = elm_view_grid_add(win, _grid_m);
+   _tree_v = eo2_add_custom(ELM_VIEW_TREE_CLASS, NULL, elm_view_tree_add(win, _file_m));
+   _grid_v = eo2_add_custom(ELM_VIEW_GRID_CLASS, NULL, elm_view_grid_add(win, _grid_m));
 
    //box init
    box = elm_box_add(win);
@@ -67,8 +70,8 @@ elm_main(int argc, char **argv)
    evas_object_show(box);
 
    //Directories tree widget
-   eo_do(_tree_v, elm_model_tree_set(ELM_TREE_VIEW_VIEWMODE_GROUP, EINA_TRUE)); //hide files, show only directories
-   eo_do(_tree_v, elm_view_tree_evas_object_get(&widget));
+   eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_TREE_VIEW_VIEWMODE_GROUP)); //hide files, show only directories
+   eo2_do(_tree_v, elm_view_tree_evas_object_get(&widget));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -77,7 +80,7 @@ elm_main(int argc, char **argv)
    evas_object_show(widget);
 
    //file grid widget
-   eo_do(_grid_v, elm_grid_view_evas_object_get(&widget));
+   eo2_do(_grid_v, elm_view_grid_evas_object_get(&widget));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
