@@ -79,6 +79,7 @@ efl_thread_win32_2.c \
 efl_thread_win32_3.c \
 efl_thread_win32_4.c \
 entry_example.c \
+filemodel_example.c \
 fileselector_button_example.c \
 fileselector_entry_example.c \
 fileselector_example.c \
@@ -220,6 +221,7 @@ efl_thread_4 \
 efl_thread_5 \
 efl_thread_6 \
 entry_example \
+filemodel_example \
 fileselector_button_example \
 fileselector_entry_example \
 fileselector_example \
