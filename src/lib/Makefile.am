@@ -301,9 +301,6 @@ elm_model_tree_const.h \
 elm_model_grid_mutable.h \
 elm_model_list_mutable.h \
 elm_model_tree_mutable.h \
-elm_model_grid_common.h \
-elm_model_list_common.h \
-elm_model_tree_common.h \
 elm_model_grid.h \
 elm_model_list.h \
 elm_model_tree.h \
