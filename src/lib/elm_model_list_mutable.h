@@ -2,8 +2,6 @@
 #ifndef ELM_MODEL_LIST_MUTABLE_H
 #define ELM_MODEL_LIST_MUTABLE_H
 
-#include "elm_model_list_common.h"
-
 /**
  * @def elm_model_list_item_append
  * @since 1.8
