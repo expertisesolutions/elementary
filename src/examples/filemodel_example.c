@@ -19,6 +19,7 @@ struct _Model_File_Tree_Private {};
 typedef struct _Model_File_Tree_Private Model_File_Tree_Private;
 
 Eo* _model_file_tree_constructor(Eo *obj, Model_File_Tree_Private *data) {}
+Eo* _model_file_tree_constructor_path(Eo *obj, Model_File_Tree_Private *data, const char *path) {}
 Eo* _model_file_tree_destructor(Eo *obj, Model_File_Tree_Private *data) {}
 void _model_file_tree_select(Elm_Model_Tree_Path path) {}
 Elm_Model_Tree_Path _model_file_tree_append(Elm_Model_Tree_Path path, Eina_Value value) {}
@@ -31,6 +32,8 @@ void _model_file_tree_value_set(Elm_Model_Tree_Path path, Eina_Value value) {}
 
 #define MODEL_FILE_TREE_CLASS model_file_tree                                   \
     , constructor_override(eo2_construct, _model_file_tree_constructor)         \
+    , constructor(model_file_tree_new,                                          \
+                  _model_file_tree_constructor_path, const char*)               \
     , destructor(_model_file_tree_destructor)                                   \
     , function_override(elm_model_tree_select, _model_file_tree_select)         \
     , function_override(elm_model_tree_child_append, _model_file_tree_append)   \
@@ -45,8 +48,8 @@ void _model_file_tree_value_set(Elm_Model_Tree_Path path, Eina_Value value) {}
 
 EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 
-////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////
 
 #define MODEL_FILE_GRID_CLASS EO_BASE_CLASS
 
@@ -54,33 +57,32 @@ EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 /* extern */ Eo* model_file_tree_root_set(const char * path) {};
 /* extern */ void elm_view_tree_model_tree_set(int mode) {};
 
+enum 
+{
+  ELM_TREE_VIEW_VIEWMODE_GROUP
+};
+   
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Evas_Object *win;
    Evas_Object *box;
    Evas_Object *widget;
-   Eo *_file_m; //implements file as a tree data model
+   Eo *_tree_m; //implements file as a tree data model
    Eo *_grid_m; //shows the selected group_node content as a grid
    Eo *_tree_v;
    Eo *_grid_v;
 
    int i;
 
-   enum 
-   {
-     ELM_TREE_VIEW_VIEWMODE_GROUP
-   };
-   
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
-   _file_m = eo2_add(MODEL_FILE_TREE_CLASS, NULL);
-   _grid_m = eo2_add_custom(MODEL_FILE_GRID_CLASS, NULL, model_file_grid_constructor(_file_m));
-   eo2_do(_file_m, model_file_tree_root_set("/tmp"));
+   _tree_m = eo2_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor_path("/tmp"));
+   _grid_m = eo2_add_custom(MODEL_FILE_GRID_CLASS, NULL, model_file_grid_constructor(_tree_m));
    
-   _tree_v = eo2_add_custom(ELM_VIEW_TREE_CLASS, NULL, elm_view_tree_add(win, _file_m));
+   _tree_v = eo2_add_custom(ELM_VIEW_TREE_CLASS, NULL, elm_view_tree_add(win, _tree_m));
    _grid_v = eo2_add_custom(ELM_VIEW_GRID_CLASS, NULL, elm_view_grid_add(win, _grid_m));
 
    //box init
