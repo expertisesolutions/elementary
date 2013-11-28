@@ -31,9 +31,9 @@ EAPI void elm_model_grid_cell_select(Elm_Model_Grid_Row row, Elm_Model_Grid_Colu
  * @def elm_model_grid_columns_get
  * @since 1.8
  *
- * get a column index list from grid model
- *
- * TODO document XXX
+ * @return The list of columns as an Eina_List of Elm_Column_Grid_Column.
+ * 
+ * Get the list of columns of this grid model.
  */
 EAPI Eina_List elm_model_grid_columns_get();
 
@@ -41,9 +41,10 @@ EAPI Eina_List elm_model_grid_columns_get();
  * @def elm_model_grid_rows_count
  * @since 1.8
  *
+ * @return The number of rows in this grid, as integer.
+ * 
  * Get the numbers of rows of this grid model.
  *
- * @return The number of rows in this grid, as integer.
  */
 EAPI int elm_model_grid_rows_count();
 
@@ -51,9 +52,9 @@ EAPI int elm_model_grid_rows_count();
  * @def elm_model_grid_columns_count
  * @since 1.8
  *
- * Get the numbers of columns of this grid model.
- *
  * @return The number of columns in this grid, as integer.
+ *
+ * Get the numbers of columns of this grid model.
  */
 EAPI int elm_model_grid_columns_count();
 
@@ -68,6 +69,20 @@ EAPI int elm_model_grid_columns_count();
  * @return The value, as @ref Eina_Value.
  */
 EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
+
+/**
+ * @def elm_model_grid_row_selected
+ * @since 1.8
+ *
+ * Raised when a row is selected.
+ */
+
+/**
+ * @def elm_model_grid_row_reordered
+ * @since 1.8
+ *
+ * Raised when the grid is reordered.
+ */
 
 /**
  * @brief EO3 Class Declaration
