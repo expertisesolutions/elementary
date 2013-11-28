@@ -41,6 +41,28 @@ EAPI Eina_Value elm_model_tree_value_get(Elm_Model_Tree_Path path);
  */
 
 /**
+ * @def elm_model_tree_child_inserted
+ * @since 1.8
+ *
+ * Raised when a new child is inserted.
+ */
+
+/**
+ * @def elm_model_tree_deleted
+ * @since 1.8
+ *
+ * Raised when a tree model is deleted.
+ */
+
+/**
+ * @def elm_model_tree_changed
+ * @since 1.8
+ *
+ * Raised when the tree model is changed.
+ */
+
+
+/**
  * @brief EO3 Class Declaration
  */
 #define ELM_MODEL_TREE_CONST_INTERFACE elm_model_tree_const                     \
@@ -48,6 +70,9 @@ EAPI Eina_Value elm_model_tree_value_get(Elm_Model_Tree_Path path);
    , function(elm_model_tree_value_get, Eina_Value, Elm_Model_Tree_Path)        \
    /* , event(elm_model_tree_node_selected) \ */
    /* , event(elm_model_tree_reordered) */
+   /* , event(elm_model_tree_node_inserted)                                \ */
+   /* , event(elm_model_tree_node_deleted)                                 \ */
+   /* , event(elm_model_tree_node_changed)                                 \ */
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_TREE_CONST_INTERFACE)
 

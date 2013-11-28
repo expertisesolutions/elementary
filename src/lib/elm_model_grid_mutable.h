@@ -68,27 +68,6 @@ EAPI void elm_model_grid_row_delete(Elm_Model_Grid_Row row);
 EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column, Eina_Value value);
 
 /**
- * @def elm_model_grid_row_inserted
- * @since 1.8
- *
- * Raised when a new row is inserted into this grid model.
- */
-
-/**
- * @def elm_model_grid_row_deleted
- * @since 1.8
- *
- * Raised when this grid model is deleted.
- */
-
-/**
- * @def elm_model_grid_row_changed
- * @since 1.8
- *
- * Raised when a row of this grid model is changed.
- */
-
-/**
  * @brief EO3 Class Declaration
  */
 #define ELM_MODEL_GRID_INTERFACE elm_model_grid                                            \
@@ -98,9 +77,6 @@ EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row row, Elm_Model_Grid_Column
    /* , function(elm_model_grid_row_prepend_relative, Elm_Model_Grid_Row, Elm_Model_Grid_Row) \ */
    /* , function(elm_model_grid_row_delete, void, Elm_Model_Grid_Row)                         \ */
    /* , function(elm_model_grid_value_set, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column, Eina_Value) */
-   /* , event(elm_model_grid_row_inserted) \ */
-   /* , event(elm_model_grid_row_deleted)  \ */
-   /* , event(elm_model_grid_row_changed)  \ */
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_GRID_INTERFACE)
 

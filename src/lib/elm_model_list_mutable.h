@@ -76,27 +76,6 @@ EAPI void elm_model_list_item_delete(Elm_Model_List_Index index);
 EAPI void elm_model_list_value_set(Elm_Model_List_Index index, Eina_Value value);
 
 /**
- * @def elm_model_list_item_inserted
- * @since 1.8
- *
- * Raised when a new item is inserted into this list model.
- */
-
-/**
- * @def elm_model_list_item_deleted
- * @since 1.8
- *
- * Raised when an item of this list model is deleted.
- */
-
-/**
- * @def elm_model_list_item_changed
- * @since 1.8
- *
- * Raised when an item of this list model is changed.
- */
-
-/**
  * @brief EO3 Interface Declaration
  */
 #define ELM_MODEL_LIST_INTERFACE elm_model_list                                                               \
@@ -106,9 +85,6 @@ EAPI void elm_model_list_value_set(Elm_Model_List_Index index, Eina_Value value)
    , function(elm_model_list_item_prepend_relative, Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value)  	\
    , function(elm_model_list_item_delete, void, Elm_Model_List_Index)                                         \
    /* , function(elm_model_list_value_set, void, Elm_Model_List_Index, Eina_Value) */
-   /* , event(elm_model_list_item_inserted) \ */
-   /* , event(elm_model_list_item_deleted)  \ */
-   /* , event(elm_model_list_item_changed)  \ */
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_LIST_INTERFACE)
 
