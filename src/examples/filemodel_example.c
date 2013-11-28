@@ -29,24 +29,27 @@ void _model_file_tree_delete(Elm_Model_Tree_Path path) {}
 Eina_Value _model_file_tree_value_get(Elm_Model_Tree_Path path) {}
 void _model_file_tree_value_set(Elm_Model_Tree_Path path, Eina_Value value) {}
 
-#define MODEL_FILE_TREE_CLASS model_file_tree                           \
+#define MODEL_FILE_TREE_CLASS model_file_tree                                   \
     , constructor_override(eo2_construct, _model_file_tree_constructor)         \
     , destructor(_model_file_tree_destructor)                                   \
     , function_override(elm_model_tree_select, _model_file_tree_select)         \
     , function_override(elm_model_tree_child_append, _model_file_tree_append)   \
     , function_override(elm_model_tree_child_prepend, _model_file_tree_prepend) \
-    , function_override(elm_model_tree_child_append_relative, _model_file_tree_append_relative) \
-    , function_override(elm_model_tree_child_prepend_relative,_model_file_tree_prepend_relative) \
+    , function_override(elm_model_tree_child_append_relative,                   \
+                        _model_file_tree_append_relative)                       \
+    , function_override(elm_model_tree_child_prepend_relative,                  \
+                        _model_file_tree_prepend_relative)                      \
     , function_override(elm_model_tree_delete, _model_file_tree_delete)         \
     , function_override(elm_model_tree_value_get, _model_file_tree_value_get)   \
     , function_override(elm_model_tree_value_set, _model_file_tree_value_set)
 
 EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 
-
 ////////////////////////////////////////////////////////////////////////////////
 
+
 #define MODEL_FILE_GRID_CLASS EO_BASE_CLASS
+
 /* extern */ Eo* model_file_grid_constructor(Eo *model) {};
 /* extern */ Eo* model_file_tree_root_set(const char * path) {};
 /* extern */ void elm_view_tree_model_tree_set(int mode) {};

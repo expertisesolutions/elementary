@@ -2,7 +2,7 @@
 #ifndef ELM_MODEL_LIST_CONST_H
 #define ELM_MODEL_LIST_CONST_H
 
-#include "elm_model_list_common.h"
+typedef long Elm_Model_List_Index;
 
 /**
  * @def elm_model_list_item_select

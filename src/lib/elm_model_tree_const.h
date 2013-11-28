@@ -2,6 +2,8 @@
 #ifndef ELM_MODEL_TREE_CONST_H
 #define ELM_MODEL_TREE_CONST_H
 
+typedef struct _Elm_Model_Tree_Path {} Elm_Model_Tree_Path;
+
 /**
  * @def elm_model_tree_select
  * @since 1.8

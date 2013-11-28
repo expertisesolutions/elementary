@@ -2,6 +2,9 @@
 #ifndef ELM_MODEL_GRID_CONST_H
 #define ELM_MODEL_GRID_CONST_H
 
+typedef long Elm_Model_Grid_Row;
+typedef long Elm_Model_Grid_Column;
+
 /**
  * @def elm_model_grid_row_select
  * @since 1.8
@@ -11,7 +14,7 @@
  * Select a @p row of this grid model.
  *
  */
-EAPI void elm_model_grid_row_select(Elm_Model_Grid_Row row); // XXX EINA_CONST; ?
+EAPI void elm_model_grid_row_select(Elm_Model_Grid_Row row) EINA_CONST; 
 
 /**
  * @def elm_model_grid_row_select
@@ -72,8 +75,8 @@ EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_
 #define ELM_MODEL_GRID_CONST_INTERFACE elm_model_grid_const         \
    , function(elm_model_grid_row_select, void, Elm_Model_Grid_Row)  \
    , function(elm_model_grid_rows_count, int)                       \
-   , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column) /* XXX */ \
-   , function(elm_model_grid_columns_get, Eina_List)  /*XXX*/       \
+   , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
+   , function(elm_model_grid_columns_get, Eina_List)                \
    , function(elm_model_grid_columns_count, int)                    \
    , function(elm_model_grid_value_get, Eina_Value, Elm_Model_Grid_Row, Elm_Model_Grid_Column)
    /* , event(elm_model_grid_row_selected) \ */
