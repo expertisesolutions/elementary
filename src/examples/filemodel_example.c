@@ -4,9 +4,15 @@
 #define EFL_EO_API_SUPPORT
 #define EFL_BETA_API_SUPPORT
 
+#include <assert.h>
+#include <Eo.h>
 #include <Elementary.h>
 
-#define ELM_VIEW_GRID_CLASS EO_BASE_CLASS
+#define MODEL_FILE_GRID_CLASS EO_BASE_CLASS
+
+/*#define ELM_VIEW_TREE_CLASS EO_BASE_CLASS*/
+/*#define ELM_VIEW_GRID_CLASS EO_BASE_CLASS*/
+
 /* extern */ Eo* elm_view_tree_add(Evas_Object* parent, Eo* file_model) {};
 /* extern */ Eo* elm_view_grid_add(Evas_Object* parent, Eo* file_model) {};
 /* extern */ Eo* elm_view_tree_evas_object_get(Evas_Object** widget) {};
@@ -18,26 +24,43 @@
 struct _Model_File_Tree_Private {};
 typedef struct _Model_File_Tree_Private Model_File_Tree_Private;
 
-Eo* _model_file_tree_constructor(Eo *obj, Model_File_Tree_Private *data) {}
-Eo* _model_file_tree_constructor_path(Eo *obj, Model_File_Tree_Private *data, const char *path) {}
-Eo* _model_file_tree_destructor(Eo *obj, Model_File_Tree_Private *data) {}
-void _model_file_tree_select(Elm_Model_Tree_Path path) {}
-Eina_Value _model_file_tree_value_get(Elm_Model_Tree_Path path) {}
+Eo*
+_model_file_tree_constructor_path(Eo *obj, Model_File_Tree_Private *data, const char* path)
+{
+  return obj;
+}
 
-#define MODEL_FILE_TREE_CLASS model_file_tree                                   \
-    , constructor_override(eo2_construct, _model_file_tree_constructor)         \
-    , constructor(model_file_tree_new,                                          \
-                  _model_file_tree_constructor_path, const char*)               \
-    , destructor(_model_file_tree_destructor)                                   \
-    , function_override(elm_model_tree_select, _model_file_tree_select)         \
-    , function_override(elm_model_tree_value_get, _model_file_tree_value_get)
+Eo*
+_model_file_tree_destructor(Eo *obj, Model_File_Tree_Private *data)
+{
+  return obj;
+}
 
+void
+_model_file_tree_select(Elm_Model_Tree_Path path)
+{
+}
+
+Eina_Value
+_model_file_tree_value_get(Elm_Model_Tree_Path path)
+{
+  Eina_Value x;
+  return x;
+}
+
+#define MODEL_FILE_TREE_CLASS model_file_tree                           \
+, constructor(model_file_tree_constructor_path, _model_file_tree_constructor_path, const char*) \
+, function_override(elm_model_tree_select, _model_file_tree_select)
+
+//
+//, function_override(elm_model_tree_value_get, _model_file_tree_value_get)
+//, destructor(_model_file_tree_destructor)
+//
 EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 
+EO3_DEFINE_CLASS(MODEL_FILE_TREE_CLASS, ((ELM_MODEL_TREE_CONST_INTERFACE)), Model_File_Tree_Private)
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define MODEL_FILE_GRID_CLASS EO_BASE_CLASS
 
 /* extern */ Eo* model_file_grid_constructor(Eo *model) {};
 /* extern */ Eo* model_file_tree_root_set(const char * path) {};
@@ -59,17 +82,19 @@ elm_main(int argc, char **argv)
    Eo *_tree_v;
    Eo *_grid_v;
 
-   int i;
-
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
-   _tree_m = eo2_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor_path("/tmp"));
-   _grid_m = eo2_add_custom(MODEL_FILE_GRID_CLASS, NULL, model_file_grid_constructor(_tree_m));
+   _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+                            NULL, model_file_tree_constructor_path("/tmp"));
+   /*_grid_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_GRID_CLASS),
+     NULL, model_file_grid_constructor(_tree_m));*/
    
-   _tree_v = eo2_add_custom(ELM_VIEW_TREE_CLASS, NULL, elm_view_tree_add(win, _tree_m));
-   _grid_v = eo2_add_custom(ELM_VIEW_GRID_CLASS, NULL, elm_view_grid_add(win, _grid_m));
+   /*_tree_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_TREE_CLASS),
+     NULL, elm_view_tree_add(win, _tree_m));*/
+   /*_grid_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_GRID_CLASS),
+     NULL, elm_view_grid_add(win, _grid_m));*/
 
    //box init
    box = elm_box_add(win);
