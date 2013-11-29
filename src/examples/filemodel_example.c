@@ -1,5 +1,3 @@
-//Compile (not yet) with:
-//gcc -g filemodel_example.c -o filemodel_example `pkg-config --cflags --libs elementary`
 
 #define EFL_EO_API_SUPPORT
 #define EFL_BETA_API_SUPPORT
