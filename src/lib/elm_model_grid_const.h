@@ -71,6 +71,27 @@ EAPI int elm_model_grid_columns_count();
 EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
 
 /**
+ * @def elm_model_grid_selected_row_get
+ * @since 1.8
+ *
+ * Get the row of a selected cell from this grid model.
+ *
+ * @return The selected row, as Elm_Model_Grid_Row.
+ */
+EAPI Elm_Model_Grid_Row elm_model_grid_selected_row_get();
+
+/**
+ * @def elm_model_grid_selected_column_get
+ * @since 1.8
+ *
+ * Get the column of a selected cell from this grid model.
+ *
+ * @return The selected column, as Elm_Model_Grid_Column.
+ */
+EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
+
+
+/**
  * @def elm_model_grid_row_selected
  * @since 1.8
  *
@@ -114,6 +135,8 @@ EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_
    , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
    , function(elm_model_grid_columns_get, Eina_List)                \
    , function(elm_model_grid_columns_count, int)                    \
+   , function(elm_model_grid_selected_row_get, Elm_Model_Grid_Row)            \
+   , function(elm_model_grid_selected_column_get, Elm_Model_Grid_Column)      \
    , function(elm_model_grid_value_get, Eina_Value, Elm_Model_Grid_Row, Elm_Model_Grid_Column)
    /* , event(elm_model_grid_row_selected) \ */
    /* , event(elm_model_grid_reordered) */

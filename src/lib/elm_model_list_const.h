@@ -26,6 +26,17 @@ EAPI void elm_model_list_item_select(Elm_Model_List_Index index);
 EAPI Eina_Value elm_model_list_value_get(Elm_Model_List_Index index);
 
 /**
+ * @def elm_model_list_selected_get
+ * @since 1.8
+ *
+ * @return index of selected iten.
+ *
+ * Get the index of selected iten.
+ */
+EAPI Elm_Model_List_Index elm_model_list_item_select();
+
+
+/**
  * @def elm_model_list_item_selected
  * @since 1.8
  *
@@ -65,6 +76,7 @@ EAPI Eina_Value elm_model_list_value_get(Elm_Model_List_Index index);
  */
 #define ELM_MODEL_LIST_CONST_INTERFACE elm_model_list_const             \
   , function(elm_model_list_item_select, void, Elm_Model_List_Index)    \
+  , function(elm_model_list_selected_get, Elm_Model_List_Index)         \
   , function(elm_model_list_value_get, Eina_Value, Elm_Model_List_Index)
 
 /* , event(elm_model_list_item_selected) \ */
