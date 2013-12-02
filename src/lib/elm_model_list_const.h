@@ -29,11 +29,11 @@ EAPI Eina_Value elm_model_list_value_get(Elm_Model_List_Index index);
  * @def elm_model_list_selected_get
  * @since 1.8
  *
- * @return index of selected iten.
+ * @return index of selected item.
  *
- * Get the index of selected iten.
+ * Get the index of selected item.
  */
-EAPI Elm_Model_List_Index elm_model_list_item_select();
+EAPI Elm_Model_List_Index elm_model_list_selected_get();
 
 
 /**

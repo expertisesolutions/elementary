@@ -50,11 +50,31 @@ _model_file_tree_value_get(Elm_Model_Tree_Path path)
   return tmp;
 }
 
+Elm_Model_Tree_Path _model_file_tree_root_get()
+{
+  Elm_Model_Tree_Path tmp;
+  return tmp;
+}
+
+Eina_List* _model_file_tree_children_get(Elm_Model_Tree_Path path)
+{
+  return NULL;
+}
+
+Elm_Model_Tree_Path _model_file_tree_selected_get()
+{
+  Elm_Model_Tree_Path tmp;
+  return tmp;
+}
+
 #define MODEL_FILE_TREE_CLASS model_file_tree                                             \
     , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*) \
     , destructor(_model_file_tree_destructor)                                             \
     , function_override(elm_model_tree_select, _model_file_tree_select)                   \
-    , function_override(elm_model_tree_value_get, _model_file_tree_value_get)
+    , function_override(elm_model_tree_value_get, _model_file_tree_value_get)             \
+    , function_override(elm_model_tree_root_get, _model_file_tree_root_get)               \
+    , function_override(elm_model_tree_children_get, _model_file_tree_children_get)       \
+    , function_override(elm_model_tree_selected_get, _model_file_tree_selected_get)
 
 EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 
@@ -111,6 +131,16 @@ _model_file_grid_columns_count()
   return -1;
 }
 
+Elm_Model_Grid_Row _model_file_grid_selected_row_get()
+{
+  return (Elm_Model_Grid_Row)-1;
+}
+
+Elm_Model_Grid_Column _model_file_grid_selected_column_get()
+{
+  return (Elm_Model_Grid_Column)-1;
+}
+
 Eina_Value
 _model_file_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column)
 {
@@ -127,6 +157,8 @@ _model_file_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column)
    , function_override(elm_model_grid_cell_select, _model_file_grid_cell_select)                 \
    , function_override(elm_model_grid_columns_get, _model_file_grid_columns_get)                 \
    , function_override(elm_model_grid_columns_count, _model_file_grid_columns_count)             \
+   , function_override(elm_model_grid_selected_row_get, _model_file_grid_selected_row_get)       \
+   , function_override(elm_model_grid_selected_column_get, _model_file_grid_selected_column_get) \
    , function_override(elm_model_grid_value_get, _model_file_grid_value_get)
 
 EO3_DECLARE_CLASS(MODEL_FILE_GRID_CLASS)
