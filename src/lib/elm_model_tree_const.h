@@ -1,18 +1,24 @@
-
 #ifndef ELM_MODEL_TREE_CONST_H
 #define ELM_MODEL_TREE_CONST_H
 
-typedef struct _Elm_Model_Tree_Path {} Elm_Model_Tree_Path;
+/**
+ * @def elm_model_tree_constructor
+ * @since 1.8
+ *
+ * @param value The value of the root node.
+ */
+EAPI void elm_model_tree_constructor(Eina_Value *value);
 
 /**
  * @def elm_model_tree_select
  * @since 1.8
  *
- * @param path Path to the node to be selected.
+ * @param path Path to the node to be selected. If @p path is NULL
+ * the currently selected node is unselected.
  * 
  * Select the node pointed by @p path.
  */
-EAPI void elm_model_tree_select(Elm_Model_Tree_Path path);
+EAPI Eina_Bool elm_model_tree_select(Elm_Model_Tree_Path *path);
 
 /**
  * @def elm_model_tree_value_get
@@ -24,18 +30,7 @@ EAPI void elm_model_tree_select(Elm_Model_Tree_Path path);
  * Get the value of the node pointed by @p path.
  *
  */
-EAPI Eina_Value elm_model_tree_value_get(Elm_Model_Tree_Path path);
-
-/**
- * @def elm_model_tree_root_get
- * @since 1.8
- *
- * @return The path of the root node, as Elm_Model_Tree_Path.
- *
- * Get the path of the root node.
- *
- */
-EAPI Elm_Model_Tree_Path elm_model_tree_root_get();
+EAPI Eina_Value* elm_model_tree_value_get(Elm_Model_Tree_Path *path);
 
 /**
  * @def elm_model_tree_children_get
@@ -47,7 +42,7 @@ EAPI Elm_Model_Tree_Path elm_model_tree_root_get();
  * Get the children of the node pointed by @p path.
  *
  */
-EAPI Eina_List elm_model_tree_chiden_get(Elm_Model_Tree_Path);
+EAPI Eina_List* elm_model_tree_children_get(Elm_Model_Tree_Path *path);
 
 /**
  * @def elm_model_tree_selected_get
@@ -58,61 +53,35 @@ EAPI Eina_List elm_model_tree_chiden_get(Elm_Model_Tree_Path);
  * Get the path of the selected node.
  *
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_selected_get();
+EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
 
 
 /**
- * @def elm_model_tree_selected
+ * @def elm_model_tree_release
  * @since 1.8
  *
- * Raised when a tree model is selected.
+ * @param path Path to the sub-tree to release.
+ * 
+ * Release the sub-tree pointed by @p path and all its
+ * children. Release does not delete the nodes, it just frees their
+ * nodes.
  */
-
-/**
- * @def elm_model_tree_reordered
- * @since 1.8
- *
- * Raised when a three model is reordered.
- */
-
-/**
- * @def elm_model_tree_child_inserted
- * @since 1.8
- *
- * Raised when a new child is inserted.
- */
-
-/**
- * @def elm_model_tree_deleted
- * @since 1.8
- *
- * Raised when a tree model is deleted.
- */
-
-/**
- * @def elm_model_tree_changed
- * @since 1.8
- *
- * Raised when the tree model is changed.
- */
+EAPI void elm_model_tree_release(Elm_Model_Tree_Path *path);
 
 
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_TREE_CONST_INTERFACE elm_model_tree_const                     \
-   , function(elm_model_tree_select, void, Elm_Model_Tree_Path)                 \
-   , function(elm_model_tree_value_get, Eina_Value, Elm_Model_Tree_Path)        \
-   , function(elm_model_tree_root_get, Elm_Model_Tree_Path)                     \
-   , function(elm_model_tree_children_get, Eina_List, Elm_Model_Tree_Path)   /*XXX Eina list or array? */   \
-   , function(elm_model_tree_selected_get, Elm_Model_Tree_Path)                 \
-   /* , event(elm_model_tree_node_selected, Elm_Model_Tree_Path)                        \ */
-   /* , event(elm_model_tree_node_inserted, Elm_Model_Tree_Path)                        \ */
-   /* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path)                         \ */
-   /* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path)                         \ */
-   /* , event(elm_model_tree_reordered) */
+#define ELM_MODEL_TREE_CONST_CLASS elm_model_tree_const                                           \
+ , constructor(elm_model_tree_constructor, _model_tree_constructor, Eina_Value*)                  \
+ , destructor(_model_tree_destructor)                                                             \
+ , function(elm_model_tree_select, _model_tree_select, Eina_Bool, Elm_Model_Tree_Path*)           \
+ , function(elm_model_tree_value_get, _model_tree_value_get, Eina_Value*, Elm_Model_Tree_Path*)   \
+ , function(elm_model_tree_children_get, _model_tree_children_get, Eina_List*, Elm_Model_Tree_Path*) \
+ , function(elm_model_tree_selected_get, _model_tree_selected_get, Elm_Model_Tree_Path*)          \
+ , function(elm_model_tree_release, _model_tree_release, void, Elm_Model_Tree_Path*)              \
+ , event(elm_model_tree_select, Elm_Model_Tree_Path*)
 
-EO3_DECLARE_INTERFACE(ELM_MODEL_TREE_CONST_INTERFACE)
+EO3_DECLARE_CLASS(ELM_MODEL_TREE_CONST_CLASS) // XXX NON-INSTANTIABLE
 
 #endif // ELM_MODEL_TREE_CONST_H
-
