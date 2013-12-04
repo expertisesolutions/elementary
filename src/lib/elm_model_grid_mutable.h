@@ -61,11 +61,11 @@ EAPI void elm_model_grid_row_delete(Elm_Model_Grid_Row row);
  *
  * @param row The row coordinate of the cell.
  * @param column The column coordinate of the cell.
- * @param value The value, as @ref Eina_Value.
+ * @param value The value.
  *
  * Set @p value to the cell at position (@p row, @p column).
  */
-EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column, Eina_Value value);
+EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column, Eina_Value* value);
 
 /**
  * @brief EO3 Class Declaration

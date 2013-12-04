@@ -19,11 +19,11 @@ EAPI void elm_model_list_item_select(Elm_Model_List_Index index);
  * @since 1.8
  *
  * @param index The position from where the value will be read.
- * @return The value, as @ref Eina_Value.
+ * @return A pionter to an @ref Eina_Value.
  * 
  * Get the value of the item in position @p index.
  */
-EAPI Eina_Value elm_model_list_value_get(Elm_Model_List_Index index);
+EAPI Eina_Value* elm_model_list_value_get(Elm_Model_List_Index index);
 
 /**
  * @def elm_model_list_selected_get
@@ -77,7 +77,7 @@ EAPI Elm_Model_List_Index elm_model_list_selected_get();
 #define ELM_MODEL_LIST_CONST_INTERFACE elm_model_list_const             \
   , function(elm_model_list_item_select, void, Elm_Model_List_Index)    \
   , function(elm_model_list_selected_get, Elm_Model_List_Index)         \
-  , function(elm_model_list_value_get, Eina_Value, Elm_Model_List_Index)
+  , function(elm_model_list_value_get, Eina_Value*, Elm_Model_List_Index)
 
 /* , event(elm_model_list_item_selected) \ */
    /* , event(elm_model_list_item_inserted) \ */

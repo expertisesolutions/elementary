@@ -13,8 +13,8 @@
  * Append a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_append(Elm_Model_Tree_Path path, Eina_Value value);
-
+EAPI Elm_Model_Tree_Path* elm_model_tree_child_append(Elm_Model_Tree_Path *path,
+                                                      Eina_Value *value);
 
 /**
  * @def elm_model_tree_item_prepend
@@ -27,8 +27,8 @@ EAPI Elm_Model_Tree_Path elm_model_tree_child_append(Elm_Model_Tree_Path path, E
  * Prepend a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend(Elm_Model_Tree_Path path,
-                                                      Eina_Value value);
+EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend(Elm_Model_Tree_Path *path,
+                                                       Eina_Value *value);
 
 /**
  * @def elm_model_tree_child_append_relative
@@ -40,8 +40,8 @@ EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend(Elm_Model_Tree_Path path,
  * 
  * Append @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_append_relative(Elm_Model_Tree_Path path,
-                                                              Eina_Value value);
+EAPI Elm_Model_Tree_Path* elm_model_tree_child_append_relative(Elm_Model_Tree_Path *path,
+                                                               Eina_Value *value);
 
 /**
  * @def elm_model_tree_child_prepend_relative
@@ -53,8 +53,8 @@ EAPI Elm_Model_Tree_Path elm_model_tree_child_append_relative(Elm_Model_Tree_Pat
  * 
  * Prepend @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend_relative(Elm_Model_Tree_Path path,
-                                                               Eina_Value value);
+EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend_relative(Elm_Model_Tree_Path *path,
+                                                                Eina_Value *value);
 
 /**
  * @def elm_model_tree_delete
@@ -64,7 +64,7 @@ EAPI Elm_Model_Tree_Path elm_model_tree_child_prepend_relative(Elm_Model_Tree_Pa
  * 
  * Delete the sub-tree pointed by @p path and all its children.
  */
-EAPI void elm_model_tree_delete(Elm_Model_Tree_Path path);
+EAPI void elm_model_tree_delete(Elm_Model_Tree_Path *path);
 
 /**
  * @def elm_model_tree_value_set
@@ -75,18 +75,18 @@ EAPI void elm_model_tree_delete(Elm_Model_Tree_Path path);
  * 
  * Set @p value to the node pointed by @p path.
  */
-EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path path, Eina_Value value);
+EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value);
 
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_TREE_INTERFACE elm_model_tree                                 \
-   , function(elm_model_tree_child_append, Elm_Model_Tree_Path, Elm_Model_Tree_Path, Eina_Value) \
-   , function(elm_model_tree_child_prepend, Elm_Model_Tree_Path, Elm_Model_Tree_Path, Eina_Value) \
-   , function(elm_model_tree_child_append_relative, Elm_Model_Tree_Path, Elm_Model_Tree_Path, Eina_Value)  \
-   , function(elm_model_tree_child_prepend_relative, Elm_Model_Tree_Path, Elm_Model_Tree_Path, Eina_Value) \
-   , function(elm_model_tree_delete, void, Elm_Model_Tree_Path)                 \
-   , function(elm_model_tree_value_set, void, Elm_Model_Tree_Path, Eina_Value)
+#define ELM_MODEL_TREE_INTERFACE elm_model_tree                                                              \
+   , function(elm_model_tree_child_append, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*)          \
+   , function(elm_model_tree_child_prepend, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*)         \
+   , function(elm_model_tree_child_append_relative, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*) \
+   , function(elm_model_tree_child_prepend_relative, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*)\
+   , function(elm_model_tree_delete, void, Elm_Model_Tree_Path*)                                             \
+   , function(elm_model_tree_value_set, void, Elm_Model_Tree_Path*, Eina_Value*)
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_TREE_INTERFACE)
 

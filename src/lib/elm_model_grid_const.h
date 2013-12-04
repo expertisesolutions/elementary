@@ -66,9 +66,9 @@ EAPI int elm_model_grid_columns_count();
  *
  * @param row The row coordinate of the cell.
  * @param column The column coordinate of the cell.
- * @return The value, as @ref Eina_Value.
+ * @return The value, as a pointer to an @ref Eina_Value.
  */
-EAPI Eina_Value elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
+EAPI Eina_Value* elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
 
 /**
  * @def elm_model_grid_selected_row_get
@@ -129,15 +129,17 @@ EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_GRID_CONST_INTERFACE elm_model_grid_const         \
-   , function(elm_model_grid_row_select, void, Elm_Model_Grid_Row)  \
-   , function(elm_model_grid_rows_count, int)                       \
-   , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
-   , function(elm_model_grid_columns_get, Eina_List)                \
-   , function(elm_model_grid_columns_count, int)                    \
-   , function(elm_model_grid_selected_row_get, Elm_Model_Grid_Row)  \
-   , function(elm_model_grid_selected_column_get, Elm_Model_Grid_Column) \
-   , function(elm_model_grid_value_get, Eina_Value, Elm_Model_Grid_Row, Elm_Model_Grid_Column)
+#define ELM_MODEL_GRID_CONST_INTERFACE elm_model_grid_const               \
+   , function(elm_model_grid_row_select, void, Elm_Model_Grid_Row)        \
+   , function(elm_model_grid_rows_count, int)                             \
+   , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row,       \
+              Elm_Model_Grid_Column)                                      \
+   , function(elm_model_grid_columns_get, Eina_List)                      \
+   , function(elm_model_grid_columns_count, int)                          \
+   , function(elm_model_grid_selected_row_get, Elm_Model_Grid_Row)        \
+   , function(elm_model_grid_selected_column_get, Elm_Model_Grid_Column)  \
+   , function(elm_model_grid_value_get, Eina_Value*, Elm_Model_Grid_Row,  \
+              Elm_Model_Grid_Column)
    /* , event(elm_model_grid_row_selected) \ */
    /* , event(elm_model_grid_reordered) */
    /* , event(elm_model_grid_row_inserted) \ */
