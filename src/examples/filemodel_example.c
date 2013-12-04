@@ -26,13 +26,6 @@ Eo* elm_view_tree_model_tree_set(Elm_View_Tree_Mode mode) { return NULL; }
 #include <Eio.h>
 #include <Ecore.h>
 
-/* struct _Model_File_Tree_ */
-/* { */
-/*   Eina_File_Direct_Info *info; */
-/*   Eina_Stat *stat; */
-/* }; */
-/* typedef struct _Model_File_Tree_ */
-
 struct _Model_File_Tree_Node
 {
    struct _Model_File_Tree_Node *parent;
@@ -72,12 +65,12 @@ static Eina_List* _model_file_tree_children_get(Eo*, Model_File_Tree_Data*, Elm_
 static Eina_List* _model_file_tree_children_get(Eo*, Model_File_Tree_Data*, Elm_Model_Tree_Path*);
 static Elm_Model_Tree_Path* _model_file_tree_selected_get(Eo*, Model_File_Tree_Data*);
 
-static Eina_Bool _model_file_eio_filter_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
-static void _model_file_eio_main_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
-static void _model_file_eio_done_cb(void*, Eio_File*);
-static void _model_file_eio_error_cb(void*, Eio_File*, int);
-static Eina_Bool _model_file_eio_event_cb(void*, int, void*);
-//static void _model_file_eio_stat_cb(void*, Eio_File*, const Eina_Stat*);
+static Eina_Bool _eio_filter_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
+static void _eio_main_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
+static void _eio_done_cb(void*, Eio_File*);
+static void _eio_error_cb(void*, Eio_File*, int);
+static Eina_Bool _eio_event_cb(void*, int, void*);
+//static void _eio_stat_cb(void*, Eio_File*, const Eina_Stat*);
 
 #define MODEL_FILE_TREE_CLASS model_file_tree                                             \
     , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*) \
@@ -151,8 +144,10 @@ _node_monitor_add(Model_File_Tree_Node *node)
    EINA_SAFETY_ON_NULL_RETURN_VAL(node->handlers, EINA_FALSE);
    
    for(i = 0; i < nevents; i++)
-      node->handlers[i] =
-        ecore_event_handler_add(events[i], _model_file_eio_event_cb, node);
+     {
+        node->handlers[i] =
+          ecore_event_handler_add(events[i], _eio_event_cb, node);
+     }
 
    node->handlers[i] = NULL;
    
@@ -166,7 +161,9 @@ _node_monitor_del(Model_File_Tree_Node *node)
    assert(node != NULL);
 
    for(ptr = node->handlers; ptr != NULL; ptr++)
-      ecore_event_handler_del(*ptr);
+     {
+        ecore_event_handler_del(*ptr);
+     }
 
    assert(node->monitor != NULL);
    eio_monitor_del(node->monitor);
@@ -181,7 +178,7 @@ _node_add(const char *filename, Model_File_Tree_Node *parent)
    _node_monitor_add(node);
    if(parent)
      {
-        eina_list_append(parent->children, node);
+        parent->children = eina_list_append(parent->children, node);
      }
    node->parent = parent;
    return node;
@@ -211,10 +208,10 @@ _node_flush(Model_File_Tree_Data *model, Model_File_Tree_Node *node)
    tuple->model = model;
    
    node->file = eio_file_stat_ls(_node_value_get(node),
-                                 _model_file_eio_filter_cb,
-                                 _model_file_eio_main_cb,
-                                 _model_file_eio_done_cb,
-                                 _model_file_eio_error_cb,
+                                 _eio_filter_cb,
+                                 _eio_main_cb,
+                                 _eio_done_cb,
+                                 _eio_error_cb,
                                  tuple);
 }
 
@@ -289,19 +286,14 @@ _model_file_tree_selected_get(Eo *obj, Model_File_Tree_Data *self)
 }
 
 static Eina_Bool
-_model_file_eio_filter_cb(void *data,
-                          Eio_File *handler,
-                          const Eina_File_Direct_Info *info)
+_eio_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 {
    return EINA_TRUE; /* i.e., list everything */
 }
 
 static void
-_model_file_eio_main_cb(void *data,
-                        Eio_File *handler,
-                        const Eina_File_Direct_Info *info)
+_eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 {
-   Model_File_Tree_Node *root;
    Model_File_Tree_Tuple *tuple = (Model_File_Tree_Tuple*)data;
 
    assert(tuple);
@@ -315,20 +307,20 @@ _model_file_eio_main_cb(void *data,
 }
 
 static void
-_model_file_eio_done_cb(void *data, Eio_File *handler)
+_eio_done_cb(void *data, Eio_File *handler)
 {
    free(data);
 }
 
 static void
-_model_file_eio_error_cb(void *data, Eio_File *handler, int error)
+_eio_error_cb(void *data, Eio_File *handler, int error)
 {
    Model_File_Tree_Data *self = (Model_File_Tree_Data*)data;
    printf("file: error! (code=%d)\n", error);
 }
 
 static Eina_Bool
-_model_file_eio_event_cb(void *data, int type, void *event)
+_eio_event_cb(void *data, int type, void *event)
 {
    if(type == EIO_MONITOR_FILE_CREATED)           /*TODO implement*/ ;
    else if(type == EIO_MONITOR_FILE_DELETED)      /*TODO implement*/ ;
@@ -444,7 +436,7 @@ elm_main(int argc, char **argv)
    Eo *_grid_m; //shows the selected group_node content as a grid
    Eo *_tree_v = NULL;
    Eo *_grid_v = NULL;
-
+   
    ecore_init();
    eio_init();
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
