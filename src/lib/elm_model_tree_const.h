@@ -1,4 +1,3 @@
-
 #ifndef ELM_MODEL_TREE_CONST_H
 #define ELM_MODEL_TREE_CONST_H
 
@@ -107,13 +106,12 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
    , function(elm_model_tree_root_get, Elm_Model_Tree_Path*)                    \
    , function(elm_model_tree_children_get, Eina_List*, Elm_Model_Tree_Path*)    \
    , function(elm_model_tree_selected_get, Elm_Model_Tree_Path*)                \
-   /* , event(elm_model_tree_node_selected, Elm_Model_Tree_Path)                        \ */
-   /* , event(elm_model_tree_node_inserted, Elm_Model_Tree_Path)                        \ */
-   /* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path)                         \ */
-   /* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path)                         \ */
-   /* , event(elm_model_tree_reordered) */
+   , event(elm_model_tree_select, Elm_Model_Tree_Path*)                         \
+   /*, event(elm_model_tree_node_inserted, Elm_Model_Tree_Path*)                  \ */
+   /* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path*)                   \ */
+   /* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path*)                   \ */
+   /* , event(elm_model_tree_reordered, int) */
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_TREE_CONST_INTERFACE)
 
 #endif // ELM_MODEL_TREE_CONST_H
-

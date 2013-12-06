@@ -140,12 +140,12 @@ EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
    , function(elm_model_grid_selected_column_get, Elm_Model_Grid_Column)  \
    , function(elm_model_grid_value_get, Eina_Value*, Elm_Model_Grid_Row,  \
               Elm_Model_Grid_Column)
-   /* , event(elm_model_grid_row_selected) \ */
-   /* , event(elm_model_grid_reordered) */
-   /* , event(elm_model_grid_row_inserted) \ */
-   /* , event(elm_model_grid_row_deleted)  \ */
-   /* , event(elm_model_grid_row_changed)  \ */
-
+    , event(elm_model_grid_cell_select, Elm_Model_Grid_Row,               \
+            Elm_Model_Grid_Column)                                        \
+    , event(elm_model_grid_row_select, Elm_Model_Grid_Row)
+    /* , event(elm_model_grid_row_deleted, Elm_Model_Grid_Row)             \
+       , event(elm_model_grid_row_changed, Elm_Model_Grid_Row)*/
+    
 EO3_DECLARE_INTERFACE(ELM_MODEL_GRID_CONST_INTERFACE)
 
 #endif // ELM_MODEL_GRID_CONST_H

@@ -1,4 +1,3 @@
-
 #ifndef ELM_MODEL_TREE_MUTABLE_H
 #define ELM_MODEL_TREE_MUTABLE_H
 
@@ -86,9 +85,10 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value)
    , function(elm_model_tree_child_append_relative, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*) \
    , function(elm_model_tree_child_prepend_relative, Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, Eina_Value*)\
    , function(elm_model_tree_delete, void, Elm_Model_Tree_Path*)                                             \
-   , function(elm_model_tree_value_set, void, Elm_Model_Tree_Path*, Eina_Value*)
+   , function(elm_model_tree_value_set, void, Elm_Model_Tree_Path*, Eina_Value*)                             \
+   , event(elm_model_tree_child_append, Elm_Model_Tree_Path*)                                                \
+   , event(elm_model_tree_delete, Elm_Model_Tree_Path*)
 
 EO3_DECLARE_INTERFACE(ELM_MODEL_TREE_INTERFACE)
 
 #endif // ELM_MODEL_TREE_MUTABLE_H
-

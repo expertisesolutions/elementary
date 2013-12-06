@@ -1,4 +1,3 @@
-
 #ifdef HAVE_CONFIG_H
 # include "elementary_config.h"
 #endif
@@ -19,6 +18,10 @@ elm_model_tree_path_new()
 {
    Elm_Model_Tree_Path *path = malloc(sizeof(Elm_Model_Tree_Path));
    EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
+
+   path->depth = 0;
+   path->indices = NULL;
+
    return path;
 }
 
@@ -71,7 +74,7 @@ elm_model_tree_path_append_index(Elm_Model_Tree_Path *path, unsigned int index)
 void
 elm_model_tree_path_prepend_index(Elm_Model_Tree_Path *path, unsigned int index)
 {
-   unsigned int*indices;
+   unsigned int *indices;
 
    assert(path);
    indices = malloc((path->depth + 1) * sizeof(unsigned int*));
@@ -142,5 +145,3 @@ elm_model_tree_path_get_index(Elm_Model_Tree_Path *path, unsigned int depth)
 EO3_DEFINE_INTERFACE(ELM_MODEL_TREE_CONST_INTERFACE, ((EO3_NO_BASE_CLASS)))
 
 EO3_DEFINE_INTERFACE(ELM_MODEL_TREE_INTERFACE, ((ELM_MODEL_TREE_CONST_INTERFACE)))
-
-
