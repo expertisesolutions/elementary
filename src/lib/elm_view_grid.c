@@ -3,6 +3,7 @@
 #endif
 #include <Elementary.h>
 
+#include "elm_view_grid.h"
 #include "elm_priv.h"
 #include <assert.h>
 
@@ -13,7 +14,7 @@ struct _Elm_View_Grid_Private
 };
 typedef struct _Elm_View_Grid_Private Elm_View_Grid_Private;
 
-///////////////////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////////////////
 #define _VIEW_TRACE  printf("%s -> %s:%d/n",__FILE__, __FUNCTION__, __LINE__);
 
 static Eina_Bool
@@ -54,12 +55,14 @@ _model_reordered_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void 
   _VIEW_TRACE
   return EINA_TRUE;
 }
-///////////////////////////////////////////////////////////////////////////////////
+*//////////////////////////////////////////////////////////////////////////////////
 
 static inline void
-_update_grid_widget(Eo* model, Evas_Object *list)
+_update_grid_widget(Elm_View_Grid_Private* self)
 {
+   assert(self);
    //foreach model itens and update rows to widget
+   //XXX emit update/reorder signal
 }
 
 static void
@@ -71,20 +74,30 @@ _elm_view_grid_add(Eo *obj, Elm_View_Grid_Private *self, Evas_Object* parent, Eo
    eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_GRID_CLASS), eo2_constructor());
    self->list = elm_genlist_add(parent);
    self->model = model;
-   _update_widget(self->model, self->list);
+   _update_grid_widget(self);
+/*
    eo2_do(self->model, elm_model_grid_row_selected_callback_add(_model_row_selected_cb, list);
    eo2_do(self->model, elm_model_grid_row_inserted_callback_add(_model_row_inserted_cb, list);
    eo2_do(self->model, elm_model_grid_row_deleted_callback_add(_model_row_deleted_cb, list);
    eo2_do(self->model, elm_model_grid_row_changed_callback_add(_model_row_changed_cb, list);
    eo2_do(self->model, elm_model_grid_reordered_callback_add(_model_reordered_cb, list);
-
-  eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_GRID_CLASS), eo2_constructor());
+*/
 }
 
 static void
 _elm_view_grid_destructor(Eo *obj, Elm_View_Grid_Private *self)
 {
-
+   assert(self);
+   assert(obj);
+   //XXX destruct evas obj?
 }
 
-EO3_DEFINE_CLASS(ELM_VIEW_GRID_CLASS, ((EO3_BASE_CLASS)) Elm_View_Grid_Private)
+static Evas_Object*
+_elm_view_grid_evas_object_get(Eo *obj, Elm_View_Grid_Private *self)
+{
+   assert(self);
+   assert(obj);
+   return self->list;
+}
+
+EO3_DEFINE_CLASS(ELM_VIEW_GRID_CLASS, ((EO3_BASE_CLASS)), Elm_View_Grid_Private)
