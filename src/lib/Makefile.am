@@ -305,6 +305,10 @@ elm_model_tree_mutable.h \
 elm_model_grid.h \
 elm_model_grid_mutable.h \
 elm_model_list_mutable.h \
+elm_model_tree.h \
+elm_view_grid.h \
+elm_view_list.h \
+elm_view_tree.h \
 elm_need.h \
 elm_notify.h \
 elm_notify_common.h \
@@ -465,6 +469,9 @@ elm_model_list.c \
 elm_model_tree.c \
 elm_model_tree_private.c \
 elm_model_tree_path.c \
+elm_view_grid.c \
+elm_view_list.c \
+elm_view_tree.c \
 elm_module.c \
 elm_notify.c \
 elm_panel.c \
