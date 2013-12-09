@@ -261,9 +261,11 @@ EAPI extern Elm_Version *elm_version;
 #include <elm_video.h>
 #include <elm_web.h>
 #include <elm_win.h>
+#ifdef EFL_BETA_API_SUPPORT
 #include <elm_model_list.h>
 #include <elm_model_grid.h>
 #include <elm_model_tree.h>
+#endif
 
 /* include deprecated calls last of all */
 #include <elm_deprecated.h>
