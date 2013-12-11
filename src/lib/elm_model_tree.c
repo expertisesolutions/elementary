@@ -7,11 +7,32 @@
 #include "elm_model_tree.h"
 #include <assert.h>
 
+struct _Elm_Model_Tree_Node
+{
+  struct _Elm_Model_Tree_Node *parent;
+  Eina_Array *children;
+  Eina_Value *value;
+};
+
+typedef struct _Elm_Model_Tree_Node Elm_Model_Tree_Node;
+
 struct _Elm_Model_Tree_Path
 {
    unsigned int depth;
    unsigned int *indices;
 };
+
+struct _Elm_Model_Tree
+{
+   Elm_Model_Tree_Node *root;
+   Elm_Model_Tree_Path* selected;
+   Eina_Lock lock;
+};
+
+typedef struct _Elm_Model_Tree Elm_Model_Tree;
+
+
+/// Path Interface ///
 
 Elm_Model_Tree_Path*
 elm_model_tree_path_new()
@@ -141,7 +162,75 @@ elm_model_tree_path_get_index(Elm_Model_Tree_Path *path, unsigned int depth)
    return path->indices[depth];
 }
 
+/// Const Interface ///
 
-EO3_DEFINE_INTERFACE(ELM_MODEL_TREE_CONST_INTERFACE, ((EO3_NO_BASE_CLASS)))
+static void
+_model_tree_select(Elm_Model_Tree_Path *path)
+{
+}
 
-EO3_DEFINE_INTERFACE(ELM_MODEL_TREE_INTERFACE, ((ELM_MODEL_TREE_CONST_INTERFACE)))
+static Eina_Value*
+_model_tree_value_get(Elm_Model_Tree_Path *path)
+{
+   return NULL;
+}
+
+static Eina_List*
+_model_tree_root_get(Elm_Model_Tree_Path *path)
+{
+   return NULL;
+}
+
+static Eina_List*
+_model_tree_children_get(Elm_Model_Tree_Path *path)
+{
+   return NULL;
+}
+ 
+static Elm_Model_Tree_Path*
+_model_tree_selected_get()
+{
+   return NULL;
+}
+
+/// Mutable Interface ///
+
+static Elm_Model_Tree_Path*
+_model_tree_child_append(Elm_Model_Tree_Path *path, Eina_Value *value)
+{
+   return NULL;
+}
+
+static Elm_Model_Tree_Path*
+_model_tree_child_prepend(Elm_Model_Tree_Path *path, Eina_Value *value)
+{
+   return NULL;
+}
+
+static Elm_Model_Tree_Path*
+_model_tree_child_append_relative(Elm_Model_Tree_Path *path, Eina_Value *value)
+{
+   return NULL;
+}
+
+static Elm_Model_Tree_Path*
+_model_tree_child_prepend_relative(Elm_Model_Tree_Path *path, Eina_Value *value)
+{
+   return NULL;
+}
+
+static void
+_model_tree_delete(Elm_Model_Tree_Path *path)
+{
+}
+
+static void
+_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value)
+{
+}
+
+/// Class definition ///
+
+EO3_DEFINE_CLASS(ELM_MODEL_TREE_CONST_CLASS, ((EO3_BASE_CLASS)), Elm_Model_Tree)
+
+EO3_DEFINE_CLASS(ELM_MODEL_TREE_CLASS, ((ELM_MODEL_TREE_CONST_CLASS)), Elm_Model_Tree)

@@ -70,14 +70,15 @@ EAPI void elm_model_grid_value_set(Elm_Model_Grid_Row row, Elm_Model_Grid_Column
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_GRID_INTERFACE elm_model_grid                                            \
-   , function(elm_model_grid_row_append, Elm_Model_Grid_Row)                               \
-   , function(elm_model_grid_row_prepend, Elm_Model_Grid_Row)                              \
-   , function(elm_model_grid_row_append_relative, Elm_Model_Grid_Row, Elm_Model_Grid_Row) /* \*/
-   /* , function(elm_model_grid_row_prepend_relative, Elm_Model_Grid_Row, Elm_Model_Grid_Row) \ */
-   /* , function(elm_model_grid_row_delete, void, Elm_Model_Grid_Row)                         \ */
-   /* , function(elm_model_grid_value_set, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column, Eina_Value) */
+#define ELM_MODEL_GRID_CLASS elm_model_grid                                           \
+ , function(elm_model_grid_row_append, _model_grid_row_append, Elm_Model_Grid_Row)    \
+ , function(elm_model_grid_row_prepend, _model_grid_row_prepend, Elm_Model_Grid_Row)  \
+ , function(elm_model_grid_row_append_relative, _model_grid_row_append_relative,      \
+            Elm_Model_Grid_Row, Elm_Model_Grid_Row)
+/* , function(elm_model_grid_row_prepend_relative, Elm_Model_Grid_Row, Elm_Model_Grid_Row) \ */
+/* , function(elm_model_grid_row_delete, void, Elm_Model_Grid_Row)                         \ */
+/* , function(elm_model_grid_value_set, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column, Eina_Value) */
 
-EO3_DECLARE_INTERFACE(ELM_MODEL_GRID_INTERFACE)
+EO3_DECLARE_CLASS(ELM_MODEL_GRID_CLASS)
 
 #endif // ELM_MODEL_GRID_MUTABLE_H

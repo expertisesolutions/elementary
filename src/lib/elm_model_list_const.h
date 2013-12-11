@@ -72,18 +72,18 @@ EAPI Elm_Model_List_Index elm_model_list_selected_get();
  */
 
 /**
- * @brief EO3 Interface Declaration
+ * @brief Const-list Model class-declaration.
  */
-#define ELM_MODEL_LIST_CONST_INTERFACE elm_model_list_const               \
-  , function(elm_model_list_item_select, void, Elm_Model_List_Index)      \
-  , function(elm_model_list_selected_get, Elm_Model_List_Index)           \
-  , function(elm_model_list_value_get, Eina_Value*, Elm_Model_List_Index)
+#define ELM_MODEL_LIST_CONST_CLASS elm_model_list_const                                       \
+ , function(elm_model_list_item_select, _model_list_item_select, void, Elm_Model_List_Index)  \
+ , function(elm_model_list_selected_get, _model_list_selected_get, Elm_Model_List_Index)      \
+ , function(elm_model_list_value_get, _model_list_value_get, Eina_Value*, Elm_Model_List_Index)
     /* , event(elm_model_list_item_selected, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_inserted, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_deleted, Elm_Model_List_Index)          \ */
     /* , event(elm_model_list_item_changed, Elm_Model_List_Index)          \ */
     /* , event(elm_model_list_reordered, int) */
 
-EO3_DECLARE_INTERFACE(ELM_MODEL_LIST_CONST_INTERFACE)
+EO3_DECLARE_CLASS(ELM_MODEL_LIST_CONST_CLASS)
 
 #endif // ELM_MODEL_LIST_CONST_H

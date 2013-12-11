@@ -35,7 +35,7 @@ EAPI void elm_model_grid_cell_select(Elm_Model_Grid_Row row, Elm_Model_Grid_Colu
  * 
  * Get the list of columns of this grid model.
  */
-EAPI Eina_List elm_model_grid_columns_get();
+EAPI Eina_List* elm_model_grid_columns_get();
 
 /**
  * @def elm_model_grid_rows_count
@@ -129,23 +129,20 @@ EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_GRID_CONST_INTERFACE elm_model_grid_const               \
-   , function(elm_model_grid_row_select, void, Elm_Model_Grid_Row)        \
-   , function(elm_model_grid_rows_count, int)                             \
-   , function(elm_model_grid_cell_select, void, Elm_Model_Grid_Row,       \
-              Elm_Model_Grid_Column)                                      \
-   , function(elm_model_grid_columns_get, Eina_List)                      \
-   , function(elm_model_grid_columns_count, int)                          \
-   , function(elm_model_grid_selected_row_get, Elm_Model_Grid_Row)        \
-   , function(elm_model_grid_selected_column_get, Elm_Model_Grid_Column)  \
-   , function(elm_model_grid_value_get, Eina_Value*, Elm_Model_Grid_Row,  \
-              Elm_Model_Grid_Column)                                      \
-    , event(elm_model_grid_cell_select, Elm_Model_Grid_Row,               \
-            Elm_Model_Grid_Column)                                        \
-    , event(elm_model_grid_row_select, Elm_Model_Grid_Row)
-    /* , event(elm_model_grid_row_deleted, Elm_Model_Grid_Row)             \
-       , event(elm_model_grid_row_changed, Elm_Model_Grid_Row)*/
+#define ELM_MODEL_GRID_CONST_CLASS elm_model_grid_const                 \
+ , function(elm_model_grid_row_select, _model_grid_row_select, void, Elm_Model_Grid_Row) \
+ , function(elm_model_grid_rows_count, _model_grid_rows_count, int)     \
+ , function(elm_model_grid_cell_select, _model_grid_cell_select, void, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
+ , function(elm_model_grid_columns_get, _model_grid_columns_get, Eina_List*) \
+ , function(elm_model_grid_columns_count, _model_grid_columns_count, int) \
+ , function(elm_model_grid_selected_row_get, _model_grid_selected_row_get, Elm_Model_Grid_Row) \
+ , function(elm_model_grid_selected_column_get, _model_grid_selected_column_get, Elm_Model_Grid_Column) \
+ , function(elm_model_grid_value_get, _model_grid_value_get, Eina_Value*, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
+ , event(elm_model_grid_cell_select, Elm_Model_Grid_Row, Elm_Model_Grid_Column) \
+ , event(elm_model_grid_row_select, Elm_Model_Grid_Row)
+/* , event(elm_model_grid_row_deleted, Elm_Model_Grid_Row)    \
+   , event(elm_model_grid_row_changed, Elm_Model_Grid_Row)*/
     
-EO3_DECLARE_INTERFACE(ELM_MODEL_GRID_CONST_INTERFACE)
+EO3_DECLARE_CLASS(ELM_MODEL_GRID_CONST_CLASS) // XXX NON-INSTANTIABLE
 
 #endif // ELM_MODEL_GRID_CONST_H
