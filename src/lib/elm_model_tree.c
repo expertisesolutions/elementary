@@ -7,20 +7,7 @@
 #include "elm_model_tree.h"
 #include <assert.h>
 
-struct _Elm_Model_Tree_Node
-{
-  struct _Elm_Model_Tree_Node *parent;
-  Eina_Array *children;
-  Eina_Value *value;
-};
-
-typedef struct _Elm_Model_Tree_Node Elm_Model_Tree_Node;
-
-struct _Elm_Model_Tree_Path
-{
-   unsigned int depth;
-   unsigned int *indices;
-};
+#include "elm_model_tree_private.h"
 
 struct _Elm_Model_Tree
 {
@@ -31,202 +18,166 @@ struct _Elm_Model_Tree
 
 typedef struct _Elm_Model_Tree Elm_Model_Tree;
 
-
-/// Path Interface ///
-
-Elm_Model_Tree_Path*
-elm_model_tree_path_new()
-{
-   Elm_Model_Tree_Path *path = malloc(sizeof(Elm_Model_Tree_Path));
-   EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
-
-   path->depth = 0;
-   path->indices = NULL;
-
-   return path;
-}
-
-void
-elm_model_tree_path_free(Elm_Model_Tree_Path *path)
-{
-   assert(path);
-   free(path->indices);
-   free(path);
-}
-
-Elm_Model_Tree_Path*
-elm_model_tree_path_new_from_string(const char *str)
-{
-   char *ptr;
-   Elm_Model_Tree_Path *path = elm_model_tree_path_new();
-   long n;
-
-   while( (n = strtol(str, &ptr, 10)) >= 0)
-     {
-        elm_model_tree_path_append_index(path, n);
-        if(*ptr == '\0') break;
-        EINA_SAFETY_ON_FALSE_GOTO(ptr != str && *ptr == ',', err_exit);
-        str = ptr + 1;
-     }
-   EINA_SAFETY_ON_FALSE_GOTO(n >= 0, err_exit);
-
-   return path;
-   
- err_exit:
-   elm_model_tree_path_free(path);
-   return NULL;
-}
-
-void
-elm_model_tree_path_append_index(Elm_Model_Tree_Path *path, unsigned int index)
-{
-   unsigned int *indices;
-
-   assert(path);
-   indices = malloc((path->depth + 1) * sizeof(unsigned int*));
-   assert(indices);
-   memcpy(indices, path->indices, sizeof(unsigned int) * path->depth);
-   indices[path->depth] = index;
-   free(path->indices);
-   path->indices = indices;
-   path->depth += 1;
-}
-
-void
-elm_model_tree_path_prepend_index(Elm_Model_Tree_Path *path, unsigned int index)
-{
-   unsigned int *indices;
-
-   assert(path);
-   indices = malloc((path->depth + 1) * sizeof(unsigned int*));
-   assert(indices);
-   indices[0] = index;
-   memcpy(indices + 1, path->indices, sizeof(unsigned int) * path->depth);
-   free(path->indices);
-   path->indices = indices;
-   path->depth += 1;
-}
-
-char*
-elm_model_tree_path_to_string(Elm_Model_Tree_Path *path)
-{
-   char *str;
-   unsigned int i, n, r, res, *index;
-   
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path, NULL);
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path->depth, NULL);
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path->indices, NULL);
-
-   for(n = path->depth, i = 0; i < path->depth; i++, n++)
-      for(res = path->indices[i]; (res /= 10) > 0; n++)
-         ;
-
-   str = calloc(sizeof(char), n);
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(str, NULL);
-
-   index = path->indices;
-   i = snprintf(str, n, "%u", *(index++));
-   EINA_SAFETY_ON_FALSE_GOTO(i, err_exit);
-   while(i < n)
-     {
-        r = snprintf(str + i, n - i, ",%u", *(index++));
-        EINA_SAFETY_ON_FALSE_GOTO(r, err_exit);
-        i += r;
-     }
-   return str;
-
- err_exit:
-   free(str);
-   return NULL;
-}
-
-unsigned int
-elm_model_tree_path_get_depth(Elm_Model_Tree_Path *path)
-{
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path, (unsigned int)-1);
-   return path->depth;
-}
-
-unsigned int*
-elm_model_tree_path_get_indices(Elm_Model_Tree_Path *path)
-{
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path, NULL);
-   return path->indices;
-}
-
-unsigned int
-elm_model_tree_path_get_index(Elm_Model_Tree_Path *path, unsigned int depth)
-{
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(path, (unsigned int)-1);
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(depth <= path->depth, (unsigned int)-1);   
-   return path->indices[depth];
-}
-
-/// Const Interface ///
+/// Const Class Functions ///
 
 static void
-_model_tree_select(Elm_Model_Tree_Path *path)
+_model_tree_constructor(Eo *object, Elm_Model_Tree *model, Eina_Value *value)
 {
+   Elm_Model_Tree_Node *root;
+   eo2_do_super(object, EO3_GET_CLASS(ELM_MODEL_TREE_CONST_CLASS), eo2_constructor());
+
+   assert(model != NULL);
+   root = _tree_node_append(value, NULL);
+   assert(root != NULL);
+   model->root = root;
+   model->selected = NULL;
+   eina_lock_new(&model->lock);
+}
+
+static void
+_model_tree_destructor(Eo *object, Elm_Model_Tree *model)
+{
+   assert(model != NULL);
+   eina_lock_take(&model->lock);
+   _tree_node_del(model->root);
+   elm_model_tree_path_free(model->selected);
+   eina_lock_release(&model->lock);
+   eina_lock_free(&model->lock);
+   eo2_do_super(object, EO3_GET_CLASS(ELM_MODEL_TREE_CONST_CLASS), eo2_destructor());
+}
+
+static Eina_Bool
+_model_tree_select(Eo *object, Elm_Model_Tree *model, Elm_Model_Tree_Path *path)
+{
+   Elm_Model_Tree_Node *node;
+   assert(model != NULL);
+
+   eina_lock_take(&model->lock);
+   node = _tree_node_find(model->root, path);
+   model->selected = node ? path : NULL;
+   eina_lock_release(&model->lock);
+   eo2_do(object, elm_model_tree_select_callback_call(path));
+   
+   return node ? EINA_TRUE : EINA_FALSE;
 }
 
 static Eina_Value*
-_model_tree_value_get(Elm_Model_Tree_Path *path)
+_model_tree_value_get(Eo *object EINA_UNUSED,
+                      Elm_Model_Tree *model,
+                      Elm_Model_Tree_Path *path)
 {
-   return NULL;
+   Elm_Model_Tree_Node *node;
+   Eina_Value *value;
+   
+   EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
+   assert(model != NULL);
+   eina_lock_take(&model->lock);
+   node = _tree_node_find(model->root, path);
+   if(node == NULL)
+     {
+        return NULL;
+     }
+   value = _tree_node_value_get(node);
+   eina_lock_release(&model->lock);
+   
+   return value;
 }
 
 static Eina_List*
-_model_tree_root_get(Elm_Model_Tree_Path *path)
+_model_tree_children_get(Eo *object EINA_UNUSED,
+                         Elm_Model_Tree *model,
+                         Elm_Model_Tree_Path *path)
 {
-   return NULL;
-}
-
-static Eina_List*
-_model_tree_children_get(Elm_Model_Tree_Path *path)
-{
-   return NULL;
+   return NULL; // TODO implement
 }
  
 static Elm_Model_Tree_Path*
-_model_tree_selected_get()
+_model_tree_selected_get(Eo *object EINA_UNUSED, Elm_Model_Tree *model)
 {
-   return NULL;
+   assert(model != NULL);
+   return model->selected;
 }
 
-/// Mutable Interface ///
+/// Mutable Class Functions ///
 
 static Elm_Model_Tree_Path*
-_model_tree_child_append(Elm_Model_Tree_Path *path, Eina_Value *value)
+_model_tree_child_append(Eo *object, Elm_Model_Tree *model,
+                         Elm_Model_Tree_Path *path, Eina_Value *value)
 {
-   return NULL;
+   Elm_Model_Tree_Path *ret = NULL;
+   Elm_Model_Tree_Node *node, *parent;
+
+   assert(model != NULL);
+   eina_lock_take(&model->lock);
+   parent = _tree_node_find(model->root, path);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent, NULL);
+   node = _tree_node_append(value, parent);
+   ret = _tree_node_path(node);
+   eina_lock_release(&model->lock);
+   // TODO: raise event
+   return ret;
 }
 
 static Elm_Model_Tree_Path*
-_model_tree_child_prepend(Elm_Model_Tree_Path *path, Eina_Value *value)
+_model_tree_child_prepend(Eo *object, Elm_Model_Tree *model,
+                          Elm_Model_Tree_Path *path, Eina_Value *value)
 {
-   return NULL;
+   Elm_Model_Tree_Path *ret = NULL;
+   Elm_Model_Tree_Node *node, *parent;
+
+   assert(model != NULL);
+   eina_lock_take(&model->lock);   
+   parent = _tree_node_find(model->root, path);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent, NULL);
+   node = _tree_node_prepend(value, parent);
+   ret = _tree_node_path(node);
+   eina_lock_release(&model->lock);
+   // TODO: raise event.
+   return ret;
 }
 
 static Elm_Model_Tree_Path*
-_model_tree_child_append_relative(Elm_Model_Tree_Path *path, Eina_Value *value)
+_model_tree_child_append_relative(Eo *object, Elm_Model_Tree *model,
+                                  Elm_Model_Tree_Path *path, Eina_Value *value)
 {
-   return NULL;
+   return NULL; // TODO implement
 }
 
 static Elm_Model_Tree_Path*
-_model_tree_child_prepend_relative(Elm_Model_Tree_Path *path, Eina_Value *value)
+_model_tree_child_prepend_relative(Eo *object, Elm_Model_Tree *model,
+                                   Elm_Model_Tree_Path *path, Eina_Value *value)
 {
-   return NULL;
+   return NULL; // TODO implement
 }
 
 static void
-_model_tree_delete(Elm_Model_Tree_Path *path)
+_model_tree_delete(Eo *object,
+                   Elm_Model_Tree *model,
+                   Elm_Model_Tree_Path *path)
 {
+   Elm_Model_Tree_Node *node;
+   if(path == NULL) return;
+   assert(model != NULL);
+   eina_lock_take(&model->lock);
+   node = _tree_node_find(model->root, path);
+   EINA_SAFETY_ON_NULL_RETURN(node);
+   _tree_node_del(node);
+   eina_lock_release(&model->lock);
+   // TODO: raise event.
 }
 
 static void
-_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value)
+_model_tree_value_set(Eo *object, Elm_Model_Tree *model,
+                      Elm_Model_Tree_Path *path, Eina_Value *value)
 {
+   Elm_Model_Tree_Node *node;
+   if(path == NULL) return;
+   assert(model != NULL);
+   eina_lock_take(&model->lock);
+   node = _tree_node_find(model->root, path);
+   _tree_node_value_set(node, value);
+   eina_lock_release(&model->lock);
+   // TODO: raise event.
 }
 
 /// Class definition ///

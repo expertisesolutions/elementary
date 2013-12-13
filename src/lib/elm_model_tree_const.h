@@ -1,18 +1,16 @@
 #ifndef ELM_MODEL_TREE_CONST_H
 #define ELM_MODEL_TREE_CONST_H
 
-typedef struct _Elm_Model_Tree_Path Elm_Model_Tree_Path;
-
-
 /**
  * @def elm_model_tree_select
  * @since 1.8
  *
- * @param path Path to the node to be selected.
+ * @param path Path to the node to be selected. If @p path is NULL
+ * the currently selected node is unselected.
  * 
  * Select the node pointed by @p path.
  */
-EAPI void elm_model_tree_select(Elm_Model_Tree_Path *path);
+EAPI Eina_Bool elm_model_tree_select(Elm_Model_Tree_Path *path);
 
 /**
  * @def elm_model_tree_value_get
@@ -100,17 +98,19 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_MODEL_TREE_CONST_CLASS elm_model_tree_const                         \
- , function(elm_model_tree_select, _model_tree_select, void, Elm_Model_Tree_Path*) \
- , function(elm_model_tree_value_get, _model_tree_value_get, Eina_Value*, Elm_Model_Tree_Path*) \
- , function(elm_model_tree_root_get, _model_tree_root_get, Elm_Model_Tree_Path*) \
+#define ELM_MODEL_TREE_CONST_CLASS elm_model_tree_const                                           \
+ , constructor(elm_model_tree_constructor, _model_tree_constructor, Eina_Value*) \
+ , destructor(_model_tree_destructor)                                   \
+ , function(elm_model_tree_select, _model_tree_select, Eina_Bool, Elm_Model_Tree_Path*)           \
+ , function(elm_model_tree_value_get, _model_tree_value_get, Eina_Value*, Elm_Model_Tree_Path*)   \
  , function(elm_model_tree_children_get, _model_tree_children_get, Eina_List*, Elm_Model_Tree_Path*) \
- , function(elm_model_tree_selected_get, _model_tree_selected_get, Elm_Model_Tree_Path*) \
- , event(elm_model_tree_select, Elm_Model_Tree_Path*)                   \
-   /*, event(elm_model_tree_node_inserted, Elm_Model_Tree_Path*)                  \ */
-   /* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path*)                   \ */
-   /* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path*)                   \ */
-   /* , event(elm_model_tree_reordered, int) */
+ , function(elm_model_tree_selected_get, _model_tree_selected_get, Elm_Model_Tree_Path*)          \
+ , event(elm_model_tree_select, Elm_Model_Tree_Path*)
+
+/*, event(elm_model_tree_node_inserted, Elm_Model_Tree_Path*)                  \ */
+/* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path*)                   \ */
+/* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path*)                   \ */
+/* , event(elm_model_tree_reordered, int) */
 
 EO3_DECLARE_CLASS(ELM_MODEL_TREE_CONST_CLASS) // XXX NON-INSTANTIABLE
 

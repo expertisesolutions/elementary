@@ -6,7 +6,8 @@
  * @since 1.8
  *
  * @param path The path to a node where the new child shall be appended.
- * @param value The value to append.
+ * @param value The value to append. The value is not copied so it's
+ * this class responsibility to deleted it.
  * @return The path to the newly created node.
  *
  * Append a new child cointaining @p value to the list of children of
