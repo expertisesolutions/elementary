@@ -6,6 +6,7 @@
 
 #include "elm_priv.h"
 #include "elm_model_list.h"
+
 #include <assert.h>
 
 /// Const interface ///

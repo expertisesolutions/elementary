@@ -5,7 +5,6 @@
 
 #include "elm_priv.h"
 #include "elm_model_tree_path.h"
-#include <assert.h>
 
 struct _Elm_Model_Tree_Path
 {
@@ -29,7 +28,7 @@ void
 elm_model_tree_path_free(Elm_Model_Tree_Path *path)
 {
    if(path == NULL) return;
-   free(path->indices);
+   if(path->indices) free(path->indices);
    free(path);
 }
 
@@ -37,9 +36,14 @@ Elm_Model_Tree_Path*
 elm_model_tree_path_new_from_string(const char *str)
 {
    char *ptr;
-   Elm_Model_Tree_Path *path = elm_model_tree_path_new();
+   Elm_Model_Tree_Path *path;
    long n;
 
+   EINA_SAFETY_ON_NULL_RETURN_VAL(str, NULL);
+   path = elm_model_tree_path_new();
+   EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
+   if(str[0] == 0) return path;
+   
    while( (n = strtol(str, &ptr, 10)) >= 0)
      {
         elm_model_tree_path_append_index(path, n);
@@ -61,9 +65,9 @@ elm_model_tree_path_append_index(Elm_Model_Tree_Path *path, unsigned int index)
 {
    unsigned int *indices;
 
-   assert(path);
+   EINA_SAFETY_ON_NULL_RETURN(path);
    indices = malloc((path->depth + 1) * sizeof(unsigned int*));
-   assert(indices);
+   EINA_SAFETY_ON_NULL_RETURN(indices);
    memcpy(indices, path->indices, sizeof(unsigned int) * path->depth);
    indices[path->depth] = index;
    free(path->indices);
@@ -76,9 +80,9 @@ elm_model_tree_path_prepend_index(Elm_Model_Tree_Path *path, unsigned int index)
 {
    unsigned int *indices;
 
-   assert(path);
+   EINA_SAFETY_ON_NULL_RETURN(path);
    indices = malloc((path->depth + 1) * sizeof(unsigned int*));
-   assert(indices);
+   EINA_SAFETY_ON_NULL_RETURN(indices);
    indices[0] = index;
    memcpy(indices + 1, path->indices, sizeof(unsigned int) * path->depth);
    free(path->indices);
@@ -91,26 +95,26 @@ elm_model_tree_path_to_string(Elm_Model_Tree_Path *path)
 {
    char *str;
    unsigned int i, n, r, res, *index;
-   
    EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(path->indices, NULL);
-
+   
    // calculate the space required for the new string
    for(n = path->depth, i = 0; i < path->depth; i++, n++)
       for(res = path->indices[i]; (res /= 10) > 0; n++)
          ;
-
-   str = calloc(sizeof(char), n);
+   
+   str = calloc(sizeof(char), n+2);
    EINA_SAFETY_ON_FALSE_RETURN_VAL(str, NULL);
-
-   index = path->indices;
-   i = snprintf(str, n, "%u", *(index++));
-   EINA_SAFETY_ON_FALSE_GOTO(i, err_exit);
-   while(i < n)
+   if(path->indices != NULL)
      {
-        r = snprintf(str + i, n - i, ",%u", *(index++));
-        EINA_SAFETY_ON_FALSE_GOTO(r, err_exit);
-        i += r;
+        index = path->indices;
+        i = snprintf(str, n, "%u", *(index++));
+        EINA_SAFETY_ON_FALSE_GOTO(i, err_exit);
+        while(i < n)
+          {
+             r = snprintf(str + i, n - i, ",%u", *(index++));
+             EINA_SAFETY_ON_FALSE_GOTO(r, err_exit);
+             i += r;
+          }
      }
    return str;
 

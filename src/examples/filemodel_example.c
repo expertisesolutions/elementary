@@ -2,145 +2,132 @@
 #define EFL_EO_API_SUPPORT
 #define EFL_BETA_API_SUPPORT
 
-#include <assert.h>
 #include <Eo.h>
 #include <Eio.h>
+#include <Ecore.h>
 #include <Elementary.h>
 
-/*#define ELM_VIEW_TREE_CLASS EO_BASE_CLASS*/
-/*#define ELM_VIEW_GRID_CLASS EO_BASE_CLASS*/
+#include <assert.h>
 
-typedef enum
+/**
+ * @brief The value stored in the nodes of this Model.
+ */
+struct _Model_File_Value
 {
-   ELM_VIEW_TREE_VIEWMODE_GROUP
-} Elm_View_Tree_Mode;
-
-Eo* elm_view_tree_add(Evas_Object* parent, Eo* file_model) { return NULL; }
-Eo* elm_view_grid_add(Evas_Object* parent, Eo* file_model) { return NULL; }
-Eo* elm_view_tree_evas_object_get(Evas_Object** widget) { return NULL; }
-Eo* elm_view_grid_evas_object_get(Evas_Object** widget) { return NULL; }
-Eo* elm_view_tree_model_tree_set(Elm_View_Tree_Mode mode) { return NULL; }
-
-////////////////////////////////////////////////////////////////////////////////
-
-#include <Eio.h>
-#include <Ecore.h>
-
-struct _Model_File_Tree
-{
-   Eina_Bool enable_filter_dironly;
-};
-
-typedef struct _Model_File_Tree Model_File_Tree;
-
-static void _model_file_tree_constructor(Eo *object, Model_File_Tree *model, const char* root);
-static void _model_file_tree_destructor(Eo *object, Model_File_Tree *model);
-static Eina_Bool _model_file_tree_select(Eo *object, Model_File_Tree *model, Elm_Model_Tree_Path *path);
-
-#define MODEL_FILE_TREE_CLASS model_file_tree                           \
- , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*) \
- , destructor(_model_file_tree_destructor)                                             \
- , function_override(elm_model_tree_select, _model_file_tree_select)
-
-EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
-
-EO3_DEFINE_CLASS(MODEL_FILE_TREE_CLASS, ((ELM_MODEL_TREE_CLASS)), Model_File_Tree)
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct _Model_File_Tree_Value
-{
-   Eina_Stringshare *filename;
+   Eina_Stringshare *filepath;
    Eio_File *file;
    Eio_Monitor *monitor;
    Ecore_Event_Handler **handlers;
 };
 
-typedef struct _Model_File_Tree_Value Model_File_Tree_Value;
+typedef struct _Model_File_Value Model_File_Value;
 
-static Eina_Bool _file_tree_filter_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
-static void _file_tree_main_cb(void*, Eio_File*, const Eina_File_Direct_Info*);
-static void _file_tree_done_cb(void*, Eio_File*);
-static void _file_tree_error_cb(void*, Eio_File*, int);
-static Eina_Bool _file_tree_event_cb(void*, int, void*);
-//static void _file_tree_stat_cb(void*, Eio_File*, const Eina_Stat*);
+/**
+ * @brief Instantiate an @ref Eina_Value representing a @ref Model_File_Value
+ * struct.
+ * @param path The file path.
+ * @return The new @ref Eina_Value instance.
+ */
+static Eina_Value* _file_value_new(const char *path);
+
+/**
+ * @brief Deletes an @ref Eina_Value that holds an @ref
+ * File_Model_Value struct.
+ * @param value The value.
+ */
+static void _file_value_delete(Eina_Value *value);
+
+/**
+ * @brief Initialize an @ref Eina_Value that holds a @ref
+ * Model_File_Value struct.
+ * @param value The value instance.
+ * @param object The EO object that will hold the value.
+ *
+ * The reference counter for this object will be incremented and a
+ * reference to it will be transmitted throughout all registered @ref
+ * Ecore_Event_Handler_Cb.
+ */
+static void _file_value_init(Eina_Value *value, const char *filepath, Elm_Model_Tree_Path *node, Eo *object);
+
+/**
+ * @brief The state of this Model.
+ */
+struct _Model_File_Tree
+{
+  //Eina_Bool enable_dir_only;
+  //Eina_Bool enable_recursive;
+};
+
+typedef struct _Model_File_Tree Model_File_Tree;
+
+/**
+ * @brief Auxiliary type used to transmit multiple values through @ref
+ * eio_file_stat_ls() event callbacks.
+ */
+struct _Model_File_Tuple
+{
+  Eo *object;
+  Elm_Model_Tree_Path *node;
+};
+
+typedef struct _Model_File_Tuple Model_File_Tuple;
+
+static void _model_file_tree_constructor(Eo*, Model_File_Tree*, const char*);
+static void _model_file_tree_destructor(Eo*, Model_File_Tree*);
+static Eina_Bool _model_file_tree_select(Eo*, Model_File_Tree*, Elm_Model_Tree_Path*);
+static Elm_Model_Tree_Path* _model_file_tree_child_append(Eo*, Model_File_Tree*, Elm_Model_Tree_Path*, const char*);
+
+#define MODEL_FILE_TREE_CLASS model_file_tree                                          \
+ , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*) \
+ , destructor(_model_file_tree_destructor)                                             \
+ , function_override(elm_model_tree_select, _model_file_tree_select)                   \
+ , function(model_file_tree_child_append, _model_file_tree_child_append,               \
+            Elm_Model_Tree_Path*, Elm_Model_Tree_Path*, const char*)
+
+// TODO: implement model_file_tree_mode_set() and model_file_tree_mode_get().
+
+EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
+EO3_DEFINE_CLASS(MODEL_FILE_TREE_CLASS, ((ELM_MODEL_TREE_CLASS)), Model_File_Tree)
 
 static void
-_model_file_tree_constructor(Eo *object,
-                             Model_File_Tree *model,
-                             const char* root)
+_eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 {
-   Eina_Value *value = NULL;
-   printf("<D> _model_file_tree_constructor().\n");
-   EINA_SAFETY_ON_NULL_RETURN(root);
-   //value = _model_file_value_new(root);
-
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                elm_model_tree_constructor(value));
-
-   //eo_ref(object); // will be unref'd at _eio_done_cb.
-   /* (XXX) = eio_file_stat_ls(root, */
-   /*                        _file_tree_filter_cb, */
-   /*                        _file_tree_main_cb, */
-   /*                        _file_tree_done_cb, */
-   /*                        _file_tree_error_cb, */
-   /*                        object); */
-}
-
-static void
-_model_file_tree_destructor(Eo *object, Model_File_Tree *model)
-{
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), eo2_destructor());
-   printf("<D> _model_file_tree_destructor().\n");
+   Model_File_Tuple *tuple = (Model_File_Tuple*)data;
+   EINA_SAFETY_ON_NULL_RETURN(tuple);
+   EINA_SAFETY_ON_NULL_RETURN(info);
+   eo2_do(tuple->object, model_file_tree_child_append(tuple->node, info->path));
 }
 
 static Eina_Bool
-_model_file_tree_select(Eo *object, Model_File_Tree *model, Elm_Model_Tree_Path *path)
-{
-   Eina_Bool ret = EINA_FALSE;
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), ret = elm_model_tree_select(path));
-   printf("<D> _model_file_tree_select().\n");
-   return ret;
-}
-
-static Eina_Bool
-_file_tree_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
+_eio_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 {
    return EINA_TRUE; /* i.e., list everything */
 }
 
 static void
-_file_tree_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
+_eio_done_cb(void *data, Eio_File *handler)
 {
-   // TODO: implement
-
-   //eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), ret =
-   //elm_model_tree_select(path));
+   Model_File_Tuple *tuple = (Model_File_Tuple*)data;
+   eo_unref(tuple->object);
+   elm_model_tree_path_free(tuple->node);
+   free(tuple);
 }
 
 static void
-_file_tree_done_cb(void *data, Eio_File *handler)
+_eio_error_cb(void *data, Eio_File *handler, int error)
 {
-   //eo_unref(model->object);
-   //free(data);
+   //printf("<E> file model eio error %d\n", error);
 }
 
-static void
-_file_tree_error_cb(void *data, Eio_File *handler, int error)
-{
-   //Model_File_Tree_Data *self = (Model_File_Tree_Data*)data;
-   printf("file: error! (code=%d)\n", error);
-}
+//static void _eio_stat_cb(void*, Eio_File*, const Eina_Stat*);
 
 static Eina_Bool
-_file_tree_event_cb(void *data, int type, void *event)
+_eio_event_cb(void *data, int type, void *event)
 {
-   //Model_File_Tree_Node *node;
+   Eo *object = (Eo*)data;
+   EINA_SAFETY_ON_NULL_RETURN_VAL(object, EINA_FALSE);
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(data, EINA_FALSE);
-   //node = (Model_File_Tree_Node*)data;
-   
+   // TODO: check if the parent node exists in the model tree.
    if(type == EIO_MONITOR_FILE_CREATED)
      {
      }
@@ -165,21 +152,192 @@ _file_tree_event_cb(void *data, int type, void *event)
    return EINA_TRUE;
 }
 
+static Eio_File*
+_eio_ls(const char *filepath, Elm_Model_Tree_Path *node, Eo *object)
+{
+   Eina_Value *value;
+   Model_File_Tuple *tuple;
+
+   printf("+%s (%s)\n", filepath, elm_model_tree_path_to_string(node));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(node, NULL);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(object, NULL);
+   tuple = malloc(sizeof(Model_File_Tuple));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(tuple, NULL);
+   eo_ref(object);
+   tuple->object = object;
+   tuple->node = node;
+   return eio_file_stat_ls(filepath,
+                           _eio_filter_cb,
+                           _eio_main_cb,
+                           _eio_done_cb,
+                           _eio_error_cb,
+                           tuple);
+}
+
+static Eina_Value*
+_file_value_new(const char *filepath)
+{
+   static Eina_Value_Struct_Member members[] =
+   {
+      EINA_VALUE_STRUCT_MEMBER(NULL, Model_File_Value, filepath),
+      EINA_VALUE_STRUCT_MEMBER(NULL, Model_File_Value, file),
+      EINA_VALUE_STRUCT_MEMBER(NULL, Model_File_Value, monitor),
+      EINA_VALUE_STRUCT_MEMBER(NULL, Model_File_Value, handlers)
+   };
+   static Eina_Value_Struct_Desc desc = 
+   {
+      EINA_VALUE_STRUCT_DESC_VERSION,
+      NULL, // XXX special ops
+      members,
+      EINA_C_ARRAY_LENGTH(members),
+      sizeof(Model_File_Value)
+   };
+   // non-static initialization
+   members[0].type = EINA_VALUE_TYPE_STRINGSHARE;
+   members[1].type = EINA_VALUE_TYPE_INT;
+   members[2].type = EINA_VALUE_TYPE_INT;
+   members[3].type = EINA_VALUE_TYPE_INT;
+
+   Eina_Value *value = eina_value_struct_new(&desc);
+   Eina_Stringshare *str = eina_stringshare_add(filepath);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(str, NULL);
+   
+   eina_value_struct_set(value, "filepath", str);
+   eina_value_struct_set(value, "file", 0);
+   eina_value_struct_set(value, "monitor", 0);
+   eina_value_struct_set(value, "handlers", 0);
+   eina_stringshare_del(str);
+   return value;
+}
+
+static void
+_file_value_delete(Eina_Value *value)
+{
+#if 0
+   Ecore_Event_Handler **ptr;
+   eina_stringshare_del(value->filepath);
+   for(ptr = node->handlers; ptr != NULL; ptr++)
+     {
+        ecore_event_handler_del(*ptr);
+     }
+   eio_monitor_del(node->monitor);
+#endif
+}
+
+static void
+_file_value_init(Eina_Value *value,
+                       const char *filepath,
+                       Elm_Model_Tree_Path *node,
+                       Eo *object)
+{
+   Eina_Stringshare *str;
+   Eio_File *file;
+   Eio_Monitor *monitor;
+   Ecore_Event_Handler **handlers;
+   Model_File_Tuple *tuple;
+   int events[] = {
+      EIO_MONITOR_FILE_CREATED,
+      EIO_MONITOR_FILE_DELETED,
+      EIO_MONITOR_DIRECTORY_CREATED,
+      EIO_MONITOR_DIRECTORY_DELETED,
+      EIO_MONITOR_SELF_RENAME,
+      EIO_MONITOR_SELF_DELETED,
+      EIO_MONITOR_ERROR
+   };
+   size_t i, nevents = sizeof(events) / sizeof(events[0]);
+   EINA_SAFETY_ON_NULL_RETURN(value);
+   EINA_SAFETY_ON_NULL_RETURN(object);
+
+   // instruct Eio subsystem to monitor filepath
+   monitor = eio_monitor_add(filepath);
+   eina_value_struct_set(value, "monitor", monitor);
+
+   // register callbacks to handle these events
+   handlers = malloc(sizeof(Ecore_Event_Handler*)*(nevents+1));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(handlers, NULL);
+   for(i = 0; i < nevents; i++)
+     {
+        handlers[i] =
+           ecore_event_handler_add(events[i], _eio_event_cb, object);
+     }
+   eina_value_struct_set(value, "handlers", handlers);
+}
+
+static void
+_model_file_tree_constructor(Eo *object,
+                             Model_File_Tree *model,
+                             const char* filepath)
+{
+   Eina_Value *value = NULL;
+   Elm_Model_Tree_Path *root;
+
+   EINA_SAFETY_ON_NULL_RETURN(filepath);
+
+   value = _file_value_new(filepath);
+   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+                elm_model_tree_constructor(value));
+
+   root = elm_model_tree_path_new_from_string("");
+   _file_value_init(value, filepath, root, object);
+   _eio_ls(filepath, root, object);
+}
+
+static void
+_model_file_tree_destructor(Eo *object, Model_File_Tree *model)
+{
+   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), eo2_destructor());
+}
+
+static Eina_Bool
+_model_file_tree_select(Eo *object, Model_File_Tree *model, Elm_Model_Tree_Path *node)
+{
+   Eina_Bool ret = EINA_FALSE;
+   Eina_Value *value = NULL;
+   Eina_Stringshare *filepath = NULL;
+   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+                ret = elm_model_tree_select(node));
+   if(ret == EINA_TRUE)
+     {
+        eo2_do(object, value = elm_model_tree_value_get(node));
+        EINA_SAFETY_ON_NULL_RETURN_VAL(value, EINA_FALSE);
+        eina_value_struct_pget(value, "filepath", &filepath);
+        _eio_ls(filepath, node, object);
+     }
+   return ret;
+}
+
+static Elm_Model_Tree_Path*
+_model_file_tree_child_append(Eo *object,
+                              Model_File_Tree *model,
+                              Elm_Model_Tree_Path *node,
+                              const char *filepath)
+{
+   Eina_Value *value;
+   Elm_Model_Tree_Path *child = NULL;
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(node, NULL);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(filepath, NULL);
+   value = _file_value_new(filepath);
+   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+                child = elm_model_tree_child_append(node, value));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(child, NULL);
+   _file_value_init(value, filepath, child, object);
+   eo2_do(object, elm_model_tree_select(child)); // XXX disable recursiveness
+   return child;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct _Model_File_Grid_Cell
 {
-   Eina_Value *value;
+  // TODO implement.
 };
 
 typedef struct _Model_File_Grid_Cell Model_File_Grid_Cell;
 
 struct _Model_File_Grid_Data
 {
-   Elm_Model_Grid_Row selected_row;
-   Elm_Model_Grid_Column selected_column;
-   Eina_List **grid;
-   Eina_Lock lock;
+  // TODO implement
 };
 typedef struct _Model_File_Grid_Data Model_File_Grid_Data;
 
@@ -188,32 +346,20 @@ void _model_file_grid_construct_from_tree(Eo*, Model_File_Grid_Data*, Eo*);
 void _model_file_grid_destructor(Eo*, Model_File_Grid_Data*);
 void _model_file_grid_row_select(Eo*, Model_File_Grid_Data*, Elm_Model_Grid_Row);
 void _model_file_grid_cell_select(Eo*, Model_File_Grid_Data*, Elm_Model_Grid_Row, Elm_Model_Grid_Column);
-Eina_List* _model_file_grid_columns_get(Eo*, Model_File_Grid_Data*);
-Eina_List* _model_file_grid_columns_get(Eo*, Model_File_Grid_Data*);
-int _model_file_grid_rows_count(Eo*, Model_File_Grid_Data*);
-int _model_file_grid_columns_count(Eo*, Model_File_Grid_Data*);
-Elm_Model_Grid_Row _model_file_grid_selected_row_get(Eo*, Model_File_Grid_Data*);
-Elm_Model_Grid_Column _model_file_grid_selected_column_get(Eo*, Model_File_Grid_Data*);
 Eina_Value* _model_file_grid_value_get(Eo*, Model_File_Grid_Data*, Elm_Model_Grid_Row, Elm_Model_Grid_Column);
+
 
 #define MODEL_FILE_GRID_CLASS model_file_grid                                                    \
    , constructor(model_file_grid_constructor, _model_file_tree_constructor, const char*)         \
    , constructor(model_file_grid_construct_from_tree, _model_file_grid_construct_from_tree, Eo*) \
    , destructor(_model_file_tree_destructor)                                                     \
    , function_override(elm_model_grid_row_select, _model_file_grid_row_select)                   \
-   , function_override(elm_model_grid_rows_count, _model_file_grid_rows_count)                   \
    , function_override(elm_model_grid_cell_select, _model_file_grid_cell_select)                 \
-   , function_override(elm_model_grid_columns_get, _model_file_grid_columns_get)                 \
-   , function_override(elm_model_grid_columns_count, _model_file_grid_columns_count)             \
-   , function_override(elm_model_grid_selected_row_get, _model_file_grid_selected_row_get)       \
-   , function_override(elm_model_grid_selected_column_get, _model_file_grid_selected_column_get) \
    , function_override(elm_model_grid_value_get, _model_file_grid_value_get)
 
 EO3_DECLARE_CLASS(MODEL_FILE_GRID_CLASS)
 
-EO3_DEFINE_CLASS(MODEL_FILE_GRID_CLASS,
-                 ((EO3_BASE_CLASS),(ELM_MODEL_GRID_CLASS)),
-                 Model_File_Grid_Data)
+EO3_DEFINE_CLASS(MODEL_FILE_GRID_CLASS, ((ELM_MODEL_GRID_CLASS)), Model_File_Grid_Data)
 
 void
 _model_file_grid_constructor(Eo *obj, Model_File_Grid_Data *self, const char *root)
@@ -243,36 +389,6 @@ _model_file_grid_cell_select(Eo *obj,
 {
 }
 
-Eina_List*
-_model_file_grid_columns_get(Eo *obj, Model_File_Grid_Data *self)
-{
-   return NULL;
-}
-
-int
-_model_file_grid_rows_count(Eo *obj, Model_File_Grid_Data *self)
-{
-   return -1;
-}
-
-int
-_model_file_grid_columns_count(Eo *obj, Model_File_Grid_Data *self)
-{
-   return -1;
-}
-
-Elm_Model_Grid_Row
-_model_file_grid_selected_row_get(Eo *obj, Model_File_Grid_Data *self)
-{
-   return (Elm_Model_Grid_Row)-1;
-}
-
-Elm_Model_Grid_Column
-_model_file_grid_selected_column_get(Eo *obj, Model_File_Grid_Data *self)
-{
-   return (Elm_Model_Grid_Column)-1;
-}
-
 Eina_Value*
 _model_file_grid_value_get(Eo *obj,
                            Model_File_Grid_Data *self,
@@ -284,14 +400,27 @@ _model_file_grid_value_get(Eo *obj,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef enum
+{
+   ELM_VIEW_TREE_VIEWMODE_GROUP
+} Elm_View_Tree_Mode;
+
+Eo* elm_view_tree_add(Evas_Object* parent, Eo* file_model) { return NULL; }
+Eo* elm_view_grid_add(Evas_Object* parent, Eo* file_model) { return NULL; }
+Eo* elm_view_tree_evas_object_get(Evas_Object** widget) { return NULL; }
+Eo* elm_view_grid_evas_object_get(Evas_Object** widget) { return NULL; }
+Eo* elm_view_tree_model_tree_set(Elm_View_Tree_Mode mode) { return NULL; }
+
+////////////////////////////////////////////////////////////////////////////////
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Evas_Object *win;
    Evas_Object *box;
    Evas_Object *widget;
-   Eo *_tree_m; //implements file as a tree data model
-   Eo *_grid_m; //shows the selected group_node content as a grid
+   Eo *_tree_m; // implements a tree data model over the underlying filesystem
+   Eo *_grid_m; // shows the selected group_node content as a grid 
    Eo *_tree_v = NULL;
    Eo *_grid_v = NULL;
    
@@ -300,7 +429,8 @@ elm_main(int argc, char **argv)
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
 
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                            NULL, model_file_tree_constructor("/tmp"));
+                            NULL, model_file_tree_constructor("./"));
+
 #if 0   
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
@@ -344,8 +474,8 @@ elm_main(int argc, char **argv)
    evas_object_resize(win, 800, 400);
    evas_object_show(win);
 #endif
-
-   //elm_run();
+   
+   elm_run();
    elm_shutdown();
    eio_shutdown();
    ecore_shutdown();

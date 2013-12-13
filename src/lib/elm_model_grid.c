@@ -6,6 +6,7 @@
 
 #include "elm_priv.h"
 #include "elm_model_grid.h"
+
 #include <assert.h>
 
 /// Const Interface ///

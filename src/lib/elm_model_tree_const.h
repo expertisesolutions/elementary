@@ -2,6 +2,14 @@
 #define ELM_MODEL_TREE_CONST_H
 
 /**
+ * @def elm_model_tree_constructor
+ * @since 1.8
+ *
+ * @param value The value of the root node.
+ */
+EAPI void elm_model_tree_constructor(Eina_Value *value);
+
+/**
  * @def elm_model_tree_select
  * @since 1.8
  *
@@ -99,8 +107,8 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
  * @brief EO3 Class Declaration
  */
 #define ELM_MODEL_TREE_CONST_CLASS elm_model_tree_const                                           \
- , constructor(elm_model_tree_constructor, _model_tree_constructor, Eina_Value*) \
- , destructor(_model_tree_destructor)                                   \
+ , constructor(elm_model_tree_constructor, _model_tree_constructor, Eina_Value*)                  \
+ , destructor(_model_tree_destructor)                                                             \
  , function(elm_model_tree_select, _model_tree_select, Eina_Bool, Elm_Model_Tree_Path*)           \
  , function(elm_model_tree_value_get, _model_tree_value_get, Eina_Value*, Elm_Model_Tree_Path*)   \
  , function(elm_model_tree_children_get, _model_tree_children_get, Eina_List*, Elm_Model_Tree_Path*) \
