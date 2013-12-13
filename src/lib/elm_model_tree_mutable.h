@@ -94,7 +94,8 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value)
  , function(elm_model_tree_value_set, _model_tree_value_set,            \
             void, Elm_Model_Tree_Path*, Eina_Value*)                    \
  , event(elm_model_tree_child_append, Elm_Model_Tree_Path*)             \
- , event(elm_model_tree_delete, Elm_Model_Tree_Path*)
+ , event(elm_model_tree_delete, Elm_Model_Tree_Path*)                   \
+ , event(elm_model_tree_value_set, Elm_Model_Tree_Path*, Eina_Value*)
 
 EO3_DECLARE_CLASS(ELM_MODEL_TREE_CLASS)
 

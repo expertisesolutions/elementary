@@ -66,43 +66,6 @@ EAPI Eina_List* elm_model_tree_children_get(Elm_Model_Tree_Path*);
  */
 EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
 
-
-/**
- * @def elm_model_tree_selected
- * @since 1.8
- *
- * Raised when a tree model is selected.
- */
-
-/**
- * @def elm_model_tree_reordered
- * @since 1.8
- *
- * Raised when a three model is reordered.
- */
-
-/**
- * @def elm_model_tree_child_inserted
- * @since 1.8
- *
- * Raised when a new child is inserted.
- */
-
-/**
- * @def elm_model_tree_deleted
- * @since 1.8
- *
- * Raised when a tree model is deleted.
- */
-
-/**
- * @def elm_model_tree_changed
- * @since 1.8
- *
- * Raised when the tree model is changed.
- */
-
-
 /**
  * @brief EO3 Class Declaration
  */
@@ -114,11 +77,6 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_selected_get();
  , function(elm_model_tree_children_get, _model_tree_children_get, Eina_List*, Elm_Model_Tree_Path*) \
  , function(elm_model_tree_selected_get, _model_tree_selected_get, Elm_Model_Tree_Path*)          \
  , event(elm_model_tree_select, Elm_Model_Tree_Path*)
-
-/*, event(elm_model_tree_node_inserted, Elm_Model_Tree_Path*)                  \ */
-/* , event(elm_model_tree_node_deleted, Elm_Model_Tree_Path*)                   \ */
-/* , event(elm_model_tree_node_changed, Elm_Model_Tree_Path*)                   \ */
-/* , event(elm_model_tree_reordered, int) */
 
 EO3_DECLARE_CLASS(ELM_MODEL_TREE_CONST_CLASS) // XXX NON-INSTANTIABLE
 
