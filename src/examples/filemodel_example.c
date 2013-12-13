@@ -158,7 +158,7 @@ _eio_ls(const char *filepath, Elm_Model_Tree_Path *node, Eo *object)
    Eina_Value *value;
    Model_File_Tuple *tuple;
 
-   printf("+%s (%s)\n", filepath, elm_model_tree_path_to_string(node));
+   printf("+(%s): %s\n", elm_model_tree_path_to_string(node), filepath);
    EINA_SAFETY_ON_NULL_RETURN_VAL(node, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(object, NULL);
    tuple = malloc(sizeof(Model_File_Tuple));
