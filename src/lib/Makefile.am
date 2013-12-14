@@ -305,7 +305,6 @@ elm_model_tree_mutable.h \
 elm_model_grid.h \
 elm_model_grid_mutable.h \
 elm_model_list_mutable.h \
-elm_model_tree.h \
 elm_view_grid.h \
 elm_view_list.h \
 elm_view_tree.h \
