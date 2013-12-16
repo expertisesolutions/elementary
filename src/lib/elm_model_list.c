@@ -22,6 +22,12 @@ _model_list_selected_get()
    return (Elm_Model_List_Index)-1;
 }
 
+static long
+_model_list_len()
+{
+   return 0;
+}
+
 static Eina_Value*
 _model_list_value_get(Elm_Model_List_Index index)
 {

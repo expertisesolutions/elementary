@@ -35,6 +35,15 @@ EAPI Eina_Value* elm_model_list_value_get(Elm_Model_List_Index index);
  */
 EAPI Elm_Model_List_Index elm_model_list_selected_get();
 
+/**
+ * @def elm_model_list_len
+ * @since 1.8
+ *
+ * @return number of items.
+ *
+ */
+EAPI long elm_model_list_len();
+
 
 /**
  * @def elm_model_list_item_selected
@@ -74,10 +83,11 @@ EAPI Elm_Model_List_Index elm_model_list_selected_get();
 /**
  * @brief Const-list Model class-declaration.
  */
-#define ELM_MODEL_LIST_CONST_CLASS elm_model_list_const                                       \
- , function(elm_model_list_item_select, _model_list_item_select, void, Elm_Model_List_Index)  \
- , function(elm_model_list_selected_get, _model_list_selected_get, Elm_Model_List_Index)      \
- , function(elm_model_list_value_get, _model_list_value_get, Eina_Value*, Elm_Model_List_Index)
+#define ELM_MODEL_LIST_CONST_CLASS elm_model_list_const                                         \
+ , function(elm_model_list_item_select, _model_list_item_select, void, Elm_Model_List_Index)    \
+ , function(elm_model_list_selected_get, _model_list_selected_get, Elm_Model_List_Index)        \
+ , function(elm_model_list_value_get, _model_list_value_get, Eina_Value*, Elm_Model_List_Index) \
+ , function(elm_model_list_len, _model_list_len, long)
     /* , event(elm_model_list_item_selected, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_inserted, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_deleted, Elm_Model_List_Index)          \ */
