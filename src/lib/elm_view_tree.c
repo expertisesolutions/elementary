@@ -10,12 +10,20 @@
 struct _Elm_View_Tree_Private
 {
    Evas_Object *list;
-   Eo *model;
    Elm_Genlist_Item_Class *itc;
    Elm_Genlist_Item_Class *itp;
    Elm_View_Tree_Mode mode;
+   Eo *model;
 };
 typedef struct _Elm_View_Tree_Private Elm_View_Tree_Private;
+
+struct _View_Tree_ItemData
+{
+        Elm_View_Tree_Private *self;
+        Elm_Model_Tree_Path *path;
+};
+typedef struct _View_Tree_ItemData View_Tree_ItemData;
+
 
 #define _VIEW_TRACE  printf("%s -> %s:%d/n",__FILE__, __FUNCTION__, __LINE__);
 
@@ -65,17 +73,21 @@ _model_reordered_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void 
 static char *
 _item_label_get(void *data, Evas_Object *obj, const char *part)
 {
-   char buf[256];
-   Elm_Model_Tree_Path *path = data;
-   Eina_Value *value;
+   Eina_Value *value = NULL;
+   char *label = NULL;
+   View_Tree_ItemData *idata = data;
+   Elm_View_Tree_Private *self;
+   assert(data);
+   self = idata->self;
+   assert(self);
 
    if (!strcmp(part, "elm.text"))
    {
-//     value = eo2_do(obj, elm_model_tree_value_get(path)); //get self and path
-     snprintf(buf, sizeof(buf), "%s", value); //cast Eina_Value to string
+      eo2_do(self->model, value = elm_model_tree_value_get(idata->path));
+      label = eina_value_to_string(value); //XXX get value type before??
    }
 
-   return strdup(buf);
+   return label;
 }
 
 static Evas_Object *
@@ -103,6 +115,13 @@ _expandable_content_get(void *data, Evas_Object *obj, const char *part)
 }
 
 static void
+_item_del(void *data, Evas_Object *obj, const char *part)
+{
+   assert(data);
+   free(data);
+}
+
+static void
 _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
 {
    printf("sel item data [%p] on genlist obj [%p], item pointer [%p]\n",
@@ -119,19 +138,22 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_
    assert(self);
    assert(path);
 
-   Eina_List *l, *cl;
+   Eina_List *l, *cl = NULL;
    Elm_Model_Tree_Path *c_path;
+   View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
+   idata->self = self;
+   idata->path = path;
 
    eo2_do(self->model, cl = elm_model_tree_children_get(path));
    Elm_Object_Item *item;
 
    if (!cl) {
-      item = elm_genlist_item_append(self->list, self->itc, path, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, NULL);
+      item = elm_genlist_item_append(self->list, self->itc, idata, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
       elm_genlist_item_expanded_set(item, EINA_FALSE);
       return;
    }
 
-   item = elm_genlist_item_append(self->list, self->itp, path, parent, ELM_GENLIST_ITEM_TREE, _item_sel_cb, NULL);
+   item = elm_genlist_item_append(self->list, self->itp, idata, parent, ELM_GENLIST_ITEM_TREE, _item_sel_cb, idata);
    assert(item);
    elm_genlist_item_expanded_set(item, EINA_TRUE);
 
@@ -166,14 +188,14 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    self->itc->func.text_get = _item_label_get;
    self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
-   self->itc->func.del = NULL;
+   self->itc->func.del = _item_del;
 
    self->itp = elm_genlist_item_class_new();
    self->itp->item_style = "default";
    self->itp->func.text_get = _item_label_get;
    self->itp->func.content_get = _expandable_content_get;
    self->itp->func.state_get = NULL;
-   self->itp->func.del = NULL;
+   self->itp->func.del = _item_del;
 
    _update_tree_widget(self);
 /*
@@ -191,7 +213,7 @@ _elm_view_tree_destructor(Eo *obj, Elm_View_Tree_Private *self)
    assert(self);
    assert(obj);
    //XXX destruct evas obj?
-   //XXX destruct item_class
+   //XXX destruct item_class?
 }
 
 static Evas_Object*
