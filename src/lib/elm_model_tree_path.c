@@ -131,9 +131,11 @@ elm_model_tree_path_get_depth(Elm_Model_Tree_Path *path)
 }
 
 unsigned int*
-elm_model_tree_path_get_indices(Elm_Model_Tree_Path *path)
+elm_model_tree_path_get_indices(Elm_Model_Tree_Path *path, unsigned int *depth)
 {
    EINA_SAFETY_ON_FALSE_RETURN_VAL(path, NULL);
+   EINA_SAFETY_ON_FALSE_RETURN_VAL(depth, NULL);
+   *depth = path->depth;
    return path->indices;
 }
 

@@ -41,8 +41,9 @@ EAPI unsigned int elm_model_tree_path_get_depth(Elm_Model_Tree_Path *path);
 
 /**
  * @brief TODO: document
+ * @param depth [out] 
  */
-EAPI unsigned int* elm_model_tree_path_get_indices(Elm_Model_Tree_Path *path);
+EAPI unsigned int* elm_model_tree_path_get_indices(Elm_Model_Tree_Path *path, unsigned int* depth);
 
 /**
  * @brief TODO: document

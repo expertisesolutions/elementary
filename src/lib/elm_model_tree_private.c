@@ -125,8 +125,7 @@ _tree_node_find(Elm_Model_Tree_Node *root, Elm_Model_Tree_Path *path)
    EINA_SAFETY_ON_NULL_RETURN_VAL(root, NULL);
    if(path == NULL) return NULL;
 
-   depth = elm_model_tree_path_get_depth(path);
-   indices = elm_model_tree_path_get_indices(path);
+   indices = elm_model_tree_path_get_indices(path, &depth);
    for(ptr = root, i = 0; i < depth; i++)
      {
         for(j = 0, child = ptr->first_child;

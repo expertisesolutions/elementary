@@ -102,6 +102,22 @@ _model_tree_selected_get(Eo *object EINA_UNUSED, Elm_Model_Tree *model)
    return model->selected;
 }
 
+static void
+_model_tree_release(Eo *object, void *_unused EINA_UNUSED, Elm_Model_Tree_Path *path)
+{
+   Elm_Model_Tree_Node *node;
+   Elm_Model_Tree *model = eo_data_scope_get
+     (object, EO3_GET_CLASS(ELM_MODEL_TREE_CONST_CLASS));
+   if(path == NULL) return;
+   EINA_SAFETY_ON_NULL_RETURN(model);
+   eina_lock_take(&model->lock);
+   node = _tree_node_find(model->root, path);
+   EINA_SAFETY_ON_NULL_RETURN(node);
+   _tree_node_del(node);
+   eina_lock_release(&model->lock);
+   eo2_do(object, elm_model_tree_delete_callback_call(path));
+}
+
 EO3_DEFINE_CLASS(ELM_MODEL_TREE_CONST_CLASS, ((EO3_BASE_CLASS)), Elm_Model_Tree)
 
 
@@ -176,16 +192,13 @@ _model_tree_child_prepend_relative(Eo *object, void *_unused EINA_UNUSED,
 static void
 _model_tree_delete(Eo *object, void *_unused EINA_UNUSED, Elm_Model_Tree_Path *path)
 {
+  
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = eo_data_scope_get
      (object, EO3_GET_CLASS(ELM_MODEL_TREE_CONST_CLASS));
-   if(path == NULL) return;
+   EINA_SAFETY_ON_NULL_RETURN(path);
    EINA_SAFETY_ON_NULL_RETURN(model);
-   eina_lock_take(&model->lock);
-   node = _tree_node_find(model->root, path);
-   EINA_SAFETY_ON_NULL_RETURN(node);
-   _tree_node_del(node);
-   eina_lock_release(&model->lock);
+   eo2_do(object, elm_model_tree_release(path));
    eo2_do(object, elm_model_tree_delete_callback_call(path));
 }
 
