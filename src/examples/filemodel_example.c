@@ -380,21 +380,6 @@ _model_file_grid_value_get(Eo *obj,
    return NULL;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-typedef enum
-{
-   ELM_VIEW_TREE_VIEWMODE_GROUP
-} Elm_View_Tree_Mode;
-
-Eo* elm_view_tree_add(Evas_Object* parent, Eo* file_model) { return NULL; }
-Eo* elm_view_grid_add(Evas_Object* parent, Eo* file_model) { return NULL; }
-Eo* elm_view_tree_evas_object_get(Evas_Object** widget) { return NULL; }
-Eo* elm_view_grid_evas_object_get(Evas_Object** widget) { return NULL; }
-Eo* elm_view_tree_model_tree_set(Elm_View_Tree_Mode mode) { return NULL; }
-
-////////////////////////////////////////////////////////////////////////////////
-
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -413,18 +398,18 @@ elm_main(int argc, char **argv)
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                             NULL, model_file_tree_constructor("./"));
 
-#if 0   
+#if 1
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                             NULL, model_file_tree_constructor("/tmp"));
-   _grid_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_GRID_CLASS),
-                            NULL, model_file_grid_construct_from_tree(_tree_m));
+   /* _grid_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_GRID_CLASS), */
+   /*                          NULL, model_file_grid_construct_from_tree(_tree_m)); */
 
-   /* _tree_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_TREE_CLASS), */
-   /*                          NULL, elm_view_tree_add(win, _tree_m)); */
+   _tree_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_TREE_CLASS),
+                             NULL, elm_view_tree_add(win, _tree_m));
    /* _grid_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_GRID_CLASS), */
    /*                          NULL, elm_view_grid_add(win, _grid_m)); */
    
@@ -436,8 +421,8 @@ elm_main(int argc, char **argv)
    evas_object_show(box);
 
    //Directories tree widget
-   eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_GROUP)); //hide files, show only directories
-   eo2_do(_tree_v, elm_view_tree_evas_object_get(&widget));
+//   eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS)); //hide files, show only directories
+   eo2_do(_tree_v, widget = elm_view_tree_evas_object_get());
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -446,17 +431,18 @@ elm_main(int argc, char **argv)
    evas_object_show(widget);
 
    //file grid widget
+/*
    eo2_do(_grid_v, elm_view_grid_evas_object_get(&widget));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_box_pack_end(box, widget);
    evas_object_show(widget);
- 
+*/
    evas_object_resize(win, 800, 400);
    evas_object_show(win);
 #endif
-   
+
    elm_run();
    elm_shutdown();
    eio_shutdown();

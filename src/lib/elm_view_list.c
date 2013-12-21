@@ -3,7 +3,6 @@
 #endif
 #include <Elementary.h>
 
-#include "elm_view_list.h"
 #include "elm_priv.h"
 #include <assert.h>
 

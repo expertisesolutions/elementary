@@ -3,13 +3,13 @@
 #endif
 #include <Elementary.h>
 
-#include "elm_view_grid.h"
 #include "elm_priv.h"
 #include <assert.h>
 
 struct _Elm_View_Grid_Private
 {
    Evas_Object *list;
+   Elm_Genlist_Item_Class *itc;
    Eo *model;
 };
 typedef struct _Elm_View_Grid_Private Elm_View_Grid_Private;

@@ -3,7 +3,6 @@
 #endif
 #include <Elementary.h>
 
-#include "elm_view_tree.h"
 #include "elm_priv.h"
 #include <assert.h>
 
@@ -25,46 +24,49 @@ struct _View_Tree_ItemData
 typedef struct _View_Tree_ItemData View_Tree_ItemData;
 
 
-#define _VIEW_TRACE  printf("%s -> %s:%d/n",__FILE__, __FUNCTION__, __LINE__);
+static inline void _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent);
+#define _VIEW_TRACE  printf("**%s -> %s:%d**\n",__FILE__, __FUNCTION__, __LINE__);
 
 static Eina_Bool
-_model_selected_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info,
-                Elm_Model_Tree_Path *path)
+_model_tree_selected_cb(void *data, Elm_Model_Tree_Path *path)
 {
-  _VIEW_TRACE
-  return EINA_TRUE;
+   assert(data);
+   assert(path);
+   _VIEW_TRACE
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
+{
+   assert(data);
+   assert(path);
+   Elm_Model_Tree_Path *root_path = elm_model_tree_path_new_from_string("");
+   _update_path(data, root_path, NULL);
+   _VIEW_TRACE
+   return EINA_TRUE;
 }
 
 /*/////////////////////////////////////////////////////////////////////////////////
 static Eina_Bool
-_model_node_inserted_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info,
-                Elm_Model_Tree_Path path)
+_model_node_deleted_cb(void *data, Elm_Model_Tree_Path path)
 {
-  _VIEW_TRACE
-  return EINA_TRUE;
+   _VIEW_TRACE
+   return EINA_TRUE;
 }
 
 static Eina_Bool
-_model_node_deleted_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info,
-                Elm_Model_Tree_Path path)
+_model_node_changed_cb(void *data, Elm_Model_Tree_Path path)
 {
-  _VIEW_TRACE
-  return EINA_TRUE;
+   _VIEW_TRACE
+   return EINA_TRUE;
 }
 
 static Eina_Bool
-_model_node_changed_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info,
-                Elm_Model_Tree_Path path)
+_model_reordered_cb(void *data)
 {
-  _VIEW_TRACE
-  return EINA_TRUE;
-}
-
-static Eina_Bool
-_model_reordered_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info)
-{
-  _VIEW_TRACE
-  return EINA_TRUE;
+   _VIEW_TRACE
+   return EINA_TRUE;
 }
 *//////////////////////////////////////////////////////////////////////////////////
 
@@ -78,6 +80,8 @@ _item_label_get(void *data, Evas_Object *obj, const char *part)
    View_Tree_ItemData *idata = data;
    Elm_View_Tree_Private *self;
    assert(data);
+   assert(obj);
+   assert(part);
    self = idata->self;
    assert(self);
 
@@ -93,6 +97,9 @@ _item_label_get(void *data, Evas_Object *obj, const char *part)
 static Evas_Object *
 _item_content_get(void *data, Evas_Object *obj, const char *part)
 {
+   assert(data);
+   assert(obj);
+   assert(part);
    Evas_Object *ic = elm_icon_add(obj);
 
    if (!strcmp(part, "elm.swallow.icon"))
@@ -105,6 +112,9 @@ _item_content_get(void *data, Evas_Object *obj, const char *part)
 static Evas_Object *
 _expandable_content_get(void *data, Evas_Object *obj, const char *part)
 {
+   assert(data);
+   assert(obj);
+   assert(part);
    Evas_Object *ic = elm_icon_add(obj);
 
    if (!strcmp(part, "elm.swallow.icon"))
@@ -114,12 +124,16 @@ _expandable_content_get(void *data, Evas_Object *obj, const char *part)
    return ic;
 }
 
+/*
 static void
 _item_del(void *data, Evas_Object *obj, const char *part)
 {
+  _VIEW_TRACE
    assert(data);
    free(data);
+  _VIEW_TRACE
 }
+*/
 
 static void
 _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
@@ -135,6 +149,7 @@ _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
 static inline void
 _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent)
 {
+  _VIEW_TRACE
    assert(self);
    assert(path);
 
@@ -170,11 +185,13 @@ _update_tree_widget(Elm_View_Tree_Private* self)
    assert(self);
    Elm_Model_Tree_Path *path = elm_model_tree_path_new_from_string("");
    _update_path(self, path, NULL);
+   _VIEW_TRACE
 }
 
 static void
 _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo* model)
 {
+   _VIEW_TRACE
    assert(self);
    assert(parent);
    assert(model);
@@ -188,23 +205,24 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    self->itc->func.text_get = _item_label_get;
    self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
-   self->itc->func.del = _item_del;
+//   self->itc->func.del = _item_del;
 
    self->itp = elm_genlist_item_class_new();
    self->itp->item_style = "default";
    self->itp->func.text_get = _item_label_get;
    self->itp->func.content_get = _expandable_content_get;
    self->itp->func.state_get = NULL;
-   self->itp->func.del = _item_del;
+//   self->itp->func.del = _item_del;
 
    _update_tree_widget(self);
+   eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
+   eo2_do(self->model, elm_model_tree_child_append_callback_add(self, _model_tree_child_append_cb));
 /*
-   eo2_do(self->model, elm_model_tree_select_callback_add(_model_selected_cb, self));
-   eo2_do(self->model, elm_model_tree_node_inserted_callback_add(_model_node_inserted_cb, list);
    eo2_do(self->model, elm_model_tree_node_deleted_callback_add(_model_node_deleted_cb, list);
    eo2_do(self->model, elm_model_tree_node_changed_callback_add(_model_node_changed_cb, list);
    eo2_do(self->model, elm_model_tree_reordered_callback_add(_model_reordered_cb, list);
 */
+   _VIEW_TRACE
 }
 
 static void
