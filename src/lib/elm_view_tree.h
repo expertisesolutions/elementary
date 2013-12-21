@@ -16,7 +16,7 @@ typedef enum
  * @param model
  *
  */
-EAPI void elm_view_tree_add(Evas_Object* parent, Eo* model);
+//EAPI void elm_view_tree_add(Evas_Object* parent, Eo* model);
 
 /**
  * @def elm_view_tree_evas_object_get
@@ -25,7 +25,7 @@ EAPI void elm_view_tree_add(Evas_Object* parent, Eo* model);
  * @return evas_widget
  *
  */
-EAPI Evas_Object* elm_view_tree_evas_object_get();
+//EAPI Evas_Object* elm_view_tree_evas_object_get();
 
 /**
  * @def elm_view_tree_mode_set
@@ -34,7 +34,7 @@ EAPI Evas_Object* elm_view_tree_evas_object_get();
  * @param mode
  *
  */
-EAPI void elm_view_tree_mode_set(Elm_View_Tree_Mode mode);
+//EAPI void elm_view_tree_mode_set(Elm_View_Tree_Mode mode);
 
 /**
  * @brief EO3 Class Declaration
