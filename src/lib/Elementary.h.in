@@ -265,6 +265,9 @@ EAPI extern Elm_Version *elm_version;
 #include <elm_model_list.h>
 #include <elm_model_grid.h>
 #include <elm_model_tree.h>
+#include <elm_view_list.h>
+#include <elm_view_grid.h>
+#include <elm_view_tree.h>
 #endif
 
 /* include deprecated calls last of all */
