@@ -13,19 +13,53 @@ struct _Elm_View_Tree_Private
    Elm_Genlist_Item_Class *itp;
    Elm_View_Tree_Mode mode;
    Eo *model;
+   Eina_List *items;
 };
 typedef struct _Elm_View_Tree_Private Elm_View_Tree_Private;
 
 struct _View_Tree_ItemData
 {
-        Elm_View_Tree_Private *self;
-        Elm_Model_Tree_Path *path;
+  Elm_View_Tree_Private *self;
+  Elm_Model_Tree_Path *path;
+  Elm_Object_Item *item;
+  int children;
 };
 typedef struct _View_Tree_ItemData View_Tree_ItemData;
 
-
 static inline void _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent);
+static inline void _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *pItem);
 #define _VIEW_TRACE  printf("**%s -> %s:%d**\n",__FILE__, __FUNCTION__, __LINE__);
+
+
+Elm_Object_Item *
+_get_parent_item(Eina_List *items, Elm_Model_Tree_Path *path)
+{
+   View_Tree_ItemData *idata;
+   Eina_List *l = NULL;
+   unsigned int depth, index; /*, pindex; */
+
+   depth = elm_model_tree_path_get_depth(path);
+   index = elm_model_tree_path_get_index(path, depth);
+   /* pindex = elm_model_tree_path_get_index(path, depth-1); //XXX parent index return not correct value */
+
+   printf("Child add depth=%d index=%d \n", depth, index);
+   if (depth == 0)
+      return NULL;
+
+   EINA_LIST_FOREACH(items, l, idata)
+   {
+      assert(idata);
+      if (elm_model_tree_path_get_depth(idata->path) == depth-1
+                     /* && elm_model_tree_path_get_index(idata->path, depth) == pindex */)
+      {
+         _VIEW_TRACE
+         return idata->item;
+      }
+   }
+
+   return NULL;
+}
+
 
 static Eina_Bool
 _model_tree_selected_cb(void *data, Elm_Model_Tree_Path *path)
@@ -41,8 +75,12 @@ _model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
 {
    assert(data);
    assert(path);
-   Elm_Model_Tree_Path *root_path = elm_model_tree_path_new_from_string("");
-   _update_path(data, root_path, NULL);
+
+   Elm_View_Tree_Private *self = data;
+
+   Elm_Object_Item *parent = _get_parent_item(self->items, path);
+
+   _add_path(self, path, parent);
    _VIEW_TRACE
    return EINA_TRUE;
 }
@@ -53,7 +91,8 @@ _model_node_deleted_cb(void *data, Elm_Model_Tree_Path path)
 {
    _VIEW_TRACE
    return EINA_TRUE;
-}
+
+   }
 
 static Eina_Bool
 _model_node_changed_cb(void *data, Elm_Model_Tree_Path path)
@@ -77,18 +116,17 @@ _item_label_get(void *data, Evas_Object *obj, const char *part)
 {
    Eina_Value *value = NULL;
    char *label = NULL;
-   View_Tree_ItemData *idata = data;
-   Elm_View_Tree_Private *self;
-   assert(data);
    assert(obj);
    assert(part);
-   self = idata->self;
-   assert(self);
+   assert(data);
+
+   View_Tree_ItemData *idata = data;
+   Elm_View_Tree_Private *self = idata->self;
 
    if (!strcmp(part, "elm.text"))
    {
       eo2_do(self->model, value = elm_model_tree_value_get(idata->path));
-      label = eina_value_to_string(value); //XXX get value type before??
+      if (value) label = eina_value_to_string(value);
    }
 
    return label;
@@ -124,16 +162,12 @@ _expandable_content_get(void *data, Evas_Object *obj, const char *part)
    return ic;
 }
 
-/*
 static void
-_item_del(void *data, Evas_Object *obj, const char *part)
+_item_del(void *data, Evas_Object *obj)
 {
-  _VIEW_TRACE
-   assert(data);
+   assert(obj);
    free(data);
-  _VIEW_TRACE
 }
-*/
 
 static void
 _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
@@ -144,38 +178,64 @@ _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
 
 
 ////////////////////////////////////////////////////////////////////////////
+static inline void
+_add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *pItem)
+{
+   assert(self);
+   assert(path);
 
+   View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
+   memset(idata, 0, sizeof(View_Tree_ItemData));
+   idata->self = self;
+   idata->path = path;
+   idata->children = 0;
+   idata->item = elm_genlist_item_append(self->list, self->itc, idata, pItem, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
+   elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
+   self->items = eina_list_append(self->items, idata);
+
+ /*XXX segfault if update item class
+   if (pItem) {
+      View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
+      if (pdata && pdata->children == 0) {
+         elm_genlist_item_item_class_update(pItem, self->itp);
+         elm_genlist_item_expanded_set(pdata->item, EINA_TRUE);
+      }
+      pdata->children++;
+   }
+   */
+}
 
 static inline void
 _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent)
 {
-  _VIEW_TRACE
    assert(self);
    assert(path);
 
    Eina_List *l, *cl = NULL;
    Elm_Model_Tree_Path *c_path;
    View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
+   memset(idata, 0, sizeof(View_Tree_ItemData));
+
    idata->self = self;
    idata->path = path;
+   idata->children = 0;
 
-   eo2_do(self->model, cl = elm_model_tree_children_get(path));
-   Elm_Object_Item *item;
+   eo2_do(self->model, cl = elm_model_tree_children_get(path)); //XXX need implement children_get in model_tree
 
    if (!cl) {
-      item = elm_genlist_item_append(self->list, self->itc, idata, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
-      elm_genlist_item_expanded_set(item, EINA_FALSE);
-      return;
+      idata->item = elm_genlist_item_append(self->list, self->itc, idata, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
+      elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
+   } else {
+      idata->children = eina_list_count(cl);
+      idata->item = elm_genlist_item_append(self->list, self->itp, idata, parent, ELM_GENLIST_ITEM_TREE, _item_sel_cb, idata);
+      elm_genlist_item_expanded_set(idata->item, EINA_TRUE);
    }
 
-   item = elm_genlist_item_append(self->list, self->itp, idata, parent, ELM_GENLIST_ITEM_TREE, _item_sel_cb, idata);
-   assert(item);
-   elm_genlist_item_expanded_set(item, EINA_TRUE);
-
+   self->items = eina_list_append(self->items, idata);
    //foreach model itens and update nodes to widget
    EINA_LIST_FOREACH(cl, l, c_path)
    {
-      _update_path(self, c_path, item);
+      _update_path(self, c_path, idata->item);
    }
 }
 
@@ -205,14 +265,14 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    self->itc->func.text_get = _item_label_get;
    self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
-//   self->itc->func.del = _item_del;
+   self->itc->func.del = _item_del;
 
    self->itp = elm_genlist_item_class_new();
    self->itp->item_style = "default";
    self->itp->func.text_get = _item_label_get;
    self->itp->func.content_get = _expandable_content_get;
    self->itp->func.state_get = NULL;
-//   self->itp->func.del = _item_del;
+   self->itp->func.del = _item_del;
 
    _update_tree_widget(self);
    eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
@@ -230,8 +290,8 @@ _elm_view_tree_destructor(Eo *obj, Elm_View_Tree_Private *self)
 {
    assert(self);
    assert(obj);
+   elm_genlist_item_class_free(self->itc);
    //XXX destruct evas obj?
-   //XXX destruct item_class?
 }
 
 static Evas_Object*
