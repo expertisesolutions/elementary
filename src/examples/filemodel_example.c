@@ -393,18 +393,19 @@ elm_main(int argc, char **argv)
    
    ecore_init();
    eio_init();
+#if 0
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
 
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                             NULL, model_file_tree_constructor("./"));
 
-#if 1
+#else
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                            NULL, model_file_tree_constructor("/tmp"));
+                            NULL, model_file_tree_constructor("./"));
    /* _grid_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_GRID_CLASS), */
    /*                          NULL, model_file_grid_construct_from_tree(_tree_m)); */
 
