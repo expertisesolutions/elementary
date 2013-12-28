@@ -276,8 +276,7 @@ _model_file_tree_child_append(Eo *object,
    eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                 child = elm_model_tree_child_append(node, value));
    EINA_SAFETY_ON_NULL_RETURN_VAL(child, NULL);
-   
-   eo2_do(object, model_file_tree_list(child)); // XXX
+   //eo2_do(object, model_file_tree_list(child)); // XXX
    return child;
 }
 
@@ -469,7 +468,7 @@ elm_main(int argc, char **argv)
 
    ecore_init();
    eio_init();
-#if 1
+#if 0
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
 
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
