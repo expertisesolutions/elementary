@@ -24,6 +24,19 @@ elm_model_tree_path_new()
    return path;
 }
 
+EAPI Elm_Model_Tree_Path* elm_model_tree_path_new_copy(Elm_Model_Tree_Path* other)
+{
+   Elm_Model_Tree_Path *path = malloc(sizeof(Elm_Model_Tree_Path));
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(other, NULL);
+
+   path->depth = other->depth;
+   path->indices = malloc(other->depth*sizeof(unsigned int));
+   memcpy(path->indices, other->indices, other->depth*sizeof(unsigned int));
+
+   return path;
+}
+
 void
 elm_model_tree_path_free(Elm_Model_Tree_Path *path)
 {

@@ -12,6 +12,11 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_path_new();
 /**
  * @brief TODO: document
  */
+EAPI Elm_Model_Tree_Path* elm_model_tree_path_new_copy(Elm_Model_Tree_Path* other);
+
+/**
+ * @brief TODO: document
+ */
 EAPI void elm_model_tree_path_free(Elm_Model_Tree_Path *path);
 
 /**

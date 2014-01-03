@@ -248,7 +248,14 @@ _model_file_tree_list(Eo *object, Model_File_Tree *model, Elm_Model_Tree_Path *n
    EINA_SAFETY_ON_NULL_RETURN_VAL(tuple, EINA_FALSE);
    eo_ref(object);
    tuple->object = object;
-   tuple->node = node;
+   tuple->node = elm_model_tree_path_new_copy(node);
+   if(!tuple->node)
+     {
+       free(tuple);
+       eo_unref(object);
+       return EINA_FALSE;
+     }
+
    if (ptr->file != NULL)
      {
         free(ptr->file);
@@ -276,7 +283,7 @@ _model_file_tree_child_append(Eo *object,
    eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                 child = elm_model_tree_child_append(node, value));
    EINA_SAFETY_ON_NULL_RETURN_VAL(child, NULL);
-   //eo2_do(object, model_file_tree_list(child)); // XXX
+   eo2_do(object, model_file_tree_list(child));
    return child;
 }
 
