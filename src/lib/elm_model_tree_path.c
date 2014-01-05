@@ -79,7 +79,7 @@ elm_model_tree_path_append_index(Elm_Model_Tree_Path *path, unsigned int index)
    unsigned int *indices;
 
    EINA_SAFETY_ON_NULL_RETURN(path);
-   indices = malloc((path->depth + 1) * sizeof(unsigned int*));
+   indices = malloc((path->depth + 1) * sizeof(unsigned int));
    EINA_SAFETY_ON_NULL_RETURN(indices);
    memcpy(indices, path->indices, sizeof(unsigned int) * path->depth);
    indices[path->depth] = index;
@@ -94,7 +94,7 @@ elm_model_tree_path_prepend_index(Elm_Model_Tree_Path *path, unsigned int index)
    unsigned int *indices;
 
    EINA_SAFETY_ON_NULL_RETURN(path);
-   indices = malloc((path->depth + 1) * sizeof(unsigned int*));
+   indices = malloc((path->depth + 1) * sizeof(unsigned int));
    EINA_SAFETY_ON_NULL_RETURN(indices);
    indices[0] = index;
    memcpy(indices + 1, path->indices, sizeof(unsigned int) * path->depth);
