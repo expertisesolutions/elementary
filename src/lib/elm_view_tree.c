@@ -27,7 +27,7 @@ struct _View_Tree_ItemData
 typedef struct _View_Tree_ItemData View_Tree_ItemData;
 
 static inline void _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent);
-static inline void _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *pItem);
+static inline void _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path);
 #define _VIEW_TRACE  printf("**%s -> %s:%d**\n",__FILE__, __FUNCTION__, __LINE__);
 
 
@@ -36,21 +36,21 @@ _get_parent_item(Eina_List *items, Elm_Model_Tree_Path *path)
 {
    View_Tree_ItemData *idata;
    Eina_List *l = NULL;
-   unsigned int depth, index; /*, pindex; */
+   unsigned int depth, *indices;
+   unsigned int pdepth, *pindices;
 
-   depth = elm_model_tree_path_get_depth(path);
-   index = elm_model_tree_path_get_index(path, depth);
-   /* pindex = elm_model_tree_path_get_index(path, depth-1); //XXX parent index return not correct value */
+   indices = elm_model_tree_path_get_indices(path, &depth);
 
-   printf("Child add depth=%d index=%d \n", depth, index);
-   if (depth == 0)
+   if (depth == 0 || depth == (unsigned int) -1)
       return NULL;
+
+   printf("Child add depth=%u\n", depth);
 
    EINA_LIST_FOREACH(items, l, idata)
    {
       assert(idata);
-      if (elm_model_tree_path_get_depth(idata->path) == depth-1
-                     /* && elm_model_tree_path_get_index(idata->path, depth) == pindex */)
+      pindices = elm_model_tree_path_get_indices(idata->path, &pdepth);
+      if (pdepth == depth-1 && memcmp(indices, pindices, sizeof(unsigned int) * pdepth) == 0)
       {
          _VIEW_TRACE
          return idata->item;
@@ -78,9 +78,7 @@ _model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
 
    Elm_View_Tree_Private *self = data;
 
-   Elm_Object_Item *parent = _get_parent_item(self->items, path);
-
-   _add_path(self, path, parent);
+   _add_path(self, path);
    _VIEW_TRACE
    return EINA_TRUE;
 }
@@ -179,11 +177,12 @@ _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
 
 ////////////////////////////////////////////////////////////////////////////
 static inline void
-_add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *pItem)
+_add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
 {
    assert(self);
    assert(path);
 
+   Elm_Object_Item *pItem = _get_parent_item(self->items, path);
    View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
    memset(idata, 0, sizeof(View_Tree_ItemData));
    idata->self = self;
@@ -194,6 +193,7 @@ _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Ite
    self->items = eina_list_append(self->items, idata);
 
  /*XXX segfault if update item class
+
    if (pItem) {
       View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
       if (pdata && pdata->children == 0) {
