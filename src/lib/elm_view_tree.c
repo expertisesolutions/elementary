@@ -10,7 +10,6 @@ struct _Elm_View_Tree_Private
 {
    Evas_Object *list;
    Elm_Genlist_Item_Class *itc;
-   Elm_Genlist_Item_Class *itp;
    Elm_View_Tree_Mode mode;
    Eo *model;
    Eina_List *items;
@@ -135,23 +134,17 @@ _item_content_get(void *data, Evas_Object *obj, const char *part)
    assert(data);
    assert(obj);
    assert(part);
+   View_Tree_ItemData *idata = data;
    Evas_Object *ic = elm_icon_add(obj);
 
-   if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "file");
-
-   evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
-   return ic;
-}
-
-static Evas_Object *
-_expandable_content_get(void *data, Evas_Object *obj, const char *part)
-{
-   assert(data);
-   assert(obj);
-   assert(part);
-   Evas_Object *ic = elm_icon_add(obj);
-
-   if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "folder");
+   if(idata->children == 0)
+     {
+        if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "file");
+     }
+   else
+     {
+        if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "folder");
+     }
 
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    return ic;
@@ -169,8 +162,8 @@ _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
 {
    View_Tree_ItemData *idata = data;
 
-   printf("sel item data [%p] on genlist obj [%p], item pointer [%p], path [%s]\n",
-          data, obj, event_info, elm_model_tree_path_to_string(idata->path));
+   printf("sel item data [%p] on genlist obj [%p], item pointer [%p], path [%s] children [%u]\n",
+          data, obj, event_info, elm_model_tree_path_to_string(idata->path), idata->children);
 }
 
 
@@ -191,17 +184,11 @@ _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
    elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
    self->items = eina_list_append(self->items, idata);
 
-  //XXX segfault if update item class
-
    if(pItem)
      {
         View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
-        if(pdata && pdata->children == 0)
-          {
-             elm_genlist_item_item_class_update(pItem, self->itp);
-             elm_genlist_item_expanded_set(pdata->item, EINA_TRUE);
-          }
         pdata->children++;
+        if(pdata && pdata->children == 1) elm_genlist_item_update(pItem);
      }
 }
 
@@ -220,19 +207,8 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_
    idata->path = path;
    idata->children = 0;
 
-   eo2_do(self->model, cl = elm_model_tree_children_get(path)); //XXX need implement children_get in model_tree
-
-   if(!cl)
-     {
-        idata->item = elm_genlist_item_append(self->list, self->itc, idata, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
-        elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
-     }
-   else
-     {
-        idata->children = eina_list_count(cl);
-        idata->item = elm_genlist_item_append(self->list, self->itp, idata, parent, ELM_GENLIST_ITEM_TREE, _item_sel_cb, idata);
-        elm_genlist_item_expanded_set(idata->item, EINA_TRUE);
-     }
+   idata->item = elm_genlist_item_append(self->list, self->itc, idata, parent, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
+   elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
 
    self->items = eina_list_append(self->items, idata);
    //foreach model itens and update nodes to widget
@@ -269,13 +245,6 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
    self->itc->func.del = _item_del;
-
-   self->itp = elm_genlist_item_class_new();
-   self->itp->item_style = "default";
-   self->itp->func.text_get = _item_label_get;
-   self->itp->func.content_get = _expandable_content_get;
-   self->itp->func.state_get = NULL;
-   self->itp->func.del = _item_del;
 
    _update_tree_widget(self);
    eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
