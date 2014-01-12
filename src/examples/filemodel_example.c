@@ -16,6 +16,7 @@ struct _Model_File_Value
 {
    Eina_Stringshare *filepath;
    Eio_File *file;
+   Eina_File_Type ftype;
    Eio_Monitor *monitor;
    Ecore_Event_Handler **handlers;
 };
@@ -295,12 +296,16 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    Model_File_Tuple *tuple = (Model_File_Tuple*)data;
    Elm_Model_Tree_Path *child = NULL;
    Eina_Value *value = NULL;
+   Model_File_Value *ptr;
 
    EINA_SAFETY_ON_NULL_RETURN(tuple);
    EINA_SAFETY_ON_NULL_RETURN(info);
 
    eo2_do(tuple->object, value = model_file_tree_value_new(info->path));
+   ptr = eina_value_memory_get(value);
+   ptr->ftype = info->type;
    eo2_do(tuple->object, child = elm_model_tree_child_append(tuple->node, value));
+   
    printf("+(%s): %s\n", elm_model_tree_path_to_string(child), info->path);
 }
 
@@ -462,6 +467,30 @@ _model_file_grid_value_get(Eo *obj,
    return NULL;
 }
 
+
+Evas_Object*
+_content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part)
+{
+   Evas_Object *ic = elm_icon_add(obj);
+
+   if(!strcmp(part, "elm.swallow.icon"))
+     {
+        Eina_Value *value;
+        Model_File_Value *ptr;
+        eo2_do(model, value = elm_model_tree_value_get(path));
+        ptr = eina_value_memory_get(value);
+        if(ptr && ptr->ftype == EINA_FILE_DIR)
+           elm_icon_standard_set(ic, "folder");
+        else
+           elm_icon_standard_set(ic, "file");
+     }
+
+   evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
+   return ic;
+
+}
+
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -506,6 +535,7 @@ elm_main(int argc, char **argv)
    //Directories tree widget
 //   eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS)); //hide files, show only directories
    eo2_do(_tree_v, widget = elm_view_tree_evas_object_get());
+   eo2_do(_tree_v, elm_view_tree_getcontent_set(_content_get_cb));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
