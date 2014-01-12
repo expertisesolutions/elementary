@@ -13,6 +13,7 @@ struct _Elm_View_Tree_Private
    Elm_View_Tree_Mode mode;
    Eo *model;
    Eina_List *items;
+   Elm_View_Tree_Content_Get_Cb get_content_cb;
 };
 typedef struct _Elm_View_Tree_Private Elm_View_Tree_Private;
 
@@ -135,15 +136,25 @@ _item_content_get(void *data, Evas_Object *obj, const char *part)
    assert(obj);
    assert(part);
    View_Tree_ItemData *idata = data;
+   Elm_View_Tree_Private *self = idata->self;
+
+   if(self->get_content_cb != NULL)
+     {
+        return self->get_content_cb(self->model, idata->path, obj, part);
+     }
+
    Evas_Object *ic = elm_icon_add(obj);
 
-   if(idata->children == 0)
+   if(!strcmp(part, "elm.swallow.icon"))
      {
-        if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "file");
-     }
-   else
-     {
-        if(!strcmp(part, "elm.swallow.icon")) elm_icon_standard_set(ic, "folder");
+        if(idata->children == 0)
+          {
+             elm_icon_standard_set(ic, "file");
+          }
+        else
+          {
+             elm_icon_standard_set(ic, "folder");
+          }
      }
 
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
@@ -238,6 +249,7 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    self->list = elm_genlist_add(parent);
    self->model = model;
    self->mode = ELM_VIEW_TREE_VIEWMODE_ALL;
+   self->get_content_cb = NULL;
 
    self->itc = elm_genlist_item_class_new();
    self->itc->item_style = "default";
@@ -285,6 +297,15 @@ _elm_view_tree_mode_set(Eo *obj, Elm_View_Tree_Private *self, Elm_View_Tree_Mode
         self->mode = mode;
         _update_tree_widget(self);
      }
+}
+
+static void
+_elm_view_tree_getcontent_set(Eo *obj, Elm_View_Tree_Private *self, Elm_View_Tree_Content_Get_Cb get_content_cb)
+{
+   assert(self);
+   assert(obj);
+
+   self->get_content_cb = get_content_cb;
 }
 
 EO3_DEFINE_CLASS(ELM_VIEW_TREE_CLASS, ((EO3_BASE_CLASS)), Elm_View_Tree_Private)

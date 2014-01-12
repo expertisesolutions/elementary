@@ -8,6 +8,8 @@ typedef enum
    ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS //groupnode or has_child
 } Elm_View_Tree_Mode;
 
+typedef Evas_Object  *(*Elm_View_Tree_Content_Get_Cb)(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part);
+
 /**
  * @def elm_view_tree_add
  * @since 1.8
@@ -43,6 +45,7 @@ typedef enum
    , constructor(elm_view_tree_add, _elm_view_tree_add, Evas_Object*, Eo*)  \
    , destructor(_elm_view_tree_destructor) \
    , function(elm_view_tree_evas_object_get, _elm_view_tree_evas_object_get, Evas_Object*) \
+   , function(elm_view_tree_getcontent_set, _elm_view_tree_getcontent_set, void, Elm_View_Tree_Content_Get_Cb) \
    , function(elm_view_tree_mode_set, _elm_view_tree_mode_set, void, Elm_View_Tree_Mode)
 
 EO3_DECLARE_CLASS(ELM_VIEW_TREE_CLASS)
