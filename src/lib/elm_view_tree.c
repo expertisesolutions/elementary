@@ -27,9 +27,7 @@ struct _View_Tree_ItemData
 typedef struct _View_Tree_ItemData View_Tree_ItemData;
 
 static inline void _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent);
-static inline void _add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path);
-#define _VIEW_TRACE  printf("**%s -> %s:%d**\n",__FILE__, __FUNCTION__, __LINE__);
-
+static void _item_sel_cb(void *data, Evas_Object *obj, void *event_info);
 
 Elm_Object_Item *
 _get_parent_item(Eina_List *items, Elm_Model_Tree_Path *path)
@@ -40,45 +38,53 @@ _get_parent_item(Eina_List *items, Elm_Model_Tree_Path *path)
    unsigned int pdepth, *pindices;
 
    indices = elm_model_tree_path_get_indices(path, &depth);
-
-   if(depth == 0 || depth == (unsigned int) -1) return NULL;
-
-   printf("Child add depth=%u\n", depth);
+   if (depth == 0 || depth == (unsigned int) -1)
+     return NULL;
 
    EINA_LIST_FOREACH(items, l, idata)
      {
-        assert(idata);
+        EINA_SAFETY_ON_NULL_RETURN_VAL(idata, NULL);
         pindices = elm_model_tree_path_get_indices(idata->path, &pdepth);
-        if(pdepth == depth-1 && memcmp(indices, pindices, sizeof(unsigned int) * pdepth) == 0)
-          {
-             _VIEW_TRACE
-             return idata->item;
-          }
+        if (pdepth == depth-1 && memcmp(indices, pindices, sizeof(unsigned int) * pdepth) == 0)
+          return idata->item;
      }
 
    return NULL;
 }
 
-
 static Eina_Bool
 _model_tree_selected_cb(void *data, Elm_Model_Tree_Path *path)
 {
-   assert(data);
-   assert(path);
-   _VIEW_TRACE
-   return EINA_TRUE;
+   return EINA_TRUE; // TODO implement
 }
 
 static Eina_Bool
 _model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
 {
-   assert(data);
-   assert(path);
-
+   Elm_Object_Item *pItem = NULL;
+   View_Tree_ItemData *idata = NULL;
    Elm_View_Tree_Private *self = data;
 
-   _add_path(self, path);
-   _VIEW_TRACE
+   pItem = _get_parent_item(self->items, path);
+
+   idata = malloc(sizeof(View_Tree_ItemData));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(idata, EINA_TRUE);
+
+   idata->self = self;
+   idata->path = path;
+   idata->children = 0;
+   idata->item = elm_genlist_item_append(self->list, self->itc, idata, pItem, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
+   elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
+   self->items = eina_list_append(self->items, idata);
+
+   if(pItem)
+     {
+        View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
+        pdata->children++;
+        if (pdata && pdata->children == 1)
+          elm_genlist_item_update(pItem);
+     }
+
    return EINA_TRUE;
 }
 
@@ -86,44 +92,37 @@ _model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
 static Eina_Bool
 _model_node_deleted_cb(void *data, Elm_Model_Tree_Path path)
 {
-   _VIEW_TRACE
    return EINA_TRUE;
-
-   }
+}
 
 static Eina_Bool
 _model_node_changed_cb(void *data, Elm_Model_Tree_Path path)
 {
-   _VIEW_TRACE
    return EINA_TRUE;
 }
 
 static Eina_Bool
 _model_reordered_cb(void *data)
 {
-   _VIEW_TRACE
    return EINA_TRUE;
 }
 *//////////////////////////////////////////////////////////////////////////////////
-
 
 ////////////////////genlist callbacks
 static char *
 _item_label_get(void *data, Evas_Object *obj, const char *part)
 {
-   Eina_Value *value = NULL;
    char *label = NULL;
-   assert(obj);
-   assert(part);
-   assert(data);
-
+   Eina_Value *value = NULL;
    View_Tree_ItemData *idata = data;
-   Elm_View_Tree_Private *self = idata->self;
 
-   if(!strcmp(part, "elm.text"))
+   EINA_SAFETY_ON_NULL_RETURN_VAL(idata, NULL);
+
+   if (!strcmp(part, "elm.text"))
      {
-        eo2_do(self->model, value = elm_model_tree_value_get(idata->path));
-        if(value) label = eina_value_to_string(value);
+        eo2_do(idata->self->model, value = elm_model_tree_value_get(idata->path));
+        if (value)
+          label = eina_value_to_string(value);
      }
 
    return label;
@@ -132,29 +131,25 @@ _item_label_get(void *data, Evas_Object *obj, const char *part)
 static Evas_Object *
 _item_content_get(void *data, Evas_Object *obj, const char *part)
 {
-   assert(data);
-   assert(obj);
-   assert(part);
+   Elm_View_Tree_Private *self;
    View_Tree_ItemData *idata = data;
-   Elm_View_Tree_Private *self = idata->self;
 
-   if(self->get_content_cb != NULL)
-     {
-        return self->get_content_cb(self->model, idata->path, obj, part);
-     }
+   EINA_SAFETY_ON_NULL_RETURN_VAL(idata, NULL);
+   self = idata->self;
+   EINA_SAFETY_ON_NULL_RETURN_VAL(self, NULL);
+
+   if (self->get_content_cb != NULL)
+     return self->get_content_cb(self->model, idata->path, obj, part);
 
    Evas_Object *ic = elm_icon_add(obj);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(ic, NULL);
 
-   if(!strcmp(part, "elm.swallow.icon"))
+   if (!strcmp(part, "elm.swallow.icon"))
      {
-        if(idata->children == 0)
-          {
-             elm_icon_standard_set(ic, "file");
-          }
+        if (idata->children == 0)
+          elm_icon_standard_set(ic, "file");
         else
-          {
-             elm_icon_standard_set(ic, "folder");
-          }
+          elm_icon_standard_set(ic, "folder");
      }
 
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
@@ -164,7 +159,6 @@ _item_content_get(void *data, Evas_Object *obj, const char *part)
 static void
 _item_del(void *data, Evas_Object *obj)
 {
-   assert(obj);
    free(data);
 }
 
@@ -177,43 +171,15 @@ _item_sel_cb(void *data, Evas_Object *obj, void *event_info)
           data, obj, event_info, elm_model_tree_path_to_string(idata->path), idata->children);
 }
 
-
 ////////////////////////////////////////////////////////////////////////////
-static inline void
-_add_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
-{
-   assert(self);
-   assert(path);
-
-   Elm_Object_Item *pItem = _get_parent_item(self->items, path);
-   View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
-   memset(idata, 0, sizeof(View_Tree_ItemData));
-   idata->self = self;
-   idata->path = path;
-   idata->children = 0;
-   idata->item = elm_genlist_item_append(self->list, self->itc, idata, pItem, ELM_GENLIST_ITEM_NONE, _item_sel_cb, idata);
-   elm_genlist_item_expanded_set(idata->item, EINA_FALSE);
-   self->items = eina_list_append(self->items, idata);
-
-   if(pItem)
-     {
-        View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
-        pdata->children++;
-        if(pdata && pdata->children == 1) elm_genlist_item_update(pItem);
-     }
-}
-
 static inline void
 _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_Item *parent)
 {
-   assert(self);
-   assert(path);
-
    Eina_List *l, *cl = NULL;
    Elm_Model_Tree_Path *c_path;
    View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
-   memset(idata, 0, sizeof(View_Tree_ItemData));
 
+   EINA_SAFETY_ON_NULL_RETURN(idata);
    idata->self = self;
    idata->path = path;
    idata->children = 0;
@@ -232,26 +198,26 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, Elm_Object_
 static inline void
 _update_tree_widget(Elm_View_Tree_Private* self)
 {
-   assert(self);
    Elm_Model_Tree_Path *path = elm_model_tree_path_new_from_string("");
    _update_path(self, path, NULL);
-   _VIEW_TRACE
 }
 
 static void
 _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo* model)
 {
-   _VIEW_TRACE
-   assert(self);
-   assert(parent);
-   assert(model);
    eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_TREE_CLASS), eo2_constructor());
+   EINA_SAFETY_ON_NULL_RETURN(self);
+   EINA_SAFETY_ON_NULL_RETURN(model);
+   EINA_SAFETY_ON_NULL_RETURN(parent);
+
    self->list = elm_genlist_add(parent);
+   EINA_SAFETY_ON_NULL_RETURN(self->list);
    self->model = model;
    self->mode = ELM_VIEW_TREE_VIEWMODE_ALL;
    self->get_content_cb = NULL;
 
    self->itc = elm_genlist_item_class_new();
+   EINA_SAFETY_ON_NULL_RETURN(self->itc);
    self->itc->item_style = "default";
    self->itc->func.text_get = _item_label_get;
    self->itc->func.content_get = _item_content_get;
@@ -266,14 +232,11 @@ _elm_view_tree_add(Eo *obj, Elm_View_Tree_Private *self, Evas_Object* parent, Eo
    eo2_do(self->model, elm_model_tree_node_changed_callback_add(_model_node_changed_cb, list);
    eo2_do(self->model, elm_model_tree_reordered_callback_add(_model_reordered_cb, list);
 */
-   _VIEW_TRACE
 }
 
 static void
 _elm_view_tree_destructor(Eo *obj, Elm_View_Tree_Private *self)
 {
-   assert(self);
-   assert(obj);
    elm_genlist_item_class_free(self->itc);
    //XXX destruct evas obj?
 }
@@ -281,18 +244,13 @@ _elm_view_tree_destructor(Eo *obj, Elm_View_Tree_Private *self)
 static Evas_Object*
 _elm_view_tree_evas_object_get(Eo *obj, Elm_View_Tree_Private *self)
 {
-   assert(self);
-   assert(obj);
    return self->list;
 }
 
 static void
 _elm_view_tree_mode_set(Eo *obj, Elm_View_Tree_Private *self, Elm_View_Tree_Mode mode)
 {
-   assert(self);
-   assert(mode);
-   assert(obj);
-   if(self->mode != mode)
+   if (self->mode != mode)
      {
         self->mode = mode;
         _update_tree_widget(self);
@@ -302,9 +260,6 @@ _elm_view_tree_mode_set(Eo *obj, Elm_View_Tree_Private *self, Elm_View_Tree_Mode
 static void
 _elm_view_tree_getcontent_set(Eo *obj, Elm_View_Tree_Private *self, Elm_View_Tree_Content_Get_Cb get_content_cb)
 {
-   assert(self);
-   assert(obj);
-
    self->get_content_cb = get_content_cb;
 }
 
