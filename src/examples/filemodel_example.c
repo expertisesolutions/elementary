@@ -1,11 +1,11 @@
+#ifdef HAVE_CONFIG_H
+# include "elementary_config.h"
+#endif
 
-#define EFL_EO_API_SUPPORT
-#define EFL_BETA_API_SUPPORT
+#include <Elementary.h>
 
-#include <Eo.h>
 #include <Eio.h>
 #include <Ecore.h>
-#include <Elementary.h>
 
 #include <assert.h>
 
