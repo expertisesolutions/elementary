@@ -29,6 +29,7 @@ LDADD = \
 @ELEMENTARY_ETHUMB_LIBS@ \
 @ELEMENTARY_EMAP_LIBS@ \
 @ELEMENTARY_X_LIBS@ \
+@EIO_LIBS@ \
 $(top_builddir)/src/lib/libelementary.la
 
 EDJE_CC = @edje_cc@
