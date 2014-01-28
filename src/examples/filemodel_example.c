@@ -490,7 +490,6 @@ _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const ch
 
 }
 
-
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -504,26 +503,19 @@ elm_main(int argc, char **argv)
 
    ecore_init();
    eio_init();
-#if 0
-   elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
 
-   _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                            NULL, model_file_tree_constructor("./"));
-
-#else
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
+   /**
+    * Will switch from eo2 to eo soon. 
+    */
    _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
                             NULL, model_file_tree_constructor("./"));
-   /* _grid_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_GRID_CLASS), */
-   /*                          NULL, model_file_grid_construct_from_tree(_tree_m)); */
 
-   _tree_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_TREE_CLASS),
-                             NULL, elm_view_tree_add(win, _tree_m));
-   /* _grid_v = eo2_add_custom(EO3_GET_CLASS(ELM_VIEW_GRID_CLASS), */
-   /*                          NULL, elm_view_grid_add(win, _grid_m)); */
+   _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL, 
+                           elm_view_tree_add(win, _tree_m));
 
    //box init
    box = elm_box_add(win);
@@ -533,9 +525,10 @@ elm_main(int argc, char **argv)
    evas_object_show(box);
 
    //Directories tree widget
-//   eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS)); //hide files, show only directories
-   eo2_do(_tree_v, widget = elm_view_tree_evas_object_get());
-   eo2_do(_tree_v, elm_view_tree_getcontent_set(_content_get_cb));
+   // eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS)); //hide files, show only directories
+
+   eo_do(_tree_v, elm_view_tree_evas_object_get(&widget));
+   eo_do(_tree_v, elm_view_tree_getcontent_set(_content_get_cb));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -554,7 +547,6 @@ elm_main(int argc, char **argv)
 */
    evas_object_resize(win, 800, 400);
    evas_object_show(win);
-#endif
 
    elm_run();
    elm_shutdown();
