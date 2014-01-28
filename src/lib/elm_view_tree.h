@@ -2,53 +2,50 @@
 #ifndef ELM_VIEW_TREE_H
 #define ELM_VIEW_TREE_H
 
+/**
+ * @def base class id
+ */
+extern EAPI Eo_Op ELM_VIEW_TREE_BASE_ID;
+
 typedef enum
 {
    ELM_VIEW_TREE_VIEWMODE_ALL,
-   ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS //groupnode or has_child
+   ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS /**< groupnode or has_child */
 } Elm_View_Tree_Mode;
+
+/**
+ * @brief EO Class functions identifiers
+ */
+enum {
+     EVT_SUB_ID_TREE_DESTRUCTOR,
+     EVT_SUB_ID_TREE_GETCONTENT_SET,
+     EVT_SUB_ID_TREE_MODE_SET,
+     EVT_SUB_ID_TREE_ADD, 
+     EVT_SUB_ID_TREE_EVAS_OBJECT_GET, 
+     EVT_SUB_ID_TREE_LAST
+};
 
 typedef Evas_Object  *(*Elm_View_Tree_Content_Get_Cb)(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part);
 
 /**
- * @def elm_view_tree_add
- * @since 1.8
- *
- * @param parent
- * @param model
- *
+ * @def base class id touple
  */
-//EAPI void elm_view_tree_add(Evas_Object* parent, Eo* model);
+#define ELM_VIEW_ID(sub_id) (ELM_VIEW_TREE_BASE_ID + sub_id)
 
 /**
- * @def elm_view_tree_evas_object_get
- * @since 1.8
- *
- * @return evas_widget
- *
+ * @brief EO Class functions declaration.
  */
-//EAPI Evas_Object* elm_view_tree_evas_object_get();
+#define elm_view_tree_add(parent, model) ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), EO_TYPECHECK(Evas_Object *, parent), EO_TYPECHECK(Eo *, model)
+#define elm_view_tree_destructor() ELM_VIEW_ID(EVT_SUB_ID_TREE_DESTRUCTOR)
+#define elm_view_tree_mode_set(mode) ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), EO_TYPECHECK(Elm_View_Tree_Mode, mode)
+#define elm_view_tree_getcontent_set(get_content_cb) ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), EO_TYPECHECK(Elm_View_Tree_Content_Get_Cb, get_content_cb)
+#define elm_view_tree_evas_object_get(widget) ELM_VIEW_ID(EVT_SUB_ID_TREE_EVAS_OBJECT_GET), EO_TYPECHECK(Evas_Object **, widget)
 
 /**
- * @def elm_view_tree_mode_set
- * @since 1.8
- *
- * @param mode
- *
+ * @brief EO Class instance object
  */
-//EAPI void elm_view_tree_mode_set(Elm_View_Tree_Mode mode);
-
-/**
- * @brief EO3 Class Declaration
- */
-#define ELM_VIEW_TREE_CLASS elm_view_tree                     \
-   , constructor(elm_view_tree_add, _elm_view_tree_add, Evas_Object*, Eo*)  \
-   , destructor(_elm_view_tree_destructor) \
-   , function(elm_view_tree_evas_object_get, _elm_view_tree_evas_object_get, Evas_Object*) \
-   , function(elm_view_tree_getcontent_set, _elm_view_tree_getcontent_set, void, Elm_View_Tree_Content_Get_Cb) \
-   , function(elm_view_tree_mode_set, _elm_view_tree_mode_set, void, Elm_View_Tree_Mode)
-
-EO3_DECLARE_CLASS(ELM_VIEW_TREE_CLASS)
+#define ELM_VIEW_TREE_CLASS elm_view_tree_class_get()
+const Eo_Class *elm_view_tree_class_get(void);
 
 #endif // ELM_VIEW_TREE_H
 
