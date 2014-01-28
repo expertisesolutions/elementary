@@ -1,10 +1,14 @@
 #ifdef HAVE_CONFIG_H
 # include "elementary_config.h"
 #endif
+#include <Eo.h>
 #include <Elementary.h>
 
 #include "elm_priv.h"
 #include <assert.h>
+
+
+EAPI Eo_Op ELM_VIEW_TREE_BASE_ID = 0;
 
 struct _Elm_View_Tree_Private
 {
@@ -277,20 +281,25 @@ _update_tree_widget(Elm_View_Tree_Private* self)
 }
 
 static void
-_elm_view_tree_add(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Evas_Object* parent, Eo* model)
+_elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_TREE_CLASS), eo2_constructor());
+   eo_do_super(obj, ELM_VIEW_TREE_CLASS, eo_constructor());
+
+   Evas_Object *parent = va_arg(*list, Evas_Object *);
+   Eo *model = va_arg(*list, Eo *);
+   Elm_View_Tree_Private *self = class_data;
+   
    EINA_SAFETY_ON_NULL_RETURN(self);
    EINA_SAFETY_ON_NULL_RETURN(model);
    EINA_SAFETY_ON_NULL_RETURN(parent);
-
+   
    self->list = elm_genlist_add(parent);
    EINA_SAFETY_ON_NULL_RETURN(self->list);
 
    self->model = model;
    self->mode = ELM_VIEW_TREE_VIEWMODE_ALL;
    self->get_content_cb = NULL;
-
+   
    self->itc = elm_genlist_item_class_new();
    EINA_SAFETY_ON_NULL_RETURN(self->itc);
    self->itc->item_style = "default";
@@ -306,6 +315,7 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Evas_Object
    evas_object_smart_callback_add(self->list, "contracted", _contracted_cb, self);
 
    _update_tree_widget(self);
+
    eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
    eo2_do(self->model, elm_model_tree_child_append_callback_add(self, _model_tree_child_append_cb));
 /*
@@ -315,22 +325,33 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Evas_Object
 */
 }
 
+
 static void
-_elm_view_tree_destructor(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self)
+_elm_view_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_Tree_Private *self = class_data;
+   EINA_SAFETY_ON_NULL_RETURN(self);
    elm_genlist_item_class_free(self->itc);
    //XXX destruct evas obj?
 }
 
-static Evas_Object*
-_elm_view_tree_evas_object_get(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self)
+static void
+_elm_view_tree_evas_object_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   return self->list;
+   Elm_View_Tree_Private *self = class_data;
+   Evas_Object **e = va_arg(*list, Evas_Object **); 
+   *e = self->list;
 }
 
 static void
-_elm_view_tree_mode_set(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Elm_View_Tree_Mode mode)
+_elm_view_tree_mode_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_Tree_Private *self = class_data;
+   Elm_View_Tree_Mode mode = va_arg(*list, Elm_View_Tree_Mode);
+   
+   EINA_SAFETY_ON_NULL_RETURN(self);
+   EINA_SAFETY_ON_NULL_RETURN(mode);
+   
    if (self->mode != mode)
      {
         self->mode = mode;
@@ -339,9 +360,47 @@ _elm_view_tree_mode_set(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Elm_Vi
 }
 
 static void
-_elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Elm_View_Tree_Content_Get_Cb get_content_cb)
+_elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   self->get_content_cb = get_content_cb;
+   Elm_View_Tree_Private *self = class_data;
+   self->get_content_cb = va_arg(*list, Elm_View_Tree_Content_Get_Cb *);
 }
 
-EO3_DEFINE_CLASS(ELM_VIEW_TREE_CLASS, ((EO3_BASE_CLASS)), Elm_View_Tree_Private)
+static void
+_class_constructor(Eo_Class *klass)
+{
+   const Eo_Op_Func_Description func_descs[] = {
+        
+        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_DESTRUCTOR), _elm_view_tree_destructor),
+        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), _elm_view_tree_getcontent_set),
+        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), _elm_view_tree_mode_set),
+        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), _elm_view_tree_add), 
+        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_EVAS_OBJECT_GET), _elm_view_tree_evas_object_get), 
+        EO_OP_FUNC_SENTINEL
+   };
+
+   eo_class_funcs_set(klass, func_descs);
+}
+
+static const Eo_Op_Description op_descs[] = {
+    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_DESTRUCTOR, "Cleanup tree data"),
+    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"), 
+    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"), 
+    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_ADD, "Setup tree object"),
+    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_EVAS_OBJECT_GET, "Return Evas object list"), 
+    EO_OP_DESCRIPTION_SENTINEL
+};
+
+static Eo_Class_Description class_descs = {
+   EO_VERSION,
+   "View Tree",
+   EO_CLASS_TYPE_REGULAR,
+   EO_CLASS_DESCRIPTION_OPS(&ELM_VIEW_TREE_BASE_ID, op_descs, EVT_SUB_ID_TREE_LAST),
+   NULL,
+   sizeof(Elm_View_Tree_Private),
+   _class_constructor,
+   NULL
+};
+
+EO_DEFINE_CLASS(elm_view_tree_class_get, &class_descs, EO_BASE_CLASS, NULL);
+
