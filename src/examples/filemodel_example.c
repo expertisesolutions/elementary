@@ -58,6 +58,7 @@ static void _eio_error_cb(void *data, Eio_File *handler, int error);
 static Eina_Bool _eio_event_cb(void *data, int type, void *event);
 static void _eio_value_init(Eina_Value *value, const char *filepath, Eo *object);
 
+#if 0
 #define MODEL_FILE_TREE_CLASS model_file_tree                                                   \
  , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*)          \
  , destructor(_model_file_tree_destructor)                                                      \
@@ -69,7 +70,7 @@ static void _eio_value_init(Eina_Value *value, const char *filepath, Eo *object)
 
 EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
 EO3_DEFINE_CLASS(MODEL_FILE_TREE_CLASS, ((ELM_MODEL_TREE_CLASS)), Model_File_Tree)
-
+#endif
 
 static Eina_Bool
 _model_file_setup(const Eina_Value_Type *type, void *mem)
@@ -218,15 +219,15 @@ _model_file_tree_constructor(Eo *object, Model_File_Tree *model, const char* fil
    Eina_Value *value = NULL;
    EINA_SAFETY_ON_NULL_RETURN(filepath);
 
-   eo2_do(object, value = model_file_tree_value_new(filepath));
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), elm_model_tree_constructor(value));
-   eo2_do(object, model_file_tree_list(elm_model_tree_path_new_from_string("")));
+   //eo2_do(object, value = model_file_tree_value_new(filepath));
+   //eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), elm_model_tree_constructor(value));
+   //eo2_do(object, model_file_tree_list(elm_model_tree_path_new_from_string("")));
 }
 
 static void
 _model_file_tree_destructor(Eo *object, Model_File_Tree *model)
 {
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), eo2_destructor());
+   //eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS), eo2_destructor());
 }
 
 static Eina_Bool
@@ -281,8 +282,8 @@ _model_file_tree_child_append(Eo *object,
    
    EINA_SAFETY_ON_NULL_RETURN_VAL(node, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(value, NULL);
-   eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                child = elm_model_tree_child_append(node, value));
+   //eo2_do_super(object, EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+     ///           child = elm_model_tree_child_append(node, value));
    EINA_SAFETY_ON_NULL_RETURN_VAL(child, NULL);
    eo2_do(object, model_file_tree_list(child));
    return child;
@@ -511,8 +512,9 @@ elm_main(int argc, char **argv)
    /**
     * Will switch from eo2 to eo soon. 
     */
-   _tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
-                            NULL, model_file_tree_constructor("./"));
+   //_tree_m = eo2_add_custom(EO3_GET_CLASS(MODEL_FILE_TREE_CLASS),
+     //                       NULL, model_file_tree_constructor("./"));
+   //_tree_m = eo_add_custom(ELM_OBJ_TREE_MUTABLE_CLASS .. to be continued
 
    _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL, 
                            elm_view_tree_add(win, _tree_m));

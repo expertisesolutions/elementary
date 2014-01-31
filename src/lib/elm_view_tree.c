@@ -317,7 +317,8 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    _update_tree_widget(self);
 
    eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
-   eo2_do(self->model, elm_model_tree_child_append_callback_add(self, _model_tree_child_append_cb));
+   //eo2_do(self->model, elm_model_tree_child_append_callback_add(self, _model_tree_child_append_cb));
+   eo_do(self->model, eo_event_callback_add(TREE_CHILD_APPEND_EVT, _model_tree_child_append_cb, self));
 /*
    eo2_do(self->model, elm_model_tree_node_deleted_callback_add(_model_node_deleted_cb, list);
    eo2_do(self->model, elm_model_tree_node_changed_callback_add(_model_node_changed_cb, list);
@@ -370,25 +371,24 @@ static void
 _class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
-        
-        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_DESTRUCTOR), _elm_view_tree_destructor),
-        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), _elm_view_tree_getcontent_set),
-        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), _elm_view_tree_mode_set),
-        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), _elm_view_tree_add), 
-        EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_EVAS_OBJECT_GET), _elm_view_tree_evas_object_get), 
-        EO_OP_FUNC_SENTINEL
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_DESTRUCTOR), _elm_view_tree_destructor),
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), _elm_view_tree_getcontent_set),
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), _elm_view_tree_mode_set),
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), _elm_view_tree_add), 
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_EVAS_OBJECT_GET), _elm_view_tree_evas_object_get), 
+      EO_OP_FUNC_SENTINEL
    };
 
    eo_class_funcs_set(klass, func_descs);
 }
 
 static const Eo_Op_Description op_descs[] = {
-    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_DESTRUCTOR, "Cleanup tree data"),
-    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"), 
-    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"), 
-    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_ADD, "Setup tree object"),
-    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_EVAS_OBJECT_GET, "Return Evas object list"), 
-    EO_OP_DESCRIPTION_SENTINEL
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_DESTRUCTOR, "Cleanup tree data"),
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"), 
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"), 
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_ADD, "Setup tree object"),
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_EVAS_OBJECT_GET, "Return Evas object list"), 
+   EO_OP_DESCRIPTION_SENTINEL
 };
 
 static Eo_Class_Description class_descs = {
@@ -402,5 +402,6 @@ static Eo_Class_Description class_descs = {
    NULL
 };
 
+//TODO/FIXME: Missing Elm_View_Tree_Private (last 'NULL' item) ?
 EO_DEFINE_CLASS(elm_view_tree_class_get, &class_descs, EO_BASE_CLASS, NULL);
 

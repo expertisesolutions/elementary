@@ -17,12 +17,12 @@ typedef enum
  * @brief EO Class functions identifiers
  */
 enum {
-     EVT_SUB_ID_TREE_DESTRUCTOR,
-     EVT_SUB_ID_TREE_GETCONTENT_SET,
-     EVT_SUB_ID_TREE_MODE_SET,
-     EVT_SUB_ID_TREE_ADD, 
-     EVT_SUB_ID_TREE_EVAS_OBJECT_GET, 
-     EVT_SUB_ID_TREE_LAST
+   EVT_SUB_ID_TREE_DESTRUCTOR,
+   EVT_SUB_ID_TREE_GETCONTENT_SET,
+   EVT_SUB_ID_TREE_MODE_SET,
+   EVT_SUB_ID_TREE_ADD, 
+   EVT_SUB_ID_TREE_EVAS_OBJECT_GET, 
+   EVT_SUB_ID_TREE_LAST
 };
 
 typedef Evas_Object  *(*Elm_View_Tree_Content_Get_Cb)(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part);

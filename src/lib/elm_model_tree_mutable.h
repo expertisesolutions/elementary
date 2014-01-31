@@ -1,6 +1,25 @@
 #ifndef ELM_MODEL_TREE_MUTABLE_H
 #define ELM_MODEL_TREE_MUTABLE_H
 
+
+
+#define ELM_OBJ_TREE_MUTABLE_CLASS elm_obj_tree_mutable_class_get()
+const Eo_Class *elm_obj_tree_mutable_class_get(void);
+
+extern EAPI Eo_Op ELM_MODEL_TREE_MUTABLE_BASE_ID;
+
+enum {
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND, 
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND, 
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND_RELATIVE,
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE,
+    ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE,
+    ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET,
+    ELM_OBJ_MUTABLE_SUB_ID_LAST
+};
+
+#define ELM_OBJ_MUTABLE_ID(sub_id) (ELM_MODEL_TREE_MUTABLE_BASE_ID + sub_id)
+
 /**
  * @def elm_model_tree_item_append
  * @since 1.8
@@ -13,8 +32,7 @@
  * Append a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path* elm_model_tree_child_append(Elm_Model_Tree_Path *path,
-                                                      Eina_Value *value);
+#define elm_model_tree_child_append(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 /**
  * @def elm_model_tree_item_prepend
@@ -27,8 +45,7 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_child_append(Elm_Model_Tree_Path *path,
  * Prepend a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend(Elm_Model_Tree_Path *path,
-                                                       Eina_Value *value);
+#define elm_model_tree_child_prepend(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 /**
  * @def elm_model_tree_child_append_relative
@@ -40,8 +57,7 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend(Elm_Model_Tree_Path *path
  * 
  * Append @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path* elm_model_tree_child_append_relative(Elm_Model_Tree_Path *path,
-                                                               Eina_Value *value);
+#define elm_model_tree_child_append_relative(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND_RELATIVE), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 /**
  * @def elm_model_tree_child_prepend_relative
@@ -53,8 +69,7 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_child_append_relative(Elm_Model_Tree_Pa
  * 
  * Prepend @p value as a sibling node of @p path.
  */
-EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend_relative(Elm_Model_Tree_Path *path,
-                                                                Eina_Value *value);
+#define elm_model_tree_child_prepend_relative(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 /**
  * @def elm_model_tree_delete
@@ -64,7 +79,7 @@ EAPI Elm_Model_Tree_Path* elm_model_tree_child_prepend_relative(Elm_Model_Tree_P
  * 
  * Delete the sub-tree pointed by @p path and all its children.
  */
-EAPI void elm_model_tree_delete(Elm_Model_Tree_Path *path);
+#define elm_model_tree_delete(path) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE), EO_TYPECHECK(Elm_Model_Tree_Path*, path)
 
 /**
  * @def elm_model_tree_value_set
@@ -75,8 +90,18 @@ EAPI void elm_model_tree_delete(Elm_Model_Tree_Path *path);
  * 
  * Set @p value to the node pointed by @p path.
  */
-EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value);
+#define elm_model_tree_value_set(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
+extern const Eo_Event_Description _TREE_CHILD_APPEND_EVT;
+#define TREE_CHILD_APPEND_EVT (&(_TREE_CHILD_APPEND_EVT))
+
+extern const Eo_Event_Description _TREE_DELETE_EVT;
+#define TREE_DELETE_EVT (&(_TREE_DELETE_EVT))
+
+extern const Eo_Event_Description _TREE_VALUE_SET_EVT;
+#define TREE_VALUE_SET_EVT (&(_TREE_VALUE_SET_EVT))
+
+#if 0
 /**
  * @brief EO3 Class Declaration
  */
@@ -98,5 +123,5 @@ EAPI void elm_model_tree_value_set(Elm_Model_Tree_Path *path, Eina_Value *value)
  , event(elm_model_tree_value_set, Elm_Model_Tree_Path*, Eina_Value*)
 
 EO3_DECLARE_CLASS(ELM_MODEL_TREE_CLASS)
-
+#endif
 #endif // ELM_MODEL_TREE_MUTABLE_H
