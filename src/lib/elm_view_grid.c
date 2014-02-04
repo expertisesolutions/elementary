@@ -6,6 +6,8 @@
 #include "elm_priv.h"
 #include <assert.h>
 
+EAPI Eo_Op ELM_OBJ_VIEW_GRID_BASE_ID = 0;
+
 struct _Elm_View_Grid_Private
 {
    Evas_Object *list;
@@ -66,12 +68,16 @@ _update_grid_widget(Elm_View_Grid_Private* self)
 }
 
 static void
-_elm_view_grid_add(Eo *obj, Elm_View_Grid_Private *self, Evas_Object* parent, Eo* model)
+_elm_view_grid_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_Grid_Private *self = class_data;
+   Evas_Object *parent = va_arg(*list, Evas_Object *);
+   Eo *model = va_arg(*list, Eo *);
+
    assert(self);
    assert(parent);
    assert(model);
-   eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_GRID_CLASS), eo2_constructor());
+   eo_do_super(obj, ELM_OBJ_VIEW_GRID_CLASS, eo_constructor());
    self->list = elm_genlist_add(parent);
    self->model = model;
    _update_grid_widget(self);
@@ -92,12 +98,45 @@ _elm_view_grid_destructor(Eo *obj, Elm_View_Grid_Private *self)
    //XXX destruct evas obj?
 }
 
-static Evas_Object*
-_elm_view_grid_evas_object_get(Eo *obj, Elm_View_Grid_Private *self)
+static void
+_elm_view_grid_evas_object_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_Grid_Private *self = class_data;
+   Evas_Object **evas = va_arg(*list, Evas_Object **);
+
    assert(self);
    assert(obj);
-   return self->list;
+   *evas = self->list;
 }
 
-EO3_DEFINE_CLASS(ELM_VIEW_GRID_CLASS, ((EO3_BASE_CLASS)), Elm_View_Grid_Private)
+static void
+_class_constructor(Eo_Class *klass)
+{
+   const Eo_Op_Func_Description func_descs[] = {
+        EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_ADD), _elm_view_grid_add),
+        EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET), _elm_view_grid_evas_object_get), 
+        EO_OP_FUNC_SENTINEL
+   };
+
+   eo_class_funcs_set(klass, func_descs);
+}
+
+const Eo_Op_Description op_descs[] = {
+     EO_OP_DESCRIPTION(ELM_OBJ_VIEW_GRID_SUB_ID_ADD, "Adds new grid."),
+     EO_OP_DESCRIPTION(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET, "Returns Evas Widget object."),
+     EO_OP_DESCRIPTION_SENTINEL
+};
+
+static Eo_Class_Description class_descs = {
+   EO_VERSION, 
+   "Elm View Grid",
+   EO_CLASS_TYPE_REGULAR_NO_INSTANT,
+   EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_VIEW_GRID_BASE_ID, op_descs, ELM_OBJ_VIEW_GRID_SUB_ID_LAST),
+   NULL,
+   sizeof(Elm_View_Grid_Private),
+   _class_constructor,
+   NULL
+};
+
+EO_DEFINE_CLASS(elm_obj_view_grid_class_get, &class_descs, EO_BASE_CLASS, NULL);
+
