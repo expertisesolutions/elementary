@@ -146,16 +146,19 @@ EO3_DEFINE_CLASS(ELM_MODEL_TREE_CONST_CLASS, ((EO3_BASE_CLASS)), Elm_Model_Tree)
 /*
  * Mutable Class definition
  */
-
+//TODO/FIXME/XXX
 static void
 _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   Elm_Model_Tree_Path *ret = NULL;
    Elm_Model_Tree_Node *node, *parent;
    Elm_Model_Tree *model = eo_data_scope_get
      (obj, EO3_GET_CLASS(ELM_MODEL_TREE_CONST_CLASS));
+
+   
+   Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
+
 
    EINA_SAFETY_ON_NULL_RETURN_VAL(model, NULL);
    eina_lock_take(&model->lock);
@@ -163,16 +166,13 @@ _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
    node = _tree_node_append(value, parent);
    EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
-   ret = _tree_node_path(node);
+   *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
    
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, ret, NULL));
-
-   return ret;
+   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
    
  exit_err:
    eina_lock_release(&model->lock);
-   return NULL;
 }
 
 static void
@@ -295,6 +295,7 @@ static Eo_Class_Description class_descs = {
 };
 
 EO_DEFINE_CLASS(elm_obj_tree_mutable_class_get, &class_descs, EO_BASE_CLASS, NULL);
+//EO_DEFINE_CLASS(elm_obj_tree_mutable_class_get, &class_descs, ELM_MODEL_TREE_CONST_CLASS, NULL);
 
 //EO3_DEFINE_CLASS(ELM_MODEL_TREE_CLASS, ((ELM_MODEL_TREE_CONST_CLASS)), NULL)
 

@@ -32,7 +32,7 @@ enum {
  * Append a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-#define elm_model_tree_child_append(path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
+#define elm_model_tree_child_append(child, path, value) ELM_OBJ_MUTABLE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path **, child), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 /**
  * @def elm_model_tree_item_prepend
