@@ -7,7 +7,7 @@
 #include "elm_priv.h"
 #include <assert.h>
 
-
+#define MY_CLASS ELM_VIEW_TREE_CLASS
 EAPI Eo_Op ELM_VIEW_TREE_BASE_ID = 0;
 
 struct _Elm_View_Tree_Private
@@ -143,7 +143,7 @@ _item_label_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
 
    if (!strcmp(part, "elm.text"))
      {
-        eo2_do(idata->self->model, value = elm_model_tree_value_get(idata->path));
+        eo2_do(idata->self->model, elm_model_tree_value_get(idata->path, &value));
         if (value)
           label = eina_value_to_string(value);
      }
@@ -283,7 +283,7 @@ _update_tree_widget(Elm_View_Tree_Private* self)
 static void
 _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   eo_do_super(obj, ELM_VIEW_TREE_CLASS, eo_constructor());
+   eo_do_super(obj, MY_CLASS, eo_constructor());
 
    Evas_Object *parent = va_arg(*list, Evas_Object *);
    Eo *model = va_arg(*list, Eo *);
@@ -316,8 +316,7 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
    _update_tree_widget(self);
 
-   eo2_do(self->model, elm_model_tree_select_callback_add(self, _model_tree_selected_cb));
-   //eo2_do(self->model, elm_model_tree_child_append_callback_add(self, _model_tree_child_append_cb));
+   eo_do(self->model, eo_event_callback_add(ELM_MODEL_TREE_CONST_SELECT_EVT, _model_tree_selected_cb, self));
    eo_do(self->model, eo_event_callback_add(TREE_CHILD_APPEND_EVT, _model_tree_child_append_cb, self));
 /*
    eo2_do(self->model, elm_model_tree_node_deleted_callback_add(_model_node_deleted_cb, list);
@@ -333,6 +332,7 @@ _elm_view_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Elm_View_Tree_Private *self = class_data;
    EINA_SAFETY_ON_NULL_RETURN(self);
    elm_genlist_item_class_free(self->itc);
+   eo_do_super(obj, MY_CLASS, eo_destructor()); 
    //XXX destruct evas obj?
 }
 
@@ -364,14 +364,14 @@ static void
 _elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Tree_Private *self = class_data;
-   self->get_content_cb = va_arg(*list, Elm_View_Tree_Content_Get_Cb *);
+   self->get_content_cb = va_arg(*list, Elm_View_Tree_Content_Get_Cb);
 }
 
 static void
 _class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
-      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_DESTRUCTOR), _elm_view_tree_destructor),
+      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_tree_destructor),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), _elm_view_tree_getcontent_set),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), _elm_view_tree_mode_set),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), _elm_view_tree_add), 
@@ -383,7 +383,6 @@ _class_constructor(Eo_Class *klass)
 }
 
 static const Eo_Op_Description op_descs[] = {
-   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_DESTRUCTOR, "Cleanup tree data"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"), 
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"), 
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_ADD, "Setup tree object"),
@@ -402,6 +401,5 @@ static Eo_Class_Description class_descs = {
    NULL
 };
 
-//TODO/FIXME: Missing Elm_View_Tree_Private (last 'NULL' item) ?
 EO_DEFINE_CLASS(elm_view_tree_class_get, &class_descs, EO_BASE_CLASS, NULL);
 
