@@ -151,6 +151,7 @@ _item_label_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    return label;
 }
 
+
 static Evas_Object *
 _item_content_get(void *data, Evas_Object *obj, const char *part)
 {
@@ -327,8 +328,9 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
 
 static void
-_elm_view_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_elm_view_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA_UNUSED)
 {
+
    Elm_View_Tree_Private *self = class_data;
    EINA_SAFETY_ON_NULL_RETURN(self);
    elm_genlist_item_class_free(self->itc);
@@ -364,7 +366,9 @@ static void
 _elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Tree_Private *self = class_data;
+   printf("%s:%d:%p\n", __FILE__, __LINE__, self->get_content_cb );
    self->get_content_cb = va_arg(*list, Elm_View_Tree_Content_Get_Cb);
+   printf("%s:%d:%p\n", __FILE__, __LINE__, self->get_content_cb );
 }
 
 static void

@@ -6,6 +6,7 @@
 #include "elm_priv.h"
 #include <assert.h>
 
+#define MY_CLASS ELM_OBJ_VIEW_GRID_CLASS
 EAPI Eo_Op ELM_OBJ_VIEW_GRID_BASE_ID = 0;
 
 struct _Elm_View_Grid_Private
@@ -77,7 +78,9 @@ _elm_view_grid_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    assert(self);
    assert(parent);
    assert(model);
+
    eo_do_super(obj, ELM_OBJ_VIEW_GRID_CLASS, eo_constructor());
+   
    self->list = elm_genlist_add(parent);
    self->model = model;
    _update_grid_widget(self);
@@ -91,10 +94,12 @@ _elm_view_grid_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 }
 
 static void
-_elm_view_grid_destructor(Eo *obj, Elm_View_Grid_Private *self)
+_elm_view_grid_destructor(Eo *obj, void *class_data, va_list *list EINA_UNUSED)
 {
+   Elm_View_Grid_Private *self = class_data;
    assert(self);
    assert(obj);
+   eo_do_super(obj, MY_CLASS, eo_destructor()); 
    //XXX destruct evas obj?
 }
 
@@ -113,16 +118,16 @@ static void
 _class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
-        EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_ADD), _elm_view_grid_add),
-        EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET), _elm_view_grid_evas_object_get), 
-        EO_OP_FUNC_SENTINEL
+      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_grid_add),
+      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_grid_destructor),
+      EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET), _elm_view_grid_evas_object_get), 
+      EO_OP_FUNC_SENTINEL
    };
 
    eo_class_funcs_set(klass, func_descs);
 }
 
 const Eo_Op_Description op_descs[] = {
-     EO_OP_DESCRIPTION(ELM_OBJ_VIEW_GRID_SUB_ID_ADD, "Adds new grid."),
      EO_OP_DESCRIPTION(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET, "Returns Evas Widget object."),
      EO_OP_DESCRIPTION_SENTINEL
 };
