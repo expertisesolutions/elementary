@@ -94,7 +94,6 @@ _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 static void
 _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   printf("IN\n");
    Elm_Model_Tree_Node *node;
    
    Elm_Model_Tree *model = class_data;
@@ -111,7 +110,6 @@ _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
         return;
      }
    *value = _tree_node_value_get(node);
-   printf("--->%s:%d:value=%p\n", __FUNCTION__, __LINE__, value);
    eina_lock_release(&model->lock);
 }
 
@@ -236,17 +234,17 @@ _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    Elm_Model_Tree_Node *node, *parent;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
 
+   void *unused = va_arg(*list, void *);
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
 
    EINA_SAFETY_ON_NULL_RETURN_VAL(model, NULL);
    eina_lock_take(&model->lock);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    parent = _tree_node_find(model->root, path);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
    node = _tree_node_append(value, parent);
+   EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
    EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
@@ -269,9 +267,7 @@ _model_tree_child_prepend(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);   
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    parent = _tree_node_find(model->root, path);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
    node = _tree_node_prepend(value, parent);
    EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
@@ -316,7 +312,6 @@ _model_tree_delete(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *l
 static void
 _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   printf("***************%s:%d\n", __FUNCTION__, __LINE__);
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
    void *unused = va_arg(*list, void *);
@@ -324,18 +319,21 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
    Eina_Value *value = va_arg(*list, Eina_Value *);
    
    if(path == NULL) return;
-   printf("$$$$$$$$$ %p\n", value);
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    node = _tree_node_find(model->root, path);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    _tree_node_value_set(node, value);
    eina_lock_release(&model->lock);
 
    //TODO/FIXME <ccarvalho>
    //eo2_do(obj, _model_tree_value_set_callback_call(path, value));   
    //eo_do(obj, eo_event_callback_call(TREE_VALUE_SET_EVT, "x", NULL));
+}
+
+static void
+_model_tree_value_set_evt(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+{
+   printf("HEREEEEEEEE\n");
 }
 
 static void 
@@ -348,6 +346,7 @@ _mutable_class_constructor(Eo_Class *klass)
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE), _model_tree_child_prepend_relative),
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE), _model_tree_delete),
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), _model_tree_value_set),
+      EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT), _model_tree_value_set_evt),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -362,6 +361,7 @@ static const Eo_Op_Description mutable_op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE, "Prepend as a sibling node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE, "Delete node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET, "Set value to the node"),
+   EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT, "Append new child event."),
    EO_OP_DESCRIPTION_SENTINEL
 };
 

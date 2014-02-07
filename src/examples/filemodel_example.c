@@ -278,10 +278,7 @@ _model_file_tree_value_new(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Eina_Value **value = va_arg(*list, Eina_Value **); //return value
    
    EINA_SAFETY_ON_NULL_RETURN(path);
-   printf("###### %p\n", eina_value_new(&EINA_VALUE_TYPE_FILEMODEL));
    *value = eina_value_new(&EINA_VALUE_TYPE_FILEMODEL);
-   printf("%d:value=%p\n",__LINE__, *value);
-   puts("BBB");
    EINA_SAFETY_ON_NULL_RETURN(*value);
    ptr = calloc(1, sizeof(Model_File_Value));
    if(ptr == NULL)
@@ -301,7 +298,6 @@ _model_file_tree_value_new(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 static void
 _model_file_tree_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    Eina_Value *value = NULL;
    Eina_Bool ret;
    //Model_File_Tree *model = va_arg(*list, Model_File_Tree *);
@@ -388,7 +384,7 @@ _model_file_tree_child_append(Eo *obj EINA_UNUSED, void *class_data, va_list *li
    EINA_SAFETY_ON_NULL_GOTO(node, fail);
    EINA_SAFETY_ON_NULL_GOTO(value, fail);
 
-   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(node, value, child /* return value */));
+   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(NULL, node, value, child /* return value */));
    
    EINA_SAFETY_ON_NULL_RETURN(*child);
    eo_do(obj, model_file_tree_list(model, child, &ret)); // TODO/FIXME/XXX: check ret
@@ -413,15 +409,12 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    EINA_SAFETY_ON_NULL_RETURN(tuple);
    EINA_SAFETY_ON_NULL_RETURN(info);
 
-   printf("%d:value=%p\n", __LINE__, value);
    eo_do(tuple->object, model_file_tree_value_new(NULL, info->path, &value)); // ccarvalho
 
-   printf("### %d:%p\n", __LINE__, value);
    ptr = eina_value_memory_get(value);
-   printf("### %d:%p\n", __LINE__, value);
    ptr->ftype = info->type;
 
-   eo_do(tuple->object, elm_model_tree_child_append(tuple->node, value, &child)); //ccarvalho
+   eo_do(tuple->object, elm_model_tree_child_append(NULL, tuple->node, value, &child)); //ccarvalho
    
    printf("+(%s): %s\n", elm_model_tree_path_to_string(child), info->path);
 }
@@ -502,9 +495,7 @@ _eio_value_init(Eina_Value *value, const char *filepath, Eo *object)
    EINA_SAFETY_ON_NULL_RETURN(value);
    EINA_SAFETY_ON_NULL_RETURN(object);
 
-   printf("### %d:%p\n", __LINE__, value);
    ptr = eina_value_memory_get(value);
-   printf("### %d:%p\n", __LINE__, value);
    EINA_SAFETY_ON_NULL_RETURN(ptr);
    ptr->monitor = eio_monitor_add(filepath);
    ptr->handlers = malloc(sizeof(Ecore_Event_Handler*)*(nevents+1));
@@ -516,7 +507,7 @@ _eio_value_init(Eina_Value *value, const char *filepath, Eo *object)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
+#if 0
 struct _Model_File_Grid_Cell
 {
   // TODO implement.
@@ -585,12 +576,11 @@ _model_file_grid_value_get(Eo *obj,
 {
    return NULL;
 }
-
+#endif
 
 Evas_Object*
 _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part)
 {
-   printf("### %d\n", __LINE__);
    Evas_Object *ic = elm_icon_add(obj);
    Eina_Value *value = NULL;
 
@@ -598,9 +588,7 @@ _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const ch
      {
         Model_File_Value *ptr;
         eo_do(model, elm_model_tree_value_get(path, &value));
-   printf("->### %d:%p\n", __LINE__, value);
         ptr = eina_value_memory_get(value);
-   printf("->### %d:%p\n", __LINE__, value);
         if(ptr && ptr->ftype == EINA_FILE_DIR)
            elm_icon_standard_set(ic, "folder");
         else
@@ -626,7 +614,6 @@ elm_main(int argc, char **argv)
    ecore_init();
    eio_init();
 
-   printf("_content_get_cb: %p\n", _content_get_cb);
    win = elm_win_util_standard_add("filemodel", "Filemodel");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
@@ -634,9 +621,7 @@ elm_main(int argc, char **argv)
    /**
     * Will switch from eo2 to eo soon. 
     */
-   printf("### %d\n", __LINE__);
    _tree_m = eo_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor("./"));
-   printf("### %d\n", __LINE__);
    //_tree_m = eo_add_custom(ELM_OBJ_TREE_MUTABLE_CLASS .. to be continued
 
    _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL, 

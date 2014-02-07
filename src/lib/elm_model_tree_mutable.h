@@ -15,6 +15,7 @@ enum {
     ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE,
     ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE,
     ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET,
+    ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT,
     ELM_OBJ_MUTABLE_SUB_ID_LAST
 };
 
@@ -34,7 +35,9 @@ enum {
  * Append a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
-#define elm_model_tree_child_append(path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret) 
+#define elm_model_tree_child_append(unused, path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(void *, unused), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret)
+
+//#define elm_model_tree_child_append(path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret) 
 
 /**
  * @def elm_model_tree_item_prepend
@@ -97,6 +100,9 @@ enum {
  * Set @p value to the node pointed by @p path.
  */
 #define elm_model_tree_value_set(unused, path, value) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), EO_TYPECHECK(void *, unused), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
+
+// Append Event
+#define elm_model_tree_child_append_evt(path) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT), EO_TYPECHECK(Elm_Model_Tree_Path *, path)
 
 extern const Eo_Event_Description _TREE_CHILD_APPEND_EVT;
 #define TREE_CHILD_APPEND_EVT (&(_TREE_CHILD_APPEND_EVT))

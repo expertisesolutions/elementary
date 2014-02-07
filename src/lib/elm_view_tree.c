@@ -74,7 +74,7 @@ _model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
    idata->path = path;
    idata->children = 0;
 
-   pItem = _get_parent_item(self->items, path);
+   pItem = _get_parent_item(self->items, idata->path);
    if (pItem)
      {
         View_Tree_ItemData *pdata = elm_object_item_data_get(pItem);
@@ -366,9 +366,7 @@ static void
 _elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Tree_Private *self = class_data;
-   printf("%s:%d:%p\n", __FILE__, __LINE__, self->get_content_cb );
    self->get_content_cb = va_arg(*list, Elm_View_Tree_Content_Get_Cb);
-   printf("%s:%d:%p\n", __FILE__, __LINE__, self->get_content_cb );
 }
 
 static void
