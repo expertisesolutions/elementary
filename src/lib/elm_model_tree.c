@@ -10,10 +10,10 @@
 
 #include <assert.h>
 
-#define MY_CONST_CLASS ELM_OBJ_MODEL_TREE_CONST_CLASS 
+#define MY_CONST_CLASS ELM_OBJ_MODEL_TREE_CONST_CLASS
 EAPI Eo_Op ELM_OBJ_MODEL_TREE_CONST_BASE_ID = 0;
 
-EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECT_EVT = 
+EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECT_EVT =
    EO_EVENT_DESCRIPTION("tree const, select","Select the node pointed by path.");
 
 struct _Elm_Model_Tree
@@ -75,14 +75,14 @@ _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Bool *ret = va_arg(*list, Eina_Bool *);
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(model, EINA_FALSE);
+   EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
    node = _tree_node_find(model->root, path);
    model->selected = node ? path : NULL;
    eina_lock_release(&model->lock);
    //eo2_do(obj, elm_model_tree_select_callback_call(path));
    eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECT_EVT, ret, NULL));
-   
+
    if (node) *ret = EINA_TRUE;
    else *ret = EINA_FALSE;
 }
@@ -95,22 +95,25 @@ static void
 _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_Model_Tree_Node *node;
-   
+
    Elm_Model_Tree *model = class_data;
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value **value = va_arg(*list, Eina_Value **);
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(model, NULL);
+   EINA_SAFETY_ON_NULL_GOTO(path, exit_err);
+   EINA_SAFETY_ON_NULL_GOTO(model, exit_err);
+
    eina_lock_take(&model->lock);
+
    node = _tree_node_find(model->root, path);
-   if(node == NULL)
-     {
-        *value = NULL;
-        return;
-     }
+   EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
    *value = _tree_node_value_get(node);
+
    eina_lock_release(&model->lock);
+   return;
+
+ exit_err:
+   *value = NULL;
 }
 
 //static Eina_List*
@@ -118,34 +121,36 @@ _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 //                         Elm_Model_Tree *model,
 //                         Elm_Model_Tree_Path *path)
 static void
-_model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   (EINA_UNUSED)va_arg(*list, Elm_Model_Tree_Path *);
+   (void)va_arg(*list, Elm_Model_Tree_Path *);
    Eina_List **ret = va_arg(*list, Eina_List **);
-   *ret = NULL; //TODO: Implement this 
+   *ret = NULL; //TODO: Implement this
 }
- 
+
 //static Elm_Model_Tree_Path*
 //_model_tree_selected_get(Eo *object EINA_UNUSED, Elm_Model_Tree *model)
 static void
 _model_tree_selected_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_Model_Tree *model = class_data;
-   EINA_SAFETY_ON_NULL_RETURN_VAL(model, NULL);
+   EINA_SAFETY_ON_NULL_RETURN(model);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
    *ret = model->selected;
 }
 
-Eina_Bool
-_model_tree_release_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info)
-{
-   //TODO: Implement this
-}
+/* Eina_Bool */
+/* _model_tree_release_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED) */
+/* { */
+/*    //TODO: Implement this */
+/*    return EINA_FALSE; */
+/* } */
+
 
 //static void
 //_model_tree_release(Eo *object, void *_unused EINA_UNUSED, Elm_Model_Tree_Path *path)
 static void
-_model_tree_release(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+_model_tree_release(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
 {
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
@@ -174,7 +179,7 @@ _model_tree_const_class_constructor(Eo_Class *klass)
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_CONST_ID(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_RELEASE), _model_tree_release),
       EO_OP_FUNC_SENTINEL
    };
-  
+
    eo_class_funcs_set(klass, func_descs);
 }
 
@@ -186,7 +191,7 @@ static const Eo_Op_Description model_tree_const_op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_RELEASE, "Release the sub-tree pointed by path and all its children. Release does not delete the nodes, it just frees their nodes."),
    EO_OP_DESCRIPTION_SENTINEL
 };
-    
+
 static const Eo_Event_Description *model_tree_const_event_descs[] = {
      ELM_MODEL_TREE_CONST_SELECT_EVT,
      NULL
@@ -214,14 +219,14 @@ EAPI Eo_Op ELM_MODEL_TREE_BASE_ID = 0;
 
 #define MY_MODEL_TREE_CLASS ELM_MODEL_TREE_CLASS
 
-EAPI const Eo_Event_Description _TREE_CHILD_APPEND_EVT = 
+EAPI const Eo_Event_Description _TREE_CHILD_APPEND_EVT =
    EO_EVENT_DESCRIPTION("child,append","Append a new child cointaining value to the \
                         list of children of the node pointed by path.");
 
-EAPI const Eo_Event_Description _TREE_DELETE_EVT = 
+EAPI const Eo_Event_Description _TREE_DELETE_EVT =
    EO_EVENT_DESCRIPTION("tree,delete","Delete the sub-tree pointed path and all its children.");
 
-EAPI const Eo_Event_Description _TREE_VALUE_SET_EVT = 
+EAPI const Eo_Event_Description _TREE_VALUE_SET_EVT =
    EO_EVENT_DESCRIPTION("value,set","Set value to the node pointed by path");
 
 /*
@@ -234,12 +239,12 @@ _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    Elm_Model_Tree_Node *node, *parent;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
 
-   void *unused = va_arg(*list, void *);
+   (void) va_arg(*list, void *);
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(model, NULL);
+   EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
    parent = _tree_node_find(model->root, path);
    EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
@@ -248,9 +253,9 @@ _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
-   
+
    eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, ret, NULL));
-   
+
  exit_err:
    eina_lock_release(&model->lock);
 }
@@ -264,18 +269,19 @@ _model_tree_child_prepend(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
-   
+
    EINA_SAFETY_ON_NULL_RETURN(model);
-   eina_lock_take(&model->lock);   
+   eina_lock_take(&model->lock);
+
    parent = _tree_node_find(model->root, path);
    EINA_SAFETY_ON_NULL_GOTO(parent, exit_err);
    node = _tree_node_prepend(value, parent);
    EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
-   
+
    eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, ret, NULL));
-   
+
    return;
 
 exit_err:
@@ -283,29 +289,27 @@ exit_err:
 }
 
 static void
-_model_tree_child_append_relative(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+_model_tree_child_append_relative(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
 {
    return; // TODO implement
 }
 
 static void
-_model_tree_child_prepend_relative(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+_model_tree_child_prepend_relative(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
 {
    return; // TODO implement
 }
 
 static void
-_model_tree_delete(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+_model_tree_delete(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
 {
-  
-   Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
-   Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *); 
+   Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
 
    EINA_SAFETY_ON_NULL_RETURN(path);
    EINA_SAFETY_ON_NULL_RETURN(model);
-   eo2_do(obj, elm_model_tree_release(path));
-   
+   eo_do(obj, elm_model_tree_release(path));
+
    eo_do(obj, eo_event_callback_call(TREE_DELETE_EVT, path, NULL));
 }
 
@@ -314,10 +318,10 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
 {
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
-   void *unused = va_arg(*list, void *);
+   (void)va_arg(*list, void *);
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
-   
+
    if(path == NULL) return;
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
@@ -326,17 +330,17 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
    eina_lock_release(&model->lock);
 
    //TODO/FIXME <ccarvalho>
-   //eo2_do(obj, _model_tree_value_set_callback_call(path, value));   
+   //eo2_do(obj, _model_tree_value_set_callback_call(path, value));
    //eo_do(obj, eo_event_callback_call(TREE_VALUE_SET_EVT, "x", NULL));
 }
 
-static void
-_model_tree_value_set_evt(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+void
+_model_tree_value_set_evt(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
 {
-   printf("HEREEEEEEEE\n");
+   // TODO/FIXME <ccarvalho>
 }
 
-static void 
+static void
 _mutable_class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
@@ -389,5 +393,3 @@ EO_DEFINE_CLASS(elm_obj_model_tree_class_get, &mutable_class_descs, ELM_OBJ_MODE
 
 //FIXME  ccarvalho
 //EO3_DEFINE_CLASS(MY_MODEL_TREE_CLASS, ((MY_CLASS)), NULL)
-
-

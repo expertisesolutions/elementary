@@ -31,7 +31,7 @@ _tree_node_append(Eina_Value *value, Elm_Model_Tree_Node *parent)
           {
              parent->first_child = node;
           }
-        else 
+        else
           {
              // find last child
              for(ptr = parent->first_child;
@@ -143,7 +143,7 @@ _tree_node_index(Elm_Model_Tree_Node *node)
 {
    Elm_Model_Tree_Node *child;
    unsigned int index = 0;
-   
+
    EINA_SAFETY_ON_NULL_RETURN_VAL(node, (unsigned int)-1);
    if(node->parent == NULL) return (unsigned int)-1;
    EINA_SAFETY_ON_NULL_RETURN_VAL(node->parent->first_child, (unsigned int)-1);
@@ -175,4 +175,3 @@ _tree_node_value_set(Elm_Model_Tree_Node *node, Eina_Value *value)
    node->value = value;
    return EINA_TRUE;
 }
-

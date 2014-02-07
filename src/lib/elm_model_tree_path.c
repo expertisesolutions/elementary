@@ -56,7 +56,7 @@ elm_model_tree_path_new_from_string(const char *str)
    path = elm_model_tree_path_new();
    EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
    if(str[0] == 0) return path;
-   
+
    while( (n = strtol(str, &ptr, 10)) >= 0)
      {
         elm_model_tree_path_append_index(path, n);
@@ -67,7 +67,7 @@ elm_model_tree_path_new_from_string(const char *str)
    EINA_SAFETY_ON_FALSE_GOTO(n >= 0, err_exit);
 
    return path;
-   
+
  err_exit:
    elm_model_tree_path_free(path);
    return NULL;
@@ -109,12 +109,12 @@ elm_model_tree_path_to_string(Elm_Model_Tree_Path *path)
    char *str;
    unsigned int i, n, r, res, *index;
    EINA_SAFETY_ON_NULL_RETURN_VAL(path, NULL);
-   
+
    // calculate the space required for the new string
    for(n = path->depth, i = 0; i < path->depth; i++, n++)
       for(res = path->indices[i]; (res /= 10) > 0; n++)
          ;
-   
+
    str = calloc(sizeof(char), n+2);
    EINA_SAFETY_ON_FALSE_RETURN_VAL(str, NULL);
    if(path->indices != NULL)
@@ -156,7 +156,6 @@ unsigned int
 elm_model_tree_path_get_index(Elm_Model_Tree_Path *path, unsigned int depth)
 {
    EINA_SAFETY_ON_FALSE_RETURN_VAL(path, (unsigned int)-1);
-   EINA_SAFETY_ON_FALSE_RETURN_VAL(depth <= path->depth, (unsigned int)-1);   
+   EINA_SAFETY_ON_FALSE_RETURN_VAL(depth <= path->depth, (unsigned int)-1);
    return path->indices[depth];
 }
-

@@ -9,8 +9,8 @@ const Eo_Class *elm_obj_model_tree_class_get(void);
 extern EAPI Eo_Op ELM_MODEL_TREE_BASE_ID;
 
 enum {
-    ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND, 
-    ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND, 
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND,
+    ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND,
     ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND_RELATIVE,
     ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE,
     ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE,
@@ -37,7 +37,7 @@ enum {
  */
 #define elm_model_tree_child_append(unused, path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(void *, unused), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret)
 
-//#define elm_model_tree_child_append(path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret) 
+//#define elm_model_tree_child_append(path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret)
 
 /**
  * @def elm_model_tree_item_prepend
@@ -46,7 +46,7 @@ enum {
  * @param path The path to a node where the new child shall be prepended.
  * @param value The value to prepend.
  * @return The path to the newly created node.
- * 
+ *
  * Prepend a new child cointaining @p value to the list of children of
  * the node pointed by @p path.
  */
@@ -59,7 +59,7 @@ enum {
  * @param path The path to a node where the new child shall be appended.
  * @param value The value to set to the newly created node, as @ref Eina_Value.
  * @return The path to the newly created node.
- * 
+ *
  * Append @p value as a sibling node of @p path.
  */
 #define elm_model_tree_child_append_relative(path, value, ret) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND_RELATIVE), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value), EO_TYPECHECK(Elm_Model_Tree_Path **, ret)
@@ -71,7 +71,7 @@ enum {
  * @param path The path to a sibling node where the new node shall be prepended.
  * @param value The value to be set in the newly created node, as @ref Eina_Value.
  * @return The path to the newly created node.
- * 
+ *
  * Prepend @p value as a sibling node of @p path.
  */
 //-static Elm_Model_Tree_Path*
@@ -85,7 +85,7 @@ enum {
  * @since 1.8
  *
  * @param path Path to the sub-tree to delete.
- * 
+ *
  * Delete the sub-tree pointed by @p path and all its children.
  */
 #define elm_model_tree_delete(path) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE), EO_TYPECHECK(Elm_Model_Tree_Path*, path)
@@ -96,7 +96,7 @@ enum {
  *
  * @param path The path to the node to receive the new value.
  * @param value The value, as @ref Eina_Value.
- * 
+ *
  * Set @p value to the node pointed by @p path.
  */
 #define elm_model_tree_value_set(unused, path, value) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), EO_TYPECHECK(void *, unused), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
