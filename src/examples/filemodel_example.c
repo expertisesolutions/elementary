@@ -282,7 +282,7 @@ _model_file_tree_value_new(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    *value = eina_value_new(&EINA_VALUE_TYPE_FILEMODEL);
    printf("%d:value=%p\n",__LINE__, *value);
    puts("BBB");
-   EINA_SAFETY_ON_NULL_RETURN_VAL(*value, NULL);
+   EINA_SAFETY_ON_NULL_RETURN(*value);
    ptr = calloc(1, sizeof(Model_File_Value));
    if(ptr == NULL)
      {
@@ -336,34 +336,30 @@ _model_file_tree_list(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Eina_Value *value = NULL;
    Model_File_Tuple *tuple;
    Model_File_Value *ptr;
-   printf("AAAAA\n");
 
-//#define model_file_tree_list(model, node, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), EO_TYPECHECK(Model_File_Tree *, model), EO_TYPECHECK(Elm_Model_Tree_Path *, node), EO_TYPECHECK(Eina_Bool *, ret)
    (EINA_UNUSED)va_arg(*list, Model_File_Tree *); // TODO/FIXME/XXX
    Elm_Model_Tree_Path *node = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Bool *ret = va_arg(*list, Eina_Bool *);
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(node, EINA_FALSE);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(obj, EINA_FALSE);
+   EINA_SAFETY_ON_NULL_GOTO(node, fail);
+   EINA_SAFETY_ON_NULL_GOTO(obj, fail);
 
-   printf("->### %d:%p\n", __LINE__, value);
    eo_do(obj, elm_model_tree_value_get(node, &value));
-   printf("->### %d:%p\n", __LINE__, value);
-   //EINA_SAFETY_ON_NULL_RETURN_VAL(value, EINA_FALSE);
-   EINA_SAFETY_ON_NULL_RETURN(value);
-   printf("->### %d:%p\n", __LINE__, value);
+   
+   EINA_SAFETY_ON_NULL_GOTO(value, fail);
+
    ptr = eina_value_memory_get(value);
-   printf("->### %d:%p\n", __LINE__, value);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(ptr, EINA_FALSE);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(ptr->filepath, EINA_FALSE);
+
+   EINA_SAFETY_ON_NULL_GOTO(ptr, fail);
+   EINA_SAFETY_ON_NULL_GOTO(ptr->filepath, fail);
 
    tuple = malloc(sizeof(Model_File_Tuple));
-   EINA_SAFETY_ON_NULL_RETURN_VAL(tuple, EINA_FALSE);
+   EINA_SAFETY_ON_NULL_GOTO(tuple, fail);
    eo_ref(obj);
    tuple->object = obj;
    tuple->node = elm_model_tree_path_new_copy(node);
 
-   if(!tuple->node) goto treelistfail;
+   EINA_SAFETY_ON_NULL_GOTO(tuple->node, treelistfail);
    if (ptr->file != NULL) free(ptr->file);
 
    ptr->file = eio_file_stat_ls
@@ -375,6 +371,8 @@ _model_file_tree_list(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 treelistfail:
    free(tuple);
    eo_unref(obj);
+
+fail:
    *ret = EINA_FALSE;
 }
 
@@ -387,13 +385,19 @@ _model_file_tree_child_append(Eo *obj EINA_UNUSED, void *class_data, va_list *li
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **child = va_arg(*list, Elm_Model_Tree_Path **);
    
-   EINA_SAFETY_ON_NULL_RETURN_VAL(node, NULL);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(value, NULL);
+   EINA_SAFETY_ON_NULL_GOTO(node, fail);
+   EINA_SAFETY_ON_NULL_GOTO(value, fail);
 
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(node, value, child /* return value */));
    
-   EINA_SAFETY_ON_NULL_RETURN_VAL(*child, NULL);
+   EINA_SAFETY_ON_NULL_RETURN(*child);
    eo_do(obj, model_file_tree_list(model, child, &ret)); // TODO/FIXME/XXX: check ret
+
+   return;
+
+fail:
+   *child = NULL;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
