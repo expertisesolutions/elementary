@@ -63,8 +63,10 @@ _model_tree_selected_cb(void *data EINA_UNUSED, Elm_Model_Tree_Path *path EINA_U
 }
 
 static Eina_Bool
-_model_tree_child_append_cb(void *data, Elm_Model_Tree_Path *path)
+_model_tree_child_append_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info) // signature change
 {
+
+   Elm_Model_Tree_Path *path = (Elm_Model_Tree_Path*)event_info;
    Elm_Object_Item *pItem = NULL;
    Elm_View_Tree_Private *self = data;
    View_Tree_ItemData *idata = malloc(sizeof(View_Tree_ItemData));
