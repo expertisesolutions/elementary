@@ -9,6 +9,8 @@
 
 #include <assert.h>
 
+#include "elm_model_tree_const.h"
+
 /**
  * @brief The value stored in the nodes of this Model.
  */

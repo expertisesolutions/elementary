@@ -24,13 +24,12 @@ EAPI Evas_Object* elm_view_list_evas_object_get();
 /**
  * @brief EO3 Class Declaration
  */
-#define ELM_VIEW_LIST_CLASS elm_view_list                     \
-   , constructor(elm_view_list_add, _elm_view_list_add, Evas_Object*, Eo*)  \
-   , destructor(_elm_view_list_destructor) \
-   , function(elm_view_list_evas_object_get, _elm_view_list_evas_object_get, Evas_Object*)
+/* #define ELM_VIEW_LIST_CLASS elm_view_list                     \ */
+/*    , constructor(elm_view_list_add, _elm_view_list_add, Evas_Object*, Eo*)  \ */
+/*    , destructor(_elm_view_list_destructor) \ */
+/*    , function(elm_view_list_evas_object_get, _elm_view_list_evas_object_get, Evas_Object*) */
 
-EO3_DECLARE_CLASS(ELM_VIEW_LIST_CLASS)
+/* EO3_DECLARE_CLASS(ELM_VIEW_LIST_CLASS) */
 
 
 #endif // ELM_VIEW_LIST_H
-

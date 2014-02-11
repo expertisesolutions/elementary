@@ -9,7 +9,7 @@ typedef long Elm_Model_List_Index;
  * @since 1.8
  *
  * @param index The position to select.
- * 
+ *
  * Select the item at position @p index.
  */
 EAPI void elm_model_list_item_select(Elm_Model_List_Index index);
@@ -20,7 +20,7 @@ EAPI void elm_model_list_item_select(Elm_Model_List_Index index);
  *
  * @param index The position from where the value will be read.
  * @return A pionter to an @ref Eina_Value.
- * 
+ *
  * Get the value of the item in position @p index.
  */
 EAPI Eina_Value* elm_model_list_value_get(Elm_Model_List_Index index);
@@ -83,17 +83,17 @@ EAPI long elm_model_list_len();
 /**
  * @brief Const-list Model class-declaration.
  */
-#define ELM_MODEL_LIST_CONST_CLASS elm_model_list_const                                         \
- , function(elm_model_list_item_select, _model_list_item_select, void, Elm_Model_List_Index)    \
- , function(elm_model_list_selected_get, _model_list_selected_get, Elm_Model_List_Index)        \
- , function(elm_model_list_value_get, _model_list_value_get, Eina_Value*, Elm_Model_List_Index) \
- , function(elm_model_list_len, _model_list_len, long)
+/* #define ELM_MODEL_LIST_CONST_CLASS elm_model_list_const                                         \ */
+/*  , function(elm_model_list_item_select, _model_list_item_select, void, Elm_Model_List_Index)    \ */
+/*  , function(elm_model_list_selected_get, _model_list_selected_get, Elm_Model_List_Index)        \ */
+/*  , function(elm_model_list_value_get, _model_list_value_get, Eina_Value*, Elm_Model_List_Index) \ */
+/*  , function(elm_model_list_len, _model_list_len, long) */
     /* , event(elm_model_list_item_selected, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_inserted, Elm_Model_List_Index)         \ */
     /* , event(elm_model_list_item_deleted, Elm_Model_List_Index)          \ */
     /* , event(elm_model_list_item_changed, Elm_Model_List_Index)          \ */
     /* , event(elm_model_list_reordered, int) */
 
-EO3_DECLARE_CLASS(ELM_MODEL_LIST_CONST_CLASS)
+/* EO3_DECLARE_CLASS(ELM_MODEL_LIST_CONST_CLASS) */
 
 #endif // ELM_MODEL_LIST_CONST_H

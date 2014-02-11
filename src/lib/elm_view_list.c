@@ -126,7 +126,7 @@ _elm_view_list_add(Eo *obj, Elm_View_List_Private *self, Evas_Object* parent, Eo
    assert(self);
    assert(parent);
    assert(model);
-   eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_LIST_CLASS), eo2_constructor());
+   /* eo2_do_super(obj, EO3_GET_CLASS(ELM_VIEW_LIST_CLASS), eo2_constructor()); */
    self->list = elm_genlist_add(parent);
    self->model = model;
 
@@ -163,4 +163,4 @@ _elm_view_list_evas_object_get(Eo *obj, Elm_View_List_Private *self)
    return self->list;
 }
 
-EO3_DEFINE_CLASS(ELM_VIEW_LIST_CLASS, ((EO3_BASE_CLASS)), Elm_View_List_Private)
+/* EO3_DEFINE_CLASS(ELM_VIEW_LIST_CLASS, ((EO3_BASE_CLASS)), Elm_View_List_Private) */

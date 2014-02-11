@@ -20,7 +20,7 @@ EAPI Elm_Model_List_Index elm_model_list_item_append(Eina_Value* value);
  *
  * @param value The value to be prepended to the list.
  * @return The position in the list where the value was inserted.
- * 
+ *
  * Prepend @p value to this list model.
  */
 EAPI Elm_Model_List_Index elm_model_list_item_prepend(Eina_Value* value);
@@ -29,7 +29,7 @@ EAPI Elm_Model_List_Index elm_model_list_item_prepend(Eina_Value* value);
 /**
  * @def elm_model_list_item_append_relative
  * @since 1.8
- * 
+ *
  * @param index The position from where the new item will be appended.
  * @param value The value to be appended.
  * @return The position in the list where the value was inserted.
@@ -57,7 +57,7 @@ EAPI Elm_Model_List_Index elm_model_list_item_prepend_relative(Elm_Model_List_In
  * @since 1.8
  *
  * @param The index the item to delete.
- * 
+ *
  * Delete the item at position @p index.
  */
 EAPI void elm_model_list_item_delete(Elm_Model_List_Index index);
@@ -65,27 +65,27 @@ EAPI void elm_model_list_item_delete(Elm_Model_List_Index index);
 /**
  * @def elm_model_list_value_set
  * @since 1.8
- * 
+ *
  * @param index The position where the value will be written to.
  * @param value The value to write, as a pointer to an @ref Eina_Value.
- * 
+ *
  * Set a value to an item of this list model.
  */
 EAPI void elm_model_list_value_set(Elm_Model_List_Index index, Eina_Value* value);
 
-/**
- * @brief EO3 Interface Declaration
- */
-#define ELM_MODEL_LIST_CLASS elm_model_list                                                           \
- , function(elm_model_list_item_append, _model_list_item_append, Elm_Model_List_Index, Eina_Value*)   \
- , function(elm_model_list_item_prepend, _model_list_item_prepend, Elm_Model_List_Index, Eina_Value*) \
- , function(elm_model_list_item_append_relative, _model_list_item_append_relative,                    \
-            Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value*)                                  \
- , function(elm_model_list_item_prepend_relative, _model_list_item_prepend_relative,                  \
-            Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value*)                                  \
- , function(elm_model_list_item_delete, _model_list_item_delete, void, Elm_Model_List_Index)
+/* /\** */
+/*  * @brief EO3 Interface Declaration */
+/*  *\/ */
+/* #define ELM_MODEL_LIST_CLASS elm_model_list                                                           \ */
+/*  , function(elm_model_list_item_append, _model_list_item_append, Elm_Model_List_Index, Eina_Value*)   \ */
+/*  , function(elm_model_list_item_prepend, _model_list_item_prepend, Elm_Model_List_Index, Eina_Value*) \ */
+/*  , function(elm_model_list_item_append_relative, _model_list_item_append_relative,                    \ */
+/*             Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value*)                                  \ */
+/*  , function(elm_model_list_item_prepend_relative, _model_list_item_prepend_relative,                  \ */
+/*             Elm_Model_List_Index, Elm_Model_List_Index, Eina_Value*)                                  \ */
+/*  , function(elm_model_list_item_delete, _model_list_item_delete, void, Elm_Model_List_Index) */
 /* , function(elm_model_list_value_set, void, Elm_Model_List_Index, Eina_Value*) */
 
-EO3_DECLARE_CLASS(ELM_MODEL_LIST_CLASS)
+/* EO3_DECLARE_CLASS(ELM_MODEL_LIST_CLASS) */
 
 #endif // ELM_MODEL_LIST_MUTABLE_H

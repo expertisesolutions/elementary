@@ -80,7 +80,7 @@ _elm_view_grid_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    assert(model);
 
    eo_do_super(obj, ELM_OBJ_VIEW_GRID_CLASS, eo_constructor());
-   
+
    self->list = elm_genlist_add(parent);
    self->model = model;
    _update_grid_widget(self);
@@ -99,7 +99,7 @@ _elm_view_grid_destructor(Eo *obj, void *class_data, va_list *list EINA_UNUSED)
    Elm_View_Grid_Private *self = class_data;
    assert(self);
    assert(obj);
-   eo_do_super(obj, MY_CLASS, eo_destructor()); 
+   eo_do_super(obj, MY_CLASS, eo_destructor());
    //XXX destruct evas obj?
 }
 
@@ -120,7 +120,7 @@ _class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_grid_add),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_grid_destructor),
-      EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET), _elm_view_grid_evas_object_get), 
+      EO_OP_FUNC(ELM_OBJ_VIEW_GRID_CLASS_ID(ELM_OBJ_VIEW_GRID_SUB_ID_EVAS_OBJECT_GET), _elm_view_grid_evas_object_get),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -133,7 +133,7 @@ const Eo_Op_Description op_descs[] = {
 };
 
 static Eo_Class_Description class_descs = {
-   EO_VERSION, 
+   EO_VERSION,
    "Elm View Grid",
    EO_CLASS_TYPE_REGULAR_NO_INSTANT,
    EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_VIEW_GRID_BASE_ID, op_descs, ELM_OBJ_VIEW_GRID_SUB_ID_LAST),
@@ -144,4 +144,3 @@ static Eo_Class_Description class_descs = {
 };
 
 EO_DEFINE_CLASS(elm_obj_view_grid_class_get, &class_descs, EO_BASE_CLASS, NULL);
-
