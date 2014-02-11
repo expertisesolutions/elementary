@@ -319,6 +319,7 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
    _update_tree_widget(self);
 
+   //TODO: check this - compiler warnings
    eo_do(self->model, eo_event_callback_add(ELM_MODEL_TREE_CONST_SELECT_EVT, _model_tree_selected_cb, self));
    eo_do(self->model, eo_event_callback_add(TREE_CHILD_APPEND_EVT, _model_tree_child_append_cb, self));
 /*

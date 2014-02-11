@@ -70,26 +70,8 @@ static void _eio_error_cb(void *data, Eio_File *handler, int error);
 static Eina_Bool _eio_event_cb(void *data, int type, void *event);
 static void _eio_value_init(Eina_Value *value, const char *filepath, Eo *object);
 
-#if 0
-#define MODEL_FILE_TREE_CLASS model_file_tree                                                   \
- , constructor(model_file_tree_constructor, _model_file_tree_constructor, const char*)          \
- , destructor(_model_file_tree_destructor)                                                      \
- , function_override(elm_model_tree_child_append, _model_file_tree_child_append)                \
- , function(model_file_tree_list, _model_file_tree_list, Eina_Bool, Elm_Model_Tree_Path*)       \
- , function(model_file_tree_value_new, _model_file_tree_value_new, Eina_Value*, const char*)
 
-// TODO: implement model_file_tree_mode_set() and model_file_tree_mode_get().
-
-EO3_DECLARE_CLASS(MODEL_FILE_TREE_CLASS)
-EO3_DEFINE_CLASS(MODEL_FILE_TREE_CLASS, ((ELM_MODEL_TREE_CLASS)), Model_File_Tree)
-#endif
-
-/**
- * <ccarvalho>
- *
- */
 #define __MODEL_FILE_TREE_CLASS
-
 #ifdef __MODEL_FILE_TREE_CLASS
 
 EAPI Eo_Op MODEL_FILE_TREE_CLASS_BASE_ID = 0;
@@ -104,7 +86,6 @@ enum {
 };
 
 #define MODEL_FILE_TREE_CLASS_ID(sub_id) (MODEL_FILE_TREE_CLASS_BASE_ID + sub_id)
-
 #define model_file_tree_constructor(filepath) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(const char *, filepath)
 //#define model_file_tree_destructor() MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_DESTRUCTOR)
 #define model_file_tree_list(model, node, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), EO_TYPECHECK(Model_File_Tree *, model), EO_TYPECHECK(Elm_Model_Tree_Path *, node), EO_TYPECHECK(Eina_Bool *, ret)
@@ -311,10 +292,9 @@ _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_constructor());
 
    eo_do(obj, model_file_tree_value_new(NULL, filepath, &value)); //ccarvalho
-   //printf("%d:value=%p\n", __LINE__, value);
-   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(NULL, filepath, value));
-   //here
 
+   //TODO: check this
+   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(NULL, filepath, value));
 
    // @see elm_model_tree_const.h
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_constructor(value)); //ccarvalho
@@ -418,9 +398,7 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    ptr->ftype = info->type;
 
    eo_do(tuple->object, elm_model_tree_child_append(NULL, tuple->node, value, &child)); //ccarvalho
-   //printf("+(%s): %s\n", elm_model_tree_path_to_string(child),
-   //info->path);
-   printf("XXX-100\n");
+   printf("+(%s): %s\n", elm_model_tree_path_to_string(child),info->path);
 }
 
 static Eina_Bool
@@ -584,7 +562,6 @@ typedef struct _Model_File_Grid_Data Model_File_Grid_Data;
 Evas_Object*
 _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part)
 {
-   printf("### %d\n", __LINE__); // XXX
    Evas_Object *ic = elm_icon_add(obj);
    Eina_Value *value = NULL;
 

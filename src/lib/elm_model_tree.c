@@ -29,9 +29,6 @@ typedef struct _Elm_Model_Tree Elm_Model_Tree;
 /*
  * Const Class definition
  */
-
-//static void
-//_model_tree_constructor(Eo *object, Elm_Model_Tree *model, Eina_Value *value)
 static void
 _model_tree_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
@@ -49,8 +46,6 @@ _model_tree_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    eina_lock_new(&model->lock);
 }
 
-//static void
-//_model_tree_destructor(Eo *object, Elm_Model_Tree *model)
 static void
 _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA_UNUSED)
 {
@@ -65,8 +60,6 @@ _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA
    eo_do_super(obj, MY_CONST_CLASS, eo_destructor());
 }
 
-//static Eina_Bool
-//_model_tree_select(Eo *object, Elm_Model_Tree *model, Elm_Model_Tree_Path *path)
 static void
 _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
@@ -80,17 +73,12 @@ _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    node = _tree_node_find(model->root, path);
    model->selected = node ? path : NULL;
    eina_lock_release(&model->lock);
-   //eo2_do(obj, elm_model_tree_select_callback_call(path));
    eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECT_EVT, ret, NULL));
 
    if (node) *ret = EINA_TRUE;
    else *ret = EINA_FALSE;
 }
 
-//static Eina_Value*
-//_model_tree_value_get(Eo *object EINA_UNUSED,
-//                      Elm_Model_Tree *model,
-//                      Elm_Model_Tree_Path *path)
 static void
 _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
@@ -106,20 +94,21 @@ _model_tree_value_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    eina_lock_take(&model->lock);
 
    node = _tree_node_find(model->root, path);
-   EINA_SAFETY_ON_NULL_GOTO(node, exit_err);
+   if(!node)
+     {
+        eina_lock_release(&model->lock);
+        EINA_SAFETY_ON_NULL_GOTO(NULL, exit_err);
+     }
+
    *value = _tree_node_value_get(node);
 
    eina_lock_release(&model->lock);
    return;
 
- exit_err:
+exit_err:
    *value = NULL;
 }
 
-//static Eina_List*
-//_model_tree_children_get(Eo *object EINA_UNUSED,
-//                         Elm_Model_Tree *model,
-//                         Elm_Model_Tree_Path *path)
 static void
 _model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
@@ -128,8 +117,6 @@ _model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    *ret = NULL; //TODO: Implement this
 }
 
-//static Elm_Model_Tree_Path*
-//_model_tree_selected_get(Eo *object EINA_UNUSED, Elm_Model_Tree *model)
 static void
 _model_tree_selected_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
@@ -208,7 +195,6 @@ static Eo_Class_Description model_tree_const_class_descs = {
    NULL
 };
 
-//EO3_DEFINE_CLASS(MY_CONST_CLASS, ((EO3_BASE_CLASS)), Elm_Model_Tree)
 EO_DEFINE_CLASS(elm_obj_model_tree_const_class_get, &model_tree_const_class_descs, EO_BASE_CLASS, NULL);
 
 
@@ -234,12 +220,12 @@ EAPI const Eo_Event_Description _TREE_VALUE_SET_EVT =
  */
 //TODO/FIXME/XXX
 static void
-_model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
+_model_tree_child_append(Eo *obj, void *class_data, va_list *list)
 {
    Elm_Model_Tree_Node *node, *parent;
-   Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
+   Elm_Model_Tree *model = (Elm_Model_Tree *)eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
 
-   (void) va_arg(*list, void *);
+   void *unused = va_arg(*list, void *); //TODO: check this
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **);
@@ -254,7 +240,7 @@ _model_tree_child_append(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_l
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
 
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, ret, NULL));
+   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
 
  exit_err:
    eina_lock_release(&model->lock);
@@ -337,7 +323,7 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
 void
 _model_tree_value_set_evt(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
 {
-   // TODO/FIXME <ccarvalho>
+   //TODO: Implement 
 }
 
 static void
