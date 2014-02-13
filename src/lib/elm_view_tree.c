@@ -57,13 +57,13 @@ _get_parent_item(Eina_List *items, Elm_Model_Tree_Path *path)
 }
 
 static Eina_Bool
-_model_tree_selected_cb(void *data EINA_UNUSED, Elm_Model_Tree_Path *path EINA_UNUSED)
+_model_tree_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED) 
 {
    return EINA_TRUE; // TODO implement
 }
 
 static Eina_Bool
-_model_tree_child_append_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info) // signature change
+_model_tree_child_append_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
 
    Elm_Model_Tree_Path *path = (Elm_Model_Tree_Path*)event_info;
@@ -288,9 +288,9 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
 
+   Elm_View_Tree_Private *self = class_data;
    Evas_Object *parent = va_arg(*list, Evas_Object *);
    Eo *model = va_arg(*list, Eo *);
-   Elm_View_Tree_Private *self = class_data;
 
    EINA_SAFETY_ON_NULL_RETURN(self);
    EINA_SAFETY_ON_NULL_RETURN(model);
@@ -318,6 +318,7 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    evas_object_smart_callback_add(self->list, "contracted", _contracted_cb, self);
 
    _update_tree_widget(self);
+
 
    //TODO: check this - compiler warnings
    eo_do(self->model, eo_event_callback_add(ELM_MODEL_TREE_CONST_SELECT_EVT, _model_tree_selected_cb, self));
@@ -356,7 +357,6 @@ _elm_view_tree_mode_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Elm_View_Tree_Mode mode = va_arg(*list, Elm_View_Tree_Mode);
 
    EINA_SAFETY_ON_NULL_RETURN(self);
-   EINA_SAFETY_ON_NULL_RETURN(mode);
 
    if (self->mode != mode)
      {
