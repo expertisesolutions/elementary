@@ -89,7 +89,7 @@ enum {
 #define model_file_tree_constructor(filepath) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(const char *, filepath)
 //#define model_file_tree_destructor() MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_DESTRUCTOR)
 #define model_file_tree_list(model, node, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), EO_TYPECHECK(Model_File_Tree *, model), EO_TYPECHECK(Elm_Model_Tree_Path *, node), EO_TYPECHECK(Eina_Bool *, ret)
-#define model_file_tree_value_new(model, path, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_VALUE_NEW), EO_TYPECHECK(Model_File_Tree *, model), EO_TYPECHECK(const char *, path), EO_TYPECHECK(Eina_Value **, ret)
+#define model_file_tree_value_new(path, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_VALUE_NEW), EO_TYPECHECK(const char *, path), EO_TYPECHECK(Eina_Value **, ret)
 
 
 #define MODEL_FILE_TREE_CLASS model_file_tree_class_get()
@@ -256,7 +256,6 @@ _model_file_tree_value_new(Eo *obj, void *class_data, va_list *list)
 {
    Model_File_Value *ptr = NULL;
 
-   (void)va_arg(*list, Model_File_Tree *);  //unused
    const char *path = va_arg(*list, const char *);
    Eina_Value **value = va_arg(*list, Eina_Value **); //return value
 
@@ -291,7 +290,7 @@ _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
 
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_constructor());
 
-   eo_do(obj, model_file_tree_value_new(NULL, filepath, &value)); //ccarvalho
+   eo_do(obj, model_file_tree_value_new(filepath, &value)); //ccarvalho
 
    //TODO: check this
    //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(NULL, filepath, value));
@@ -377,7 +376,6 @@ fail:
    *child = NULL;
 
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 
 static void
@@ -391,7 +389,7 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    EINA_SAFETY_ON_NULL_RETURN(tuple);
    EINA_SAFETY_ON_NULL_RETURN(info);
 
-   eo_do(tuple->object, model_file_tree_value_new(NULL, info->path, &value)); // ccarvalho
+   eo_do(tuple->object, model_file_tree_value_new(info->path, &value)); // ccarvalho
    EINA_SAFETY_ON_NULL_RETURN(value);
 
    ptr = eina_value_memory_get(value);
