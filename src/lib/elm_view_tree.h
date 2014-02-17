@@ -25,6 +25,8 @@ enum {
 };
 
 typedef Evas_Object  *(*Elm_View_Tree_Content_Get_Cb)(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const char *part);
+typedef Eina_Bool (*Elm_View_Tree_Expanded_Get_Cb)(Eo *model, Elm_Model_Tree_Path *path);
+
 
 /**
  * @def base class id touple
