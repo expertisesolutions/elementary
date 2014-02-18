@@ -89,15 +89,13 @@ _expanded_is(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
    if (self->get_expanded_cb)
      return self->get_expanded_cb(self->model, path);
 
-   //FIXME: carlos eo2
-   //eo2_do(self->model, cc = elm_model_tree_children_count (path));
+   eo_do(self->model, elm_model_tree_children_count(NULL, path, &cc));
    return cc > 0;
 }
 
 static void
 _append_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, View_Tree_ItemData *pdata)
 {
-
    View_Tree_ItemData *idata;
    Elm_Genlist_Item_Type type = ELM_GENLIST_ITEM_NONE;
    Elm_Object_Item *pitem = NULL;
@@ -157,8 +155,7 @@ _append_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, View_Tree_I
    self->items = eina_list_append(self->items, idata);
 }
 
-////////////////////////////////////////////////////////////////////////////
-static inline void
+static void
 _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
 {
    //   Eina_List *l, *cl = NULL;
@@ -168,11 +165,11 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
    EINA_SAFETY_ON_NULL_RETURN(self);
    EINA_SAFETY_ON_NULL_RETURN(path);
 
-   //carlos
+   printf("%s:%d\n", __FUNCTION__, __LINE__);
    data = _get_data(self->items, path);
+   printf("%s:%d\n", __FUNCTION__, __LINE__);
    if(!data)
      {
-        //carlos
         _append_path(self, path, _get_parent_data(self, path));
         return;
      }
@@ -188,6 +185,7 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
    */
 }
 
+/* --- Tree Model Callbacks --- */
 static Eina_Bool
 _model_tree_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED) 
 {
@@ -205,7 +203,7 @@ _model_tree_child_append_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Desc
    return EINA_TRUE;
 }
 
-/*/////////////////////////////////////////////////////////////////////////////////
+/*
 static Eina_Bool
 _model_node_deleted_cb(void *data, Elm_Model_Tree_Path path)
 {
@@ -223,9 +221,9 @@ _model_reordered_cb(void *data)
 {
    return EINA_TRUE;
 }
-*//////////////////////////////////////////////////////////////////////////////////
+*/
 
-////////////////////genlist callbacks
+/* --- Genlist Callbacks --- */
 static void
 _item_del(void *data, Evas_Object *obj EINA_UNUSED)
 {
@@ -318,8 +316,7 @@ _expanded_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info)
 
    EINA_SAFETY_ON_NULL_RETURN(idata);
 
-   //carlos
-   //eo2_do(self->model, children = elm_model_tree_children_get (idata->path));
+   eo_do(self->model, elm_model_tree_children_get(NULL, idata->path, &children));
    EINA_SAFETY_ON_NULL_RETURN(children);
    idata->children = eina_list_count(children);
 
@@ -426,7 +423,7 @@ _elm_view_tree_mode_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    if (self->mode != mode)
      {
         self->mode = mode;
-        //_update_tree_widget(self);
+        //_update_path(self, NULL);
      }
 }
 
@@ -438,7 +435,6 @@ _elm_view_tree_getcontent_set(Eo *obj EINA_UNUSED, void *class_data, va_list *li
 }
 
 static void
-//_elm_view_tree_getexpanded_set(Eo *obj EINA_UNUSED, Elm_View_Tree_Private *self, Elm_View_Tree_Expanded_Get_Cb get_expanded_cb)
 _elm_view_tree_getexpanded_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Tree_Private *self = class_data;
