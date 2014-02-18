@@ -175,3 +175,46 @@ _tree_node_value_set(Elm_Model_Tree_Node *node, Eina_Value *value)
    node->value = value;
    return EINA_TRUE;
 }
+
+Eina_List*
+_tree_node_children_path_get(Elm_Model_Tree_Node *parent)
+{
+   Elm_Model_Tree_Node *ptr;
+   Elm_Model_Tree_Path *path;
+   Eina_List *cPath = NULL;
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent, NULL);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent->first_child, NULL);
+
+   for(ptr = parent->first_child;
+       ptr != NULL;
+       ptr = ptr->next_sibling)
+     {
+        path = _tree_node_path(ptr);
+        if (path != NULL)
+          cPath = eina_list_append(cPath, path);
+     }
+
+   return cPath;
+}
+
+unsigned int
+_tree_node_children_count(Elm_Model_Tree_Node *parent)
+{
+   Elm_Model_Tree_Node *ptr;
+   unsigned int n = 0;
+
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent, 0);
+   
+   //TODO/FIXME: check this
+   EINA_SAFETY_ON_NULL_RETURN_VAL(parent->first_child, 0);
+
+   for(ptr = parent->first_child;
+       ptr != NULL;
+       ptr = ptr->next_sibling)
+     {
+        n++;
+     }
+
+   return n;
+}

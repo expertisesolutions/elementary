@@ -72,4 +72,18 @@ Eina_Value* _tree_node_value_get(Elm_Model_Tree_Node *node);
  */
 Eina_Bool _tree_node_value_set(Elm_Model_Tree_Node *node, Eina_Value *value);
 
+/**
+ * @brief
+ * @param
+ * @return
+ */
+Eina_List* _tree_node_children_path_get(Elm_Model_Tree_Node *parent);
+
+/**
+ * @brief
+ * @param
+ * @return
+ */
+unsigned int _tree_node_children_count(Elm_Model_Tree_Node *parent);
+
 #endif // ELM_MODEL_TREE_PRIVATE_H
