@@ -10,6 +10,7 @@ enum {
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_SELECT, //event
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_VALUE_GET,
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_GET,
+     ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_COUNT,
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_SELECTED_GET,
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_RELEASE,
      ELM_OBJ_MODEL_TREE_CONST_SUB_ID_LAST
@@ -46,13 +47,29 @@ enum {
  * @def elm_model_tree_children_get
  * @since 1.8
  *
- * @param path The node from which @p children is listed
- * @return The a list children path, as Eina_list of Elm_Model_Tree_Path.
+ * @param[in] eo object
+ * @param[in] path the node from which @p children is listed
+ * @param[out] the a list children path, as eina_list of elm_model_tree_path.
  *
- * Get the children of the node pointed by @p path.
+ * get the children of the node pointed by @p path.
  *
  */
-#define elm_model_tree_children_get(path, ret) ELM_OBJ_MODEL_TREE_CONST_ID(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_GET), EO_TYPECHECK(Elm_Model_Tree_Path *, path), EO_TYPECHECK(Eina_List **, ret) 
+#define elm_model_tree_children_get(unused, path, ret) ELM_OBJ_MODEL_TREE_CONST_ID(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_GET), EO_TYPECHECK(Eo *, unused), EO_TYPECHECK(Elm_Model_Tree_Path *, path), EO_TYPECHECK(Eina_List **, ret) 
+
+
+/**
+ * @def elm_model_tree_children_count
+ * @since 1.8
+ *
+ * @param[in] eo object
+ * @param[in] path the node from which @p children is listed
+ * @param[out] number of children.
+ *
+ * Count number of children of the node pointed by path.
+ *
+ */
+#define elm_model_tree_children_count(unused, path, ret) ELM_OBJ_MODEL_TREE_CONST_ID(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_COUNT), EO_TYPECHECK(Eo *, unused), EO_TYPECHECK(Elm_Model_Tree_Path *, path), EO_TYPECHECK(unsigned int *, ret) 
+
 
 /**
  * @def elm_model_tree_selected_get
