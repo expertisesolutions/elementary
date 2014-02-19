@@ -6,6 +6,13 @@
 #include "elm_priv.h"
 #include <assert.h>
 
+/**
+ * @brief Elm View List Class 
+ *
+ */
+#define MY_VIEW_LIST_CLASS ELM_OBJ_VIEW_LIST_CLASS
+EAPI Eo_Op ELM_OBJ_VIEW_LIST_BASE_ID = 0;
+
 struct _Elm_View_List_Private
 {
    Evas_Object *list;
@@ -79,7 +86,8 @@ _item_label_get(void *data, Evas_Object *obj, const char *part)
 
    if (!strcmp(part, "elm.text"))
    {
-      eo2_do(self->model, value = elm_model_list_value_get(idata->index));
+      //TODO/FIXME/XXX -  elm_model_list_const
+      //eo_do(self->model, elm_model_list_value_get(idata->index, &value));
       label = eina_value_to_string(value); //XXX get value type before??
    }
 
@@ -108,7 +116,8 @@ _update_list_widget(Elm_View_List_Private *self)
    Elm_Model_List_Index i;
    long len = 0;
    assert(self);
-   eo2_do(self->model, len = elm_model_list_len());
+   //TODO/FIXME/XXX - elm_model_list_const
+   //eo2_do(self->model, len = elm_model_list_len());
 
    for (i = 0; i < len; i++) {
       View_List_ItemData *data = malloc(sizeof(View_List_ItemData));
@@ -120,9 +129,18 @@ _update_list_widget(Elm_View_List_Private *self)
    }
 }
 
+
+/**
+ * @brief Elm View List Class impl.
+ *
+ */
 static void
-_elm_view_list_add(Eo *obj, Elm_View_List_Private *self, Evas_Object* parent, Eo* model)
+_elm_view_list_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_List_Private *self = (Elm_View_List_Private *)class_data;
+   Evas_Object *parent = va_arg(*list, Evas_Object *);
+   Eo *model = va_arg(*list, Eo *);
+
    assert(self);
    assert(parent);
    assert(model);
@@ -148,10 +166,12 @@ _elm_view_list_add(Eo *obj, Elm_View_List_Private *self, Evas_Object* parent, Eo
 }
 
 static void
-_elm_view_list_destructor(Eo *obj, Elm_View_List_Private *self)
+_elm_view_list_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Elm_View_List_Private *self = (Elm_View_List_Private *)class_data;
    assert(self);
    assert(obj);
+   eo_do_super(obj, MY_VIEW_LIST_CLASS, eo_destructor());
    //XXX destruct evas obj?
 }
 
@@ -162,5 +182,36 @@ _elm_view_list_evas_object_get(Eo *obj, Elm_View_List_Private *self)
    assert(obj);
    return self->list;
 }
+
+static void
+_view_list_class_constructor(Eo_Class *klass)
+{
+   const Eo_Op_Func_Description func_descs[] = {
+      EO_OP_FUNC(ELM_OBJ_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_LIST_ADD), _elm_view_list_add),
+      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_list_destructor),
+      EO_OP_FUNC_SENTINEL
+   };
+
+   eo_class_funcs_set(klass, func_descs);
+}
+
+
+static const Eo_Op_Description op_descs[] = {
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_LIST_ADD, "Add new list on parent."),
+   EO_OP_DESCRIPTION_SENTINEL
+};
+
+static Eo_Class_Description model_tree_const_class_descs = {
+   EO_VERSION,
+   "Model Tree",
+   EO_CLASS_TYPE_REGULAR,
+   EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_VIEW_LIST_BASE_ID, op_descs, ELM_OBJ_VIEW_LIST_SUB_ID_LIST_LAST),
+   NULL,
+   sizeof(Elm_View_List_Private),
+   _view_list_class_constructor,
+   NULL
+};
+
+EO_DEFINE_CLASS(elm_obj_view_list_class_get, &model_tree_const_class_descs, EO_BASE_CLASS, NULL);
 
 /* EO3_DEFINE_CLASS(ELM_VIEW_LIST_CLASS, ((EO3_BASE_CLASS)), Elm_View_List_Private) */
