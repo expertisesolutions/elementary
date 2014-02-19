@@ -12,26 +12,33 @@
 /// Const interface ///
 
 static void
-_model_list_item_select(Elm_Model_List_Index index)
+_model_list_item_select(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
 {
+   return;
 }
 
-static Elm_Model_List_Index
-_model_list_selected_get()
+static void
+_model_list_selected_get(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   return (Elm_Model_List_Index)-1;
+   Elm_Model_List_Index *index = va_arg(*list, Elm_Model_List_Index *);
+   EINA_SAFETY_ON_NULL_RETURN(index);
+   *index = (Elm_Model_List_Index)-1; 
 }
 
-static long
-_model_list_len()
+static void
+_model_list_len(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   return 0;
+   long *len = va_arg(*list, long *);
+   EINA_SAFETY_ON_NULL_RETURN(len);
+   *len = 0L;
 }
 
-static Eina_Value*
-_model_list_value_get(Elm_Model_List_Index index)
+static void
+_model_list_value_get(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list)
 {
-   return NULL;
+   Eina_Value **value = va_arg(*list, Eina_Value **);
+   EINA_SAFETY_ON_NULL_RETURN(*value);
+   *value = EINA_FALSE;
 }
 
 /// Mutable interface ///
