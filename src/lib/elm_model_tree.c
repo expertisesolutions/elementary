@@ -263,7 +263,6 @@ _model_tree_child_append(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **); //param[out]
-   Elm_Model_Tree_Path *evtarg = *ret;
 
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
@@ -272,11 +271,10 @@ _model_tree_child_append(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    node = _tree_node_append(value, parent);
    EINA_SAFETY_ON_NULL_GOTO(parent, release);
    EINA_SAFETY_ON_NULL_GOTO(node, release);
-   evtarg = _tree_node_path(node);
+   *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
 
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, evtarg, NULL));
-   *ret = evtarg;
+   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
    return;
 
 release:
@@ -293,7 +291,6 @@ _model_tree_child_prepend(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **); //param[out]
-   Elm_Model_Tree_Path *evtarg = *ret;
 
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
@@ -302,11 +299,10 @@ _model_tree_child_prepend(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    EINA_SAFETY_ON_NULL_GOTO(parent, release);
    node = _tree_node_prepend(value, parent);
    EINA_SAFETY_ON_NULL_GOTO(node, release);
-   evtarg = _tree_node_path(node);
+   *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
 
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, evtarg, NULL));
-   *ret = evtarg;
+   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
    return;
 
 release:
@@ -337,7 +333,7 @@ _model_tree_delete(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    eo_do(obj, elm_model_tree_release(path));
 
    //TODO/FIXME/XXX 
-   //eo_do(obj, eo_event_callback_call(TREE_DELETE_EVT, path, NULL));
+   eo_do(obj, eo_event_callback_call(TREE_DELETE_EVT, path, NULL));
 }
 
 static void
@@ -365,12 +361,6 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
    //eo_do(obj, eo_event_callback_call(TREE_VALUE_SET_EVT, "xxx", NULL)); //new eo
 }
 
-void
-_model_tree_value_set_evt(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
-{
-   //TODO/FIXME/XXX: is this necessary? 
-}
-
 static void
 _mutable_class_constructor(Eo_Class *klass)
 {
@@ -381,7 +371,6 @@ _mutable_class_constructor(Eo_Class *klass)
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE), _model_tree_child_prepend_relative),
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE), _model_tree_delete),
       EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), _model_tree_value_set),
-      EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT), _model_tree_value_set_evt),
       EO_OP_FUNC_SENTINEL
    };
 
