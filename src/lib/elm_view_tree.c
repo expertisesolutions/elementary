@@ -442,7 +442,7 @@ _elm_view_tree_getexpanded_set(Eo *obj EINA_UNUSED, void *class_data, va_list *l
 }
 
 static void
-_class_constructor(Eo_Class *klass)
+_view_tree_class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_tree_destructor),
@@ -457,7 +457,7 @@ _class_constructor(Eo_Class *klass)
    eo_class_funcs_set(klass, func_descs);
 }
 
-static const Eo_Op_Description op_descs[] = {
+static const Eo_Op_Description view_tree_op_descs[] = {
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETEXPANDED_SET, "Set expanded callback"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"),
@@ -466,16 +466,16 @@ static const Eo_Op_Description op_descs[] = {
    EO_OP_DESCRIPTION_SENTINEL
 };
 
-static Eo_Class_Description class_descs = {
+static Eo_Class_Description view_tree_class_descs = {
    EO_VERSION,
    "View Tree",
    EO_CLASS_TYPE_REGULAR,
-   EO_CLASS_DESCRIPTION_OPS(&ELM_VIEW_TREE_BASE_ID, op_descs, EVT_SUB_ID_TREE_LAST),
+   EO_CLASS_DESCRIPTION_OPS(&ELM_VIEW_TREE_BASE_ID, view_tree_op_descs, EVT_SUB_ID_TREE_LAST),
    NULL,
    sizeof(Elm_View_Tree_Private),
-   _class_constructor,
+   _view_tree_class_constructor,
    NULL
 };
 
 
-EO_DEFINE_CLASS(elm_view_tree_class_get, &class_descs, EO_BASE_CLASS, NULL);
+EO_DEFINE_CLASS(elm_view_tree_class_get, &view_tree_class_descs, EO_BASE_CLASS, NULL);
