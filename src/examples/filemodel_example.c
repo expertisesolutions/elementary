@@ -51,18 +51,10 @@ typedef struct _Model_File_Tuple Model_File_Tuple;
 static void _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list);
 
 //static void _model_file_tree_constructor(Eo*, Model_File_Tree*, const char*);
-static void _model_file_tree_destructor(Eo *obj, void *class_data, va_list *list);
-
-//static Elm_Model_Tree_Path* _model_file_tree_child_append(Eo*, Model_File_Tree*, Elm_Model_Tree_Path*, Eina_Value*);
+//static void _model_file_tree_destructor(Eo *obj, void *class_data, va_list *list);
 static void _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list);
-
-//static Eina_Bool _model_file_tree_list(Eo*, Model_File_Tree*, Elm_Model_Tree_Path*);
-
 static void _model_file_tree_list(Eo *obj, void *class_data, va_list *list);
-//static Eina_Value* _model_file_tree_value_new(Eo*, Model_File_Tree*, const char*);
-
 static void _model_file_tree_value_new(Eo *obj, void *class_data, va_list *list);
-
 static void _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info);
 static Eina_Bool _eio_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info);
 static void _eio_done_cb(void *data, Eio_File *handler);
@@ -100,7 +92,7 @@ _class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
         EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _model_file_tree_constructor),
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _model_file_tree_destructor),
+        //EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _model_file_tree_destructor),
         EO_OP_FUNC(MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), _model_file_tree_list),
         EO_OP_FUNC(MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_VALUE_NEW), _model_file_tree_value_new),
         EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), _model_file_tree_child_append), // override
@@ -660,4 +652,5 @@ elm_main(int argc, char **argv)
    eo_unref(_tree_m);
    return 0;
 }
+
 ELM_MAIN()
