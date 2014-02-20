@@ -438,8 +438,7 @@ static void
 _elm_view_tree_getexpanded_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Tree_Private *self = class_data;
-   Elm_View_Tree_Expanded_Get_Cb get_expanded_cb = va_arg(*list, Elm_View_Tree_Expanded_Get_Cb);
-   self->get_expanded_cb = get_expanded_cb;
+   self->get_expanded_cb = va_arg(*list, Elm_View_Tree_Expanded_Get_Cb);
 }
 
 static void
@@ -448,6 +447,7 @@ _class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_tree_destructor),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETCONTENT_SET), _elm_view_tree_getcontent_set),
+      EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_GETEXPANDED_SET), _elm_view_tree_getexpanded_set),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_MODE_SET), _elm_view_tree_mode_set),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_ADD), _elm_view_tree_add),
       EO_OP_FUNC(ELM_VIEW_ID(EVT_SUB_ID_TREE_EVAS_OBJECT_GET), _elm_view_tree_evas_object_get),
@@ -459,6 +459,7 @@ _class_constructor(Eo_Class *klass)
 
 static const Eo_Op_Description op_descs[] = {
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETCONTENT_SET, "Set content callback"),
+   EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_GETEXPANDED_SET, "Set expanded callback"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_MODE_SET, "Set view mode"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_ADD, "Setup tree object"),
    EO_OP_DESCRIPTION(EVT_SUB_ID_TREE_EVAS_OBJECT_GET, "Return Evas object list"),

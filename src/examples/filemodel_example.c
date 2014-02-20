@@ -579,6 +579,19 @@ _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const ch
 
 }
 
+Eina_Bool
+_expanded_get_cb(Eo *model, Elm_Model_Tree_Path *path)
+{
+   Eina_Value *value = NULL;
+   Model_File_Value *ptr;
+
+   eo_do(model, elm_model_tree_value_get(path, &value));
+   ptr = eina_value_memory_get(value);
+   return (ptr && ptr->ftype == EINA_FILE_DIR);
+}
+
+
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -618,6 +631,7 @@ elm_main(int argc, char **argv)
 
    eo_do(_tree_v, elm_view_tree_evas_object_get(&widget));
    eo_do(_tree_v, elm_view_tree_getcontent_set(_content_get_cb));
+   eo_do(_tree_v, elm_view_tree_getexpanded_set(_expanded_get_cb));
 
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
@@ -642,6 +656,7 @@ elm_main(int argc, char **argv)
    eio_shutdown();
    ecore_shutdown();
 
+   eo_unref(_tree_v);
    eo_unref(_tree_m);
    return 0;
 }
