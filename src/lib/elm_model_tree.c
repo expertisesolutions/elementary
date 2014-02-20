@@ -10,7 +10,7 @@
 
 #include <assert.h>
 
-#define MY_CONST_CLASS ELM_OBJ_MODEL_TREE_CONST_CLASS
+#define MY_MODEL_TREE_CONST_CLASS ELM_OBJ_MODEL_TREE_CONST_CLASS
 EAPI Eo_Op ELM_OBJ_MODEL_TREE_CONST_BASE_ID = 0;
 
 EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECT_EVT =
@@ -36,7 +36,7 @@ _model_tree_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Elm_Model_Tree *model = class_data;
    Eina_Value *value = va_arg(*list, Eina_Value *);
 
-   eo_do_super(obj, MY_CONST_CLASS, eo_constructor());
+   eo_do_super(obj, MY_MODEL_TREE_CONST_CLASS, eo_constructor());
 
    EINA_SAFETY_ON_NULL_RETURN(model);
    root = _tree_node_append(value, NULL);
@@ -57,7 +57,7 @@ _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA
    elm_model_tree_path_free(model->selected);
    eina_lock_release(&model->lock);
    eina_lock_free(&model->lock);
-   eo_do_super(obj, MY_CONST_CLASS, eo_destructor());
+   eo_do_super(obj, MY_MODEL_TREE_CONST_CLASS, eo_destructor());
 }
 
 static void
@@ -168,7 +168,7 @@ _model_tree_release(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
 
-   Elm_Model_Tree *model = eo_data_scope_get(obj, MY_CONST_CLASS);
+   Elm_Model_Tree *model = eo_data_scope_get(obj, MY_MODEL_TREE_CONST_CLASS);
    if(path == NULL) return;
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
@@ -217,7 +217,7 @@ static const Eo_Event_Description *model_tree_const_event_descs[] = {
 
 static Eo_Class_Description model_tree_const_class_descs = {
    EO_VERSION,
-   "Model Tree",
+   "Model Tree Const",
    EO_CLASS_TYPE_REGULAR_NO_INSTANT,
    EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_MODEL_TREE_CONST_BASE_ID, model_tree_const_op_descs, ELM_OBJ_MODEL_TREE_CONST_SUB_ID_LAST),
    model_tree_const_event_descs, // event_descs
