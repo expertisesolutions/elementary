@@ -5,6 +5,24 @@
 typedef long Elm_Model_Grid_Row;
 typedef long Elm_Model_Grid_Column;
 
+extern EAPI Eo_Op ELM_OBJ_MODEL_GRID_CONST_BASE_ID;
+
+enum {
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_ROW_SELECT,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_CELL_SELECT,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_COLUMNS_GET,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_ROWS_COUNT,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_COLUMNS_COUNT,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_VALUE_GET,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_SELECTED_ROW_GET,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_SELECTED_COLUMN_GET,
+   ELM_OBJ_MODEL_GRID_CONST_SUB_ID_LAST,
+};
+
+extern EAPI Eo_Op ELM_OBJ_MODEL_GRID_CONST_BASE_ID;
+
+#define ELM_OBJ_MODEL_GRID_CONST_ID(sub_id) (ELM_OBJ_MODEL_GRID_CONST_BASE_ID + sub_id)
+
 /**
  * @def elm_model_grid_row_select
  * @since 1.8
@@ -14,7 +32,7 @@ typedef long Elm_Model_Grid_Column;
  * Select a @p row of this grid model.
  *
  */
-EAPI void elm_model_grid_row_select(Elm_Model_Grid_Row row) EINA_CONST;
+#define elm_model_grid_row_select(row) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_ROW_SELECT), EO_TYPECHECK(Elm_Model_Grid_Row, row)
 
 /**
  * @def elm_model_grid_row_select
@@ -25,7 +43,7 @@ EAPI void elm_model_grid_row_select(Elm_Model_Grid_Row row) EINA_CONST;
  *
  * Select a cell from this grid model.
  */
-EAPI void elm_model_grid_cell_select(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
+#define elm_model_grid_cell_select(row, column) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_CELL_SELECT), EO_TYPECHECK(Elm_Model_Grid_Row, row), EO_TYPECHECK(Elm_Model_Grid_Column, column)
 
 /**
  * @def elm_model_grid_columns_get
@@ -35,7 +53,7 @@ EAPI void elm_model_grid_cell_select(Elm_Model_Grid_Row row, Elm_Model_Grid_Colu
  *
  * Get the list of columns of this grid model.
  */
-EAPI Eina_List* elm_model_grid_columns_get();
+#define  elm_model_grid_columns_get(ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_COLUMNS_GET), EO_TYPECHECK(Eina_List **, ret)
 
 /**
  * @def elm_model_grid_rows_count
@@ -46,7 +64,7 @@ EAPI Eina_List* elm_model_grid_columns_get();
  * Get the numbers of rows of this grid model.
  *
  */
-EAPI int elm_model_grid_rows_count();
+#define elm_model_grid_rows_count(ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_ROWS_COUNT), EO_TYPECHECK(int *, ret)
 
 /**
  * @def elm_model_grid_columns_count
@@ -56,7 +74,7 @@ EAPI int elm_model_grid_rows_count();
  *
  * Get the numbers of columns of this grid model.
  */
-EAPI int elm_model_grid_columns_count();
+#define elm_model_grid_columns_count(ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_COLUMNS_COUNT), EO_TYPECHECK(int *, ret)
 
 /**
  * @def elm_model_grid_value_get
@@ -68,7 +86,7 @@ EAPI int elm_model_grid_columns_count();
  * @param column The column coordinate of the cell.
  * @return The value, as a pointer to an @ref Eina_Value.
  */
-EAPI Eina_Value* elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid_Column column);
+#define elm_model_grid_value_get(row, column, ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_VALUE_GET), EO_TYPECHECK(Elm_Model_Grid_Row, row), EO_TYPECHECK(Elm_Model_Grid_Column, column), EO_TYPECHECK(Eina_Value **, ret)
 
 /**
  * @def elm_model_grid_selected_row_get
@@ -78,7 +96,7 @@ EAPI Eina_Value* elm_model_grid_value_get(Elm_Model_Grid_Row row, Elm_Model_Grid
  *
  * @return The selected row, as Elm_Model_Grid_Row.
  */
-EAPI Elm_Model_Grid_Row elm_model_grid_selected_row_get();
+#define elm_model_grid_selected_row_get(ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_SELECTED_ROW_GET), EO_TYPECHECK(Elm_Model_Grid_Row *, ret)
 
 /**
  * @def elm_model_grid_selected_column_get
@@ -88,7 +106,7 @@ EAPI Elm_Model_Grid_Row elm_model_grid_selected_row_get();
  *
  * @return The selected column, as Elm_Model_Grid_Column.
  */
-EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
+#define elm_model_grid_selected_column_get(ret) ELM_OBJ_MODEL_GRID_CONST_ID(ELM_OBJ_MODEL_GRID_CONST_SUB_ID_COLUMN_GET), EO_TYPECHECK(Elm_Model_Grid_Column_Get *, ret)
 
 
 /**
@@ -144,5 +162,8 @@ EAPI Elm_Model_Grid_Column elm_model_grid_selected_column_get();
 /*    , event(elm_model_grid_row_changed, Elm_Model_Grid_Row)*\/ */
 
 /* EO3_DECLARE_CLASS(ELM_MODEL_GRID_CONST_CLASS) // XXX NON-INSTANTIABLE */
+
+#define ELM_OBJ_MODEL_GRID_CONST_CLASS elm_obj_model_grid_const_class_get()
+const Eo_Class *elm_obj_model_grid_const_class_get(void);
 
 #endif // ELM_MODEL_GRID_CONST_H
