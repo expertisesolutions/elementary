@@ -91,7 +91,8 @@ static const Eo_Op_Description model_list_const_op_descs[] = {
 static Eo_Class_Description model_list_const_class_descs = {
    EO_VERSION,
    "Model List Const",
-   EO_CLASS_TYPE_REGULAR,
+   EO_CLASS_TYPE_REGULAR_NO_INSTANT, //TODO: check this
+   //EO_CLASS_TYPE_REGULAR_NO_INSTANT,
    EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_MODEL_LIST_CONST_BASE_ID, model_list_const_op_descs, ELM_OBJ_MODEL_LIST_CONST_SUB_ID_LAST),
    NULL, // event_descs
    0, //private data sizeof
@@ -161,7 +162,7 @@ _model_list_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
 }
 
 
-#define MY_MODEL_LIST_CLASS ELM_OBJ_MODEL_LIST_CONST_CLASS
+#define MY_MODEL_LIST_CLASS ELM_OBJ_MODEL_LIST_CLASS
 EAPI Eo_Op ELM_OBJ_MODEL_LIST_BASE_ID = 0;
 
 static void
