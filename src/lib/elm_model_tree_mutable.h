@@ -100,13 +100,5 @@ enum {
 #define elm_model_tree_value_set(unused, path, value) ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET), EO_TYPECHECK(void *, unused), EO_TYPECHECK(Elm_Model_Tree_Path*, path), EO_TYPECHECK(Eina_Value *, value)
 
 
-extern const Eo_Event_Description _TREE_CHILD_APPEND_EVT;
-#define TREE_CHILD_APPEND_EVT (&(_TREE_CHILD_APPEND_EVT))
-
-extern const Eo_Event_Description _TREE_DELETE_EVT;
-#define TREE_DELETE_EVT (&(_TREE_DELETE_EVT))
-
-extern const Eo_Event_Description _TREE_VALUE_SET_EVT;
-#define TREE_VALUE_SET_EVT (&(_TREE_VALUE_SET_EVT))
 
 #endif // ELM_MODEL_TREE_MUTABLE_H

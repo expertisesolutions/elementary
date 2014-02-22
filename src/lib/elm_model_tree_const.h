@@ -101,4 +101,13 @@ enum {
 extern const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECT_EVT;
 #define ELM_MODEL_TREE_CONST_SELECT_EVT (&(_ELM_MODEL_TREE_CONST_SELECT_EVT))
 
+extern const Eo_Event_Description _TREE_CHILD_APPEND_EVT;
+#define TREE_CHILD_APPEND_EVT (&(_TREE_CHILD_APPEND_EVT))
+
+extern const Eo_Event_Description _TREE_DELETE_EVT;
+#define TREE_DELETE_EVT (&(_TREE_DELETE_EVT))
+
+extern const Eo_Event_Description _TREE_VALUE_SET_EVT;
+#define TREE_VALUE_SET_EVT (&(_TREE_VALUE_SET_EVT))
+
 #endif // ELM_MODEL_TREE_CONST_H
