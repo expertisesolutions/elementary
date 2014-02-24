@@ -6,11 +6,19 @@
 
 #include <Eio.h>
 #include <Ecore.h>
+#include "Ecore_Getopt.h"
 
 #include <assert.h>
 
 #include "elm_model_tree_const.h"
 
+static int _log_dom;
+#define DBG(...)  EINA_LOG_DOM_DBG(_log_dom, __VA_ARGS__)
+#define ERR(...)  EINA_LOG_DOM_ERR(_log_dom, __VA_ARGS__)
+
+/**
+ * File Model Tree Class definition - Begin
+ */
 /**
  * @brief The value stored in the nodes of this Model.
  */
@@ -586,6 +594,24 @@ _expanded_get_cb(Eo *model, Elm_Model_Tree_Path *path)
 
 
 
+static const Ecore_Getopt optdesc = {
+  "filemodel_example",
+  "%prog [options] [path]",
+  PACKAGE_VERSION,
+  "(C) 2010 - The Enlightenment Project",
+  "BSD",
+  "FileModel - MVC implementation tester.\n",
+  1,
+  {
+    ECORE_GETOPT_STORE_STR('p', "path", "Construct directory tree from given path. If no argument is given \"./\" is then assumed."),
+    ECORE_GETOPT_LICENSE('L', "license"),
+    ECORE_GETOPT_COPYRIGHT('C', "copyright"),
+    ECORE_GETOPT_VERSION('V', "version"),
+    ECORE_GETOPT_HELP('h', "help"),
+    ECORE_GETOPT_SENTINEL
+  }
+};
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -598,6 +624,28 @@ elm_main(int argc, char **argv)
    Eo *_tree_v = NULL;
    //Eo *_grid_v = NULL;
 
+   // default path
+   char *p = "./";
+   Eina_Bool exit_option = EINA_FALSE;
+
+   Ecore_Getopt_Value values[] = {
+        ECORE_GETOPT_VALUE_STR(p), // path
+        ECORE_GETOPT_VALUE_BOOL(exit_option), // license  -- this and below will exit
+        ECORE_GETOPT_VALUE_BOOL(exit_option), // copyright
+        ECORE_GETOPT_VALUE_BOOL(exit_option), // version
+        ECORE_GETOPT_VALUE_BOOL(exit_option), // help
+        ECORE_GETOPT_VALUE_NONE
+   };
+
+   int arg_index = ecore_getopt_parse(&optdesc, values, argc, argv);
+   if (arg_index < 0)
+     {
+        ERR("could not parse arguments.");
+        exit(-1);
+     }
+
+   if(exit_option == EINA_TRUE) exit(0);
+
    ecore_init();
    eio_init();
 
@@ -608,7 +656,7 @@ elm_main(int argc, char **argv)
    /**
     * Will switch from eo2 to eo soon.
     */
-   _tree_m = eo_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor("./"));
+   _tree_m = eo_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor(p));
    //_tree_m = eo_add_custom(ELM_OBJ_TREE_MUTABLE_CLASS .. to be continued
 
    _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL,
