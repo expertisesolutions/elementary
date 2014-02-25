@@ -255,11 +255,6 @@ _model_tree_child_append(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    Elm_Model_Tree_Node *node, *parent;
    Elm_Model_Tree *model = (Elm_Model_Tree *)eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
 
-   //skip arg
-   //TODO/FIXME/XXX: Let's let compiler warn us about this 
-   //unused variable, thus must be fixed soon.
-   void *unused = va_arg(*list, void *); 
-
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **ret = va_arg(*list, Elm_Model_Tree_Path **); //param[out]
@@ -342,10 +337,6 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = eo_data_scope_get(obj, ELM_OBJ_MODEL_TREE_CONST_CLASS);
 
-   //TODO/FIXME/XXX: Let's let compiler warn us about this 
-   //unused variable, thus must be fixed soon.
-   void *unused = va_arg(*list, void *); // skip unused argument
-   
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
 

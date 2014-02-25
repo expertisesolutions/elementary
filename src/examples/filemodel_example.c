@@ -82,7 +82,7 @@ enum {
 #define MODEL_FILE_TREE_CLASS_ID(sub_id) (MODEL_FILE_TREE_CLASS_BASE_ID + sub_id)
 #define model_file_tree_constructor(filepath) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(const char *, filepath)
 //#define model_file_tree_destructor() MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_DESTRUCTOR)
-#define model_file_tree_list(model, node, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), EO_TYPECHECK(Model_File_Tree *, model), EO_TYPECHECK(Elm_Model_Tree_Path *, node), EO_TYPECHECK(Eina_Bool *, ret)
+#define model_file_tree_list(node, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), EO_TYPECHECK(Elm_Model_Tree_Path *, node), EO_TYPECHECK(Eina_Bool *, ret)
 #define model_file_tree_value_new(path, type, ret) MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_VALUE_NEW), EO_TYPECHECK(const char *, path), EO_TYPECHECK(Eina_File_Type, type) ,EO_TYPECHECK(Eina_Value **, ret)
 
 #define MODEL_FILE_TREE_CLASS model_file_tree_class_get()
@@ -371,23 +371,23 @@ _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
 {
    Eina_Value *value = NULL;
    Eina_Bool ret;
-   //Model_File_Tree *model = va_arg(*list, Model_File_Tree *);
    Model_File_Tree *model = class_data;
    const char *filepath = va_arg(*list, const char *);
 
    EINA_SAFETY_ON_NULL_RETURN(filepath);
 
-   eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_constructor());
+   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_constructor());
 
    eo_do(obj, model_file_tree_value_new(filepath, EINA_FILE_UNKNOWN, &value)); 
+   EINA_SAFETY_ON_NULL_RETURN(value);
 
    //TODO: check this
-   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(NULL, filepath, value));
+   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(filepath, value));
 
    // @see elm_model_tree_const.h
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_constructor(value)); 
 
-   eo_do(obj, model_file_tree_list(model, elm_model_tree_path_new_from_string(""), &ret)); //TODO/FIXME/XXX: check ret
+   eo_do(obj, model_file_tree_list(elm_model_tree_path_new_from_string(""), &ret)); //TODO/FIXME/XXX: check ret
 }
 
 static void
@@ -403,7 +403,6 @@ _model_file_tree_list(Eo *obj, void *class_data, va_list *list)
    Model_File_Tuple *tuple;
    Model_File_Value *ptr;
 
-   (void)va_arg(*list, Model_File_Tree *); // TODO/FIXME/XXX
    Elm_Model_Tree_Path *node = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Bool *ret = va_arg(*list, Eina_Bool *);
 
@@ -446,7 +445,7 @@ static void
 _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list)
 {
    Eina_Bool ret;
-   Model_File_Tree *model = va_arg(*list, Model_File_Tree *);
+   Model_File_Tree *model = class_data;
    Elm_Model_Tree_Path *node = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **child = va_arg(*list, Elm_Model_Tree_Path **);
@@ -454,10 +453,10 @@ _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list)
    EINA_SAFETY_ON_NULL_GOTO(node, fail);
    EINA_SAFETY_ON_NULL_GOTO(value, fail);
 
-   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(NULL, node, value, child /* return value */));
+   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(node, value, child /* return value */));
 
    EINA_SAFETY_ON_NULL_RETURN(*child);
-   eo_do(obj, model_file_tree_list(model, *child, &ret)); // TODO/FIXME/XXX: check ret
+   eo_do(obj, model_file_tree_list(*child, &ret)); // TODO/FIXME/XXX: check ret
 
    return;
 
@@ -483,7 +482,7 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    EINA_SAFETY_ON_NULL_RETURN(value);
 
 
-   eo_do(tuple->object, elm_model_tree_child_append(NULL, tuple->node, value, &child)); //ccarvalho
+   eo_do(tuple->object, elm_model_tree_child_append(tuple->node, value, &child)); //ccarvalho
    printf("+(%s): %s\n", elm_model_tree_path_to_string(child),info->path);
 }
 
