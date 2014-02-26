@@ -371,7 +371,10 @@ _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
 {
    Eina_Value *value = NULL;
    Eina_Bool ret;
+
+   //TODO: check this unused var
    Model_File_Tree *model = class_data;
+   
    const char *filepath = va_arg(*list, const char *);
 
    EINA_SAFETY_ON_NULL_RETURN(filepath);
@@ -406,25 +409,26 @@ _model_file_tree_list(Eo *obj, void *class_data, va_list *list)
    Elm_Model_Tree_Path *node = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Bool *ret = va_arg(*list, Eina_Bool *);
 
-   EINA_SAFETY_ON_NULL_GOTO(node, fail);
-   EINA_SAFETY_ON_NULL_GOTO(obj, fail);
+   EINA_SAFETY_ON_NULL_GOTO(node, failed_init);
+   EINA_SAFETY_ON_NULL_GOTO(obj, failed_init);
 
    eo_do(obj, elm_model_tree_value_get(node, &value));
 
-   EINA_SAFETY_ON_NULL_GOTO(value, fail);
+   EINA_SAFETY_ON_NULL_GOTO(value, failed_init);
 
    ptr = eina_value_memory_get(value);
 
-   EINA_SAFETY_ON_NULL_GOTO(ptr, fail);
-   EINA_SAFETY_ON_NULL_GOTO(ptr->filepath, fail);
+   EINA_SAFETY_ON_NULL_GOTO(ptr, failed_init);
+   EINA_SAFETY_ON_NULL_GOTO(ptr->filepath, failed_init);
 
    tuple = malloc(sizeof(Model_File_Tuple));
-   EINA_SAFETY_ON_NULL_GOTO(tuple, fail);
+   EINA_SAFETY_ON_NULL_GOTO(tuple, failed_init);
+
    eo_ref(obj);
    tuple->object = obj;
    tuple->node = elm_model_tree_path_new_copy(node);
 
-   EINA_SAFETY_ON_NULL_GOTO(tuple->node, treelistfail);
+   EINA_SAFETY_ON_NULL_GOTO(tuple->node, failed_copy);
    if (ptr->file != NULL) free(ptr->file);
 
    ptr->file = eio_file_stat_ls
@@ -433,11 +437,11 @@ _model_file_tree_list(Eo *obj, void *class_data, va_list *list)
    *ret = EINA_TRUE;
    return;
 
-treelistfail:
+failed_copy:
    free(tuple);
    eo_unref(obj);
 
-fail:
+failed_init:
    *ret = EINA_FALSE;
 }
 
@@ -450,19 +454,20 @@ _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list)
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **child = va_arg(*list, Elm_Model_Tree_Path **);
 
-   EINA_SAFETY_ON_NULL_GOTO(node, fail);
-   EINA_SAFETY_ON_NULL_GOTO(value, fail);
+   EINA_SAFETY_ON_NULL_GOTO(node, failed_init);
+   EINA_SAFETY_ON_NULL_GOTO(value, failed_init);
 
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(node, value, child /* return value */));
-
    EINA_SAFETY_ON_NULL_RETURN(*child);
-   eo_do(obj, model_file_tree_list(*child, &ret)); // TODO/FIXME/XXX: check ret
+
+   eo_do(obj, model_file_tree_list(*child, &ret)); 
+   if(ret != EINA_TRUE)
+     ERR("model_file_tree_list call");
 
    return;
 
-fail:
+failed_init:
    *child = NULL;
-
 }
 ////////////////////////////////////////////////////////////////////////////////
 
