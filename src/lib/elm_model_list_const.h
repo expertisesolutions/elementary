@@ -112,4 +112,17 @@ typedef long Elm_Model_List_Index;
 #define ELM_OBJ_MODEL_LIST_CONST_CLASS elm_obj_model_list_const_class_get()
 const Eo_Class *elm_obj_model_list_const_class_get(void);
 
+
+extern const Eo_Event_Description _ELM_MODEL_LIST_CONST_SELECTED_EVT;
+#define ELM_MODEL_LIST_CONST_SELECTED_EVT (&(_ELM_MODEL_LIST_CONST_SELECTED_EVT))
+
+extern const Eo_Event_Description _ELM_MODEL_LIST_CONST_INSERTED_EVT;
+#define ELM_MODEL_LIST_CONST_INSERTED_EVT (&(_ELM_MODEL_LIST_CONST_INSERTED_EVT))
+
+extern const Eo_Event_Description _ELM_MODEL_LIST_CONST_DELETED_EVT;
+#define ELM_MODEL_LIST_CONST_DELETED_EVT (&(_ELM_MODEL_LIST_CONST_DELETED_EVT))
+
+extern const Eo_Event_Description _ELM_MODEL_LIST_CONST_CHANGED_EVT;
+#define ELM_MODEL_LIST_CONST_CHANGED_EVT (&(_ELM_MODEL_LIST_CONST_CHANGED_EVT))
+
 #endif // ELM_MODEL_LIST_CONST_H
