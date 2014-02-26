@@ -389,8 +389,6 @@ _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
 
    // @see elm_model_tree_const.h
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_constructor(value)); 
-
-   eo_do(obj, model_file_tree_list(elm_model_tree_path_new_from_string(""), &ret)); //TODO/FIXME/XXX: check ret
 }
 
 static void
@@ -717,6 +715,9 @@ elm_main(int argc, char **argv)
 */
    evas_object_resize(win, 800, 400);
    evas_object_show(win);
+
+   Eina_Bool ret;
+   eo_do(_tree_m, model_file_tree_list(elm_model_tree_path_new_from_string(""), &ret)); //TODO/FIXME/XXX: check ret
 
    elm_run();
    elm_shutdown();
