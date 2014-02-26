@@ -54,6 +54,7 @@ _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
    elm_model_tree_path_free(model->selected);
+   _tree_node_del(model->root);
    eina_lock_release(&model->lock);
    eina_lock_free(&model->lock);
    eo_do_super(obj, MY_MODEL_TREE_CONST_CLASS, eo_destructor());
@@ -107,7 +108,6 @@ release:
 static void
 _model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   (void)va_arg(*list, Elm_Model_Tree_Path *); //skip unused arg
    Elm_Model_Tree *model = (Elm_Model_Tree *)class_data;
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_List **children = va_arg(*list, Eina_List **);
@@ -120,7 +120,6 @@ _model_tree_children_get(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    node = _tree_node_find(model->root, path);
    EINA_SAFETY_ON_NULL_GOTO(node, release);
    *children = _tree_node_children_path_get(node);
-   EINA_SAFETY_ON_NULL_GOTO(*children, release);
    eina_lock_release(&model->lock);
    return;
 
@@ -132,7 +131,6 @@ release:
 static void
 _model_tree_children_count(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   (void)va_arg(*list, Elm_Model_Tree_Path *); //skip unused arg
    Elm_Model_Tree *model = (Elm_Model_Tree *)class_data;
    Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
    unsigned int *n = va_arg(*list, unsigned int *);
@@ -172,13 +170,9 @@ _model_tree_release(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
    node = _tree_node_find(model->root, path);
-   EINA_SAFETY_ON_NULL_RETURN(node);
-   _tree_node_del(node);
+   if (node && node != model->root)
+      _tree_node_del(node);
    eina_lock_release(&model->lock);
-   
-   //TODO/FIXME/XXX 
-   //eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_DELETED_EVT, path, NULL));
-   //eo2_do(object, elm_model_tree_delete_callback_call(path));
 }
 
 static void
@@ -375,7 +369,6 @@ static const Eo_Op_Description mutable_op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE, "Prepend as a sibling node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE, "Delete node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET, "Set value to the node"),
-   EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT, "Append new child event."),
    EO_OP_DESCRIPTION_SENTINEL
 };
 

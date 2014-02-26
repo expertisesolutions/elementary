@@ -41,8 +41,10 @@ void
 elm_model_tree_path_free(Elm_Model_Tree_Path *path)
 {
    if(path == NULL) return;
-   if(path->indices) free(path->indices);
+   free(path->indices);
+   path->indices = NULL;
    free(path);
+   path = NULL;
 }
 
 Elm_Model_Tree_Path*

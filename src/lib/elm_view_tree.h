@@ -20,7 +20,6 @@ enum {
    ELM_OBJ_VIEW_TREE_SUB_ID_GETCONTENT_SET,
    ELM_OBJ_VIEW_TREE_SUB_ID_GETEXPANDED_SET,
    ELM_OBJ_VIEW_TREE_SUB_ID_MODE_SET,
-   ELM_OBJ_VIEW_TREE_SUB_ID_ADD, 
    ELM_OBJ_VIEW_TREE_SUB_ID_EVAS_OBJECT_GET, 
    ELM_OBJ_VIEW_TREE_SUB_ID_TREE_LAST
 };
@@ -37,7 +36,7 @@ typedef Eina_Bool (*Elm_View_Tree_Expanded_Get_Cb)(Eo *model, Elm_Model_Tree_Pat
 /**
  * @brief EO Class functions declaration.
  */
-#define elm_view_tree_add(parent, model) ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_ADD), EO_TYPECHECK(Evas_Object *, parent), EO_TYPECHECK(Eo *, model)
+#define elm_view_tree_add(parent, model) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(Evas_Object *, parent), EO_TYPECHECK(Eo *, model)
 #define elm_view_tree_mode_set(mode) ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_MODE_SET), EO_TYPECHECK(Elm_View_Tree_Mode, mode)
 #define elm_view_tree_getcontent_set(get_content_cb) ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_GETCONTENT_SET), EO_TYPECHECK(Elm_View_Tree_Content_Get_Cb, get_content_cb)
 #define elm_view_tree_getexpanded_set(get_expanded_cb) ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_GETEXPANDED_SET), EO_TYPECHECK(Elm_View_Tree_Expanded_Get_Cb, get_expanded_cb)

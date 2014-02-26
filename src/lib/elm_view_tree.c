@@ -89,7 +89,7 @@ _expanded_is(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
    if (self->get_expanded_cb)
      return self->get_expanded_cb(self->model, path);
 
-   eo_do(self->model, elm_model_tree_children_count(NULL, path, &cc));
+   eo_do(self->model, elm_model_tree_children_count(path, &cc));
    return cc > 0;
 }
 
@@ -316,7 +316,7 @@ _expanded_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info)
 
    EINA_SAFETY_ON_NULL_RETURN(idata);
 
-   eo_do(self->model, elm_model_tree_children_get(NULL, idata->path, &children));
+   eo_do(self->model, elm_model_tree_children_get(idata->path, &children));
    EINA_SAFETY_ON_NULL_RETURN(children);
    idata->children = eina_list_count(children);
 
@@ -352,6 +352,7 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    EINA_SAFETY_ON_NULL_RETURN(self->list);
 
    self->model = model;
+   eo_ref(self->model);
    self->mode = ELM_VIEW_TREE_VIEWMODE_ALL;
    self->get_content_cb = NULL;
    self->get_expanded_cb = NULL;
@@ -363,8 +364,8 @@ _elm_view_tree_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
    self->itc->func.del = _item_del;
-   
-    self->rootpath = elm_model_tree_path_new_from_string("");
+
+   self->rootpath = elm_model_tree_path_new_from_string("");
    _update_path(self, self->rootpath);
 
    evas_object_size_hint_weight_set(self->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -445,11 +446,11 @@ static void
 _view_tree_class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
+      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_tree_add),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_tree_destructor),
       EO_OP_FUNC(ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_GETCONTENT_SET), _elm_view_tree_getcontent_set),
       EO_OP_FUNC(ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_GETEXPANDED_SET), _elm_view_tree_getexpanded_set),
       EO_OP_FUNC(ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_MODE_SET), _elm_view_tree_mode_set),
-      EO_OP_FUNC(ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_ADD), _elm_view_tree_add),
       EO_OP_FUNC(ELM_VIEW_ID(ELM_OBJ_VIEW_TREE_SUB_ID_EVAS_OBJECT_GET), _elm_view_tree_evas_object_get),
       EO_OP_FUNC_SENTINEL
    };
@@ -461,7 +462,6 @@ static const Eo_Op_Description view_tree_op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_TREE_SUB_ID_GETCONTENT_SET, "Set content callback"),
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_TREE_SUB_ID_GETEXPANDED_SET, "Set expanded callback"),
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_TREE_SUB_ID_MODE_SET, "Set view mode"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_TREE_SUB_ID_ADD, "Setup tree object"),
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_TREE_SUB_ID_EVAS_OBJECT_GET, "Return Evas object list"),
    EO_OP_DESCRIPTION_SENTINEL
 };
