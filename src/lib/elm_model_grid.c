@@ -123,7 +123,7 @@ static const Eo_Op_Description model_grid_const_op_descs[] = {
 
 /*
 static const Eo_Event_Description *model_grid_const_event_descs[] = {
-     ELM_MODEL_TREE_CONST_SELECT_EVT,
+     ELM_MODEL_TREE_CONST_SELECTED_EVT,
      NULL
 };
 */

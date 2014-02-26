@@ -13,7 +13,7 @@
 #define MY_MODEL_TREE_CONST_CLASS ELM_OBJ_MODEL_TREE_CONST_CLASS
 EAPI Eo_Op ELM_OBJ_MODEL_TREE_CONST_BASE_ID = 0;
 
-EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECT_EVT =
+EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_SELECTED_EVT =
    EO_EVENT_DESCRIPTION("tree const, select","Select the node pointed by path.");
 
 struct _Elm_Model_Tree
@@ -73,7 +73,7 @@ _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    node = _tree_node_find(model->root, path);
    model->selected = node ? path : NULL;
    eina_lock_release(&model->lock);
-   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECT_EVT, ret, NULL));
+   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECTED_EVT, ret, NULL));
 
    if (node) *ret = EINA_TRUE;
    else *ret = EINA_FALSE;
@@ -178,7 +178,7 @@ _model_tree_release(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    eina_lock_release(&model->lock);
    
    //TODO/FIXME/XXX 
-   //eo_do(obj, eo_event_callback_call(TREE_DELETE_EVT, path, NULL));
+   //eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_DELETED_EVT, path, NULL));
    //eo2_do(object, elm_model_tree_delete_callback_call(path));
 }
 
@@ -211,7 +211,7 @@ static const Eo_Op_Description model_tree_const_op_descs[] = {
 };
 
 static const Eo_Event_Description *model_tree_const_event_descs[] = {
-     ELM_MODEL_TREE_CONST_SELECT_EVT,
+     ELM_MODEL_TREE_CONST_SELECTED_EVT,
      NULL
 };
 
@@ -236,14 +236,14 @@ EAPI Eo_Op ELM_MODEL_TREE_BASE_ID = 0;
 
 #define MY_MODEL_TREE_CLASS ELM_MODEL_TREE_CLASS
 
-EAPI const Eo_Event_Description _TREE_CHILD_APPEND_EVT =
+EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT =
    EO_EVENT_DESCRIPTION("child,append","Append a new child cointaining value to the \
                         list of children of the node pointed by path.");
 
-EAPI const Eo_Event_Description _TREE_DELETE_EVT =
+EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_DELETED_EVT =
    EO_EVENT_DESCRIPTION("tree,delete","Delete the sub-tree pointed path and all its children.");
 
-EAPI const Eo_Event_Description _TREE_VALUE_SET_EVT =
+EAPI const Eo_Event_Description _ELM_MODEL_TREE_CONST_VALUE_SET_EVT =
    EO_EVENT_DESCRIPTION("value,set","Set value to the node pointed by path");
 
 /*
@@ -269,7 +269,7 @@ _model_tree_child_append(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
 
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
+   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT, *ret, NULL));
    return;
 
 release:
@@ -297,7 +297,7 @@ _model_tree_child_prepend(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    *ret = _tree_node_path(node);
    eina_lock_release(&model->lock);
 
-   eo_do(obj, eo_event_callback_call(TREE_CHILD_APPEND_EVT, *ret, NULL));
+   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT, *ret, NULL));
    return;
 
 release:
@@ -328,7 +328,7 @@ _model_tree_delete(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    eo_do(obj, elm_model_tree_release(path));
 
    //TODO/FIXME/XXX 
-   eo_do(obj, eo_event_callback_call(TREE_DELETE_EVT, path, NULL));
+   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_DELETED_EVT, path, NULL));
 }
 
 static void
@@ -347,9 +347,9 @@ _model_tree_value_set(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list
    _tree_node_value_set(node, value);
    eina_lock_release(&model->lock);
 
-   //TODO/FIXME/XXX: nedd to implement TREE_VALUE_SET_EVT && call
+   //TODO/FIXME/XXX: nedd to implement ELM_MODEL_TREE_CONST_VALUE_SET_EVT && call
    //eo2_do(obj, _model_tree_value_set_callback_call(path, value)); //eo2 original
-   //eo_do(obj, eo_event_callback_call(TREE_VALUE_SET_EVT, "xxx", NULL)); //new eo
+   //eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_VALUE_SET_EVT, "xxx", NULL)); //new eo
 }
 
 static void
@@ -376,14 +376,14 @@ static const Eo_Op_Description mutable_op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_CHILD_PREPEND_RELATIVE, "Prepend as a sibling node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_DELETE, "Delete node"),
    EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_VALUE_SET, "Set value to the node"),
-   EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_TREE_CHILD_APPEND_EVT, "Append new child event."),
+   EO_OP_DESCRIPTION(ELM_OBJ_MUTABLE_SUB_ID_ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT, "Append new child event."),
    EO_OP_DESCRIPTION_SENTINEL
 };
 
 static const Eo_Event_Description *mutable_event_descs[] = {
-   TREE_CHILD_APPEND_EVT,
-   TREE_DELETE_EVT, //TODO/FIXME/XXX: implement this
-   TREE_VALUE_SET_EVT, //TODO/FIXME/XXX: Implement this
+   ELM_MODEL_TREE_CONST_CHILD_APPENDED_EVT,
+   ELM_MODEL_TREE_CONST_DELETED_EVT, //TODO/FIXME/XXX: implement this
+   ELM_MODEL_TREE_CONST_VALUE_SET_EVT, //TODO/FIXME/XXX: Implement this
    NULL
 };
 
