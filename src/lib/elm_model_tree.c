@@ -53,7 +53,6 @@ _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA
 
    EINA_SAFETY_ON_NULL_RETURN(model);
    eina_lock_take(&model->lock);
-   _tree_node_del(model->root);
    elm_model_tree_path_free(model->selected);
    eina_lock_release(&model->lock);
    eina_lock_free(&model->lock);
