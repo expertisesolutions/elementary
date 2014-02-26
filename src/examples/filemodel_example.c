@@ -494,7 +494,8 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 static Eina_Bool
 _eio_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 {
-   return EINA_TRUE; /* i.e., list everything */
+   //return EINA_TRUE;                  /* i.e., list everything */
+   return info->type == EINA_FILE_DIR;  /* list only directories */
 }
 
 static void
