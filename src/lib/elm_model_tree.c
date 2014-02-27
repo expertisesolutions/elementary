@@ -61,7 +61,7 @@ _model_tree_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA
 }
 
 static void
-_model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_model_tree_select(Eo *obj, void *class_data, va_list *list)
 {
    Elm_Model_Tree_Node *node;
    Elm_Model_Tree *model = class_data;
@@ -73,7 +73,7 @@ _model_tree_select(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    node = _tree_node_find(model->root, path);
    model->selected = node ? path : NULL;
    eina_lock_release(&model->lock);
-   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECTED_EVT, ret, NULL));
+   eo_do(obj, eo_event_callback_call(ELM_MODEL_TREE_CONST_SELECTED_EVT, path, NULL));
 
    if (node) *ret = EINA_TRUE;
    else *ret = EINA_FALSE;

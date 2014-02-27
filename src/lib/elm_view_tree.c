@@ -35,7 +35,6 @@ typedef struct _View_Tree_ItemData View_Tree_ItemData;
 static void _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path);
 static void _append_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, View_Tree_ItemData *pdata);
 static void _item_sel_cb(void *data, Evas_Object *obj, void *event_info);
-//static View_Tree_ItemData *_get_parent_data(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path);
 
 /* --- Private Func --- */
 static View_Tree_ItemData *
@@ -183,7 +182,7 @@ _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
 
 /* --- Tree Model Callbacks --- */
 static Eina_Bool
-_model_tree_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED) 
+_model_tree_selected_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    return EINA_TRUE; // TODO implement
 }
@@ -282,8 +281,13 @@ _item_content_get(void *data, Evas_Object *obj, const char *part)
 static void
 _item_sel_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
+   Eina_Bool ret;
    Elm_Object_Item *item = event_info;
    View_Tree_ItemData *idata = elm_object_item_data_get(item);
+   EINA_SAFETY_ON_NULL_RETURN(idata);
+   Elm_View_Tree_Private *self = idata->self;
+
+   eo_do(self->model, elm_model_tree_select(idata->path, &ret));
 }
 
 static void
