@@ -158,26 +158,22 @@ _append_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path, View_Tree_I
 static void
 _update_path(Elm_View_Tree_Private *self, Elm_Model_Tree_Path *path)
 {
-   //   Eina_List *l, *cl = NULL;
+   Eina_List *cl = NULL;
    //   Elm_Model_Tree_Path *c_path;
    View_Tree_ItemData *data;
 
    EINA_SAFETY_ON_NULL_RETURN(self);
    EINA_SAFETY_ON_NULL_RETURN(path);
 
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    data = _get_data(self->items, path);
-   printf("%s:%d\n", __FUNCTION__, __LINE__);
    if(!data)
-     {
-        _append_path(self, path, _get_parent_data(self, path));
-        return;
-     }
+     _append_path(self, path, _get_parent_data(self, path));
+   else
+     elm_genlist_item_update(data->item);
 
-   elm_genlist_item_update(data->item);
-   /*
    //foreach model itens and update nodes to widget
-   eo2_do(self->model, cl = elm_model_tree_children_get (idata->path));
+   eo_do(self->model, elm_model_tree_children_get(path, &cl));
+   /*
    EINA_LIST_FOREACH(cl, l, c_path)
    {
    _update_path(self, c_path);

@@ -60,6 +60,7 @@ typedef struct _Model_File_Tuple Model_File_Tuple;
 static void _model_file_tree_destructor(Eo *obj, void *class_data, va_list *list);
 static void _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list);
 static void _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list);
+static void _model_file_tree_children_get(Eo *obj, void *class_data, va_list *list);
 static void _model_file_tree_list(Eo *obj, void *class_data, va_list *list);
 static void _model_file_tree_value_new(Eo *obj, void *class_data, va_list *list);
 static void _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info);
@@ -97,6 +98,7 @@ _class_constructor(Eo_Class *klass)
         EO_OP_FUNC(MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_LIST), _model_file_tree_list),
         EO_OP_FUNC(MODEL_FILE_TREE_CLASS_ID(MODEL_FILE_TREE_SUB_ID_VALUE_NEW), _model_file_tree_value_new),
         EO_OP_FUNC(ELM_OBJ_MODEL_TREE_ID(ELM_OBJ_MUTABLE_SUB_ID_CHILD_APPEND), _model_file_tree_child_append), // override
+        EO_OP_FUNC(ELM_OBJ_MODEL_TREE_CONST_ID(ELM_OBJ_MODEL_TREE_CONST_SUB_ID_CHILDREN_GET), _model_file_tree_children_get), // override
         EO_OP_FUNC_SENTINEL
    };
 
@@ -231,6 +233,8 @@ _model_file_setup(const Eina_Value_Type *type, void *mem)
 static Eina_Bool
 _model_file_flush(const Eina_Value_Type *type, void *mem)
 {
+  //TODO//FIXME//flush raise many crashes
+/*
    Model_File_Value *value = (Model_File_Value*)mem;
    Ecore_Event_Handler **ptr;
 
@@ -261,6 +265,7 @@ _model_file_flush(const Eina_Value_Type *type, void *mem)
         free(value->file);
         value->file = NULL;
      }
+*/
    return EINA_TRUE;
 }
 
@@ -355,7 +360,6 @@ _model_file_tree_value_new(Eo *obj, void *class_data, va_list *list)
         eina_value_free(*value);
         *value = NULL;
         return;
-
      }
 
    ptr->filepath = eina_stringshare_add(path);
@@ -370,31 +374,13 @@ static void
 _model_file_tree_constructor(Eo *obj, void *class_data, va_list *list)
 {
    Eina_Value *value = NULL;
-   Eina_Bool ret;
 
-   //TODO: check this unused var
-   Model_File_Tree *model = class_data;
-   
    const char *filepath = va_arg(*list, const char *);
-
    EINA_SAFETY_ON_NULL_RETURN(filepath);
 
-   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_constructor());
-
-   eo_do(obj, model_file_tree_value_new(filepath, EINA_FILE_UNKNOWN, &value)); 
+   eo_do(obj, model_file_tree_value_new(filepath, EINA_FILE_UNKNOWN, &value));
    EINA_SAFETY_ON_NULL_RETURN(value);
-
-   //TODO: check this
-   //eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_value_set(filepath, value));
-
-   // @see elm_model_tree_const.h
-   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_constructor(value)); 
-}
-
-static void
-_model_file_tree_destructor(Eo *obj, void *class_data, va_list *list)
-{
-   eo_do_super(obj, MODEL_FILE_TREE_CLASS, eo_destructor());
+   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_constructor(value));
 }
 
 static void
@@ -422,12 +408,13 @@ _model_file_tree_list(Eo *obj, void *class_data, va_list *list)
    tuple = malloc(sizeof(Model_File_Tuple));
    EINA_SAFETY_ON_NULL_GOTO(tuple, failed_init);
 
-   eo_ref(obj);
+   //eo_ref(obj);
    tuple->object = obj;
    tuple->node = elm_model_tree_path_new_copy(node);
 
    EINA_SAFETY_ON_NULL_GOTO(tuple->node, failed_copy);
-   if (ptr->file != NULL) free(ptr->file);
+   free(ptr->file);
+   ptr->file = NULL;
 
    ptr->file = eio_file_stat_ls
       (ptr->filepath, _eio_filter_cb, _eio_main_cb, _eio_done_cb, _eio_error_cb, tuple);
@@ -437,7 +424,7 @@ _model_file_tree_list(Eo *obj, void *class_data, va_list *list)
 
 failed_copy:
    free(tuple);
-   eo_unref(obj);
+   //eo_unref(obj);
 
 failed_init:
    *ret = EINA_FALSE;
@@ -446,8 +433,6 @@ failed_init:
 static void
 _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list)
 {
-   Eina_Bool ret;
-   Model_File_Tree *model = class_data;
    Elm_Model_Tree_Path *node = va_arg(*list, Elm_Model_Tree_Path *);
    Eina_Value *value = va_arg(*list, Eina_Value *);
    Elm_Model_Tree_Path **child = va_arg(*list, Elm_Model_Tree_Path **);
@@ -458,15 +443,32 @@ _model_file_tree_child_append(Eo *obj, void *class_data, va_list *list)
    eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_child_append(node, value, child /* return value */));
    EINA_SAFETY_ON_NULL_RETURN(*child);
 
-   eo_do(obj, model_file_tree_list(*child, &ret)); 
-   if(ret != EINA_TRUE)
-     ERR("model_file_tree_list call");
-
    return;
 
 failed_init:
    *child = NULL;
 }
+
+static void
+_model_file_tree_children_get(Eo *obj, void *class_data, va_list *list)
+{
+   Eina_Bool ret;
+   Elm_Model_Tree_Path *path = va_arg(*list, Elm_Model_Tree_Path *);
+   Eina_List **children = va_arg(*list, Eina_List **);
+   *children = NULL;
+
+   EINA_SAFETY_ON_NULL_RETURN(path);
+   EINA_SAFETY_ON_NULL_RETURN(children);
+
+   eo_do_super(obj, MODEL_FILE_TREE_CLASS, elm_model_tree_children_get(path, children));
+
+   if (*children == NULL) 
+     {
+        eo_do(obj, model_file_tree_list(path, &ret));
+        if(ret != EINA_TRUE) ERR("model_file_tree_list call");
+     }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static void
@@ -475,15 +477,12 @@ _eio_main_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
    Model_File_Tuple *tuple = (Model_File_Tuple*)data;
    Elm_Model_Tree_Path *child = NULL;
    Eina_Value *value = NULL;
-   Model_File_Value *ptr;
 
    EINA_SAFETY_ON_NULL_RETURN(tuple);
    EINA_SAFETY_ON_NULL_RETURN(info);
 
-   //eo_do(tuple->object, model_file_tree_value_new(info->path, &value)); // ccarvalho
    eo_do(tuple->object, model_file_tree_value_new(info->path, info->type , &value));
    EINA_SAFETY_ON_NULL_RETURN(value);
-
 
    eo_do(tuple->object, elm_model_tree_child_append(tuple->node, value, &child)); //ccarvalho
    printf("+(%s): %s\n", elm_model_tree_path_to_string(child),info->path);
@@ -499,8 +498,9 @@ _eio_filter_cb(void *data, Eio_File *handler, const Eina_File_Direct_Info *info)
 static void
 _eio_done_cb(void *data, Eio_File *handler)
 {
+   EINA_SAFETY_ON_NULL_RETURN(data);
    Model_File_Tuple *tuple = (Model_File_Tuple*)data;
-   eo_unref(tuple->object);
+   //eo_unref(tuple->object);
    elm_model_tree_path_free(tuple->node);
    free(tuple);
 }
@@ -508,7 +508,7 @@ _eio_done_cb(void *data, Eio_File *handler)
 static void
 _eio_error_cb(void *data, Eio_File *handler, int error)
 {
-   //printf("<E> file model eio error %d\n", error);
+   printf("<E> file model eio error %d\n", error);
 }
 
 static Eina_Bool
@@ -586,29 +586,26 @@ _content_get_cb(Eo *model, Elm_Model_Tree_Path *path, Evas_Object *obj, const ch
 
    if(!strcmp(part, "elm.swallow.icon"))
      {
-        Model_File_Value *ptr;
         eo_do(model, elm_model_tree_value_get(path, &value));
-        ptr = eina_value_memory_get(value);
-        if(ptr && ptr->ftype == EINA_FILE_DIR)
-           elm_icon_standard_set(ic, "folder");
-        else
-           elm_icon_standard_set(ic, "file");
+        elm_icon_standard_set(ic, "folder");
      }
 
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    return ic;
-
 }
 
 Eina_Bool
 _expanded_get_cb(Eo *model, Elm_Model_Tree_Path *path)
 {
+/*
    Eina_Value *value = NULL;
    Model_File_Value *ptr;
 
    eo_do(model, elm_model_tree_value_get(path, &value));
    ptr = eina_value_memory_get(value);
    return (ptr && ptr->ftype == EINA_FILE_DIR);
+*/
+   return EINA_TRUE;
 }
 
 
@@ -676,10 +673,8 @@ elm_main(int argc, char **argv)
     * Will switch from eo2 to eo soon.
     */
    _tree_m = eo_add_custom(MODEL_FILE_TREE_CLASS, NULL, model_file_tree_constructor(p));
-   //_tree_m = eo_add_custom(ELM_OBJ_TREE_MUTABLE_CLASS .. to be continued
 
-   _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL,
-                           elm_view_tree_add(win, _tree_m));
+   _tree_v = eo_add_custom(ELM_VIEW_TREE_CLASS, NULL, elm_view_tree_add(win, _tree_m));
 
 
    //box init
@@ -688,9 +683,6 @@ elm_main(int argc, char **argv)
    evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    elm_win_resize_object_add(win, box);
    evas_object_show(box);
-
-   //Directories tree widget
-   // eo2_do(_tree_v, elm_view_tree_model_tree_set(ELM_VIEW_TREE_VIEWMODE_ONLYPARENTS)); //hide files, show only directories
 
    eo_do(_tree_v, elm_view_tree_evas_object_get(&widget));
    eo_do(_tree_v, elm_view_tree_getcontent_set(_content_get_cb));
@@ -715,9 +707,6 @@ elm_main(int argc, char **argv)
 */
    evas_object_resize(win, 800, 400);
    evas_object_show(win);
-
-   Eina_Bool ret;
-   eo_do(_tree_m, model_file_tree_list(elm_model_tree_path_new_from_string(""), &ret)); //TODO/FIXME/XXX: check ret
 
    elm_run();
    elm_shutdown();
