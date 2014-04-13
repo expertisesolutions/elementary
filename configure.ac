@@ -219,6 +219,7 @@ PKG_CHECK_MODULES([ELEMENTARY],
     ecore-imf >= efl_version
     ecore-con >= efl_version
     eio >= efl_version
+    emodel >= efl_version
     eldbus >= efl_version
     efreet >= efl_version
     efreet-mime >= efl_version
@@ -244,6 +245,7 @@ requirement_elm="\
     ecore-imf >= efl_version \
     ecore-con >= efl_version \
     eio >= efl_version \
+    emodel >= efl_version \
     eldbus >= efl_version \
     efreet >= efl_version \
     efreet-mime >= efl_version \
