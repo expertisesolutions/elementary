@@ -28,6 +28,7 @@ struct _Elm_View_List_Private
    Evas_Object *list;
    View_List_ItemData *rootdata;
    Elm_Genlist_Item_Class *itc;
+   Eina_Hash *prop_con;
    Eo *model;
 };
 
@@ -65,40 +66,50 @@ _hash_free(void *data)
 
 
 static char *
-_item_text_get(void *data, Evas_Object *obj, const char *part)
+_item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
 {
-   EINA_SAFETY_ON_NULL_RETURN_VAL(obj, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(data, NULL);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(part, NULL);
    View_List_ItemData *idata = data;
    Elm_View_List_Private *self = idata->self;
    Eina_Value *value;
 
+   const char *prop = eina_hash_find(self->prop_con, part);
+   if (prop == NULL)
+     {
+         prop = part;
+     }
+
    if (idata->parts == NULL)
      {
         idata->parts = eina_hash_string_superfast_new(_hash_free);
-        eina_hash_add(idata->parts, part, eina_value_new(EINA_VALUE_TYPE_STRING));
+        eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         //FIXME get parent model
         eo_do(self->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
         return NULL;
      }
 
-   EINA_SAFETY_ON_NULL_RETURN_VAL(idata->model, NULL);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(idata->parts, NULL);
-   value = eina_hash_find(idata->parts, part);
+   if (idata->model == NULL)
+     {
+        return NULL;
+     }
+
+   value = eina_hash_find(idata->parts, prop);
    if (value)
      {
         char *text = eina_value_to_string(value);
         if (text)
           {
+              //FIXME: don't cache
+              //eina_hash_del_by_key(idata->parts, part);
+              //eina_value_free(value);
               return strdup(text);
           }
         return NULL;
      }
 
-   if (idata->model)
-        eo_do(idata->model, emodel_property_get(part));
-
-   eina_hash_add(idata->parts, part, eina_value_new(EINA_VALUE_TYPE_STRING));
+   eo_do(idata->model, emodel_property_get(prop));
+   eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
    return NULL;
 }
 
@@ -194,6 +205,7 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    self->rootdata = malloc(sizeof(View_List_ItemData));
    self->rootdata->self = self;
    self->rootdata->model = self->model;
+   self->prop_con = eina_hash_string_superfast_new(free);
 
    self->list = elm_genlist_add(parent);
 
@@ -233,10 +245,27 @@ _elm_view_list_evas_object_get(Eo *obj, void *class_data, va_list *list)
    Elm_View_List_Private *self = class_data;
    EINA_SAFETY_ON_NULL_RETURN(self);
    EINA_SAFETY_ON_NULL_RETURN(obj);
-
    EINA_SAFETY_ON_NULL_RETURN(list);
+
    Evas_Object **e = va_arg(*list, Evas_Object **);
    *e = self->list;
+}
+
+static void
+_elm_view_list_property_connect(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+{
+   Elm_View_List_Private *self = class_data;
+   EINA_SAFETY_ON_NULL_RETURN(self);
+   EINA_SAFETY_ON_NULL_RETURN(list);
+
+   EINA_SAFETY_ON_NULL_RETURN(self->prop_con);
+   const char *property = va_arg(*list, const char *);
+   EINA_SAFETY_ON_NULL_RETURN(property);
+
+   const char *part = va_arg(*list, const char *);
+   EINA_SAFETY_ON_NULL_RETURN(part);
+
+   free(eina_hash_set(self->prop_con, part, strdup(property)));
 }
 
 static void
@@ -246,6 +275,7 @@ _view_list_class_constructor(Eo_Class *klass)
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_list_add),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_list_destructor),
       EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET), _elm_view_list_evas_object_get),
+      EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT), _elm_view_list_property_connect),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -255,6 +285,7 @@ _view_list_class_constructor(Eo_Class *klass)
 
 static const Eo_Op_Description op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET, "Return Evas object list"),
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT, "Connect a property to one part"),
    EO_OP_DESCRIPTION_SENTINEL
 };
 

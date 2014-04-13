@@ -11,6 +11,7 @@ extern EAPI Eo_Op ELM_VIEW_LIST_BASE_ID;
 
 enum {
      ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET,
+     ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT,
      ELM_OBJ_VIEW_LIST_SUB_ID_LAST
 };
 
@@ -33,6 +34,17 @@ enum {
  *
  */
 #define elm_view_list_evas_object_get(widget) ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET), EO_TYPECHECK(Evas_Object **, widget)
+
+/**
+ * @def elm_view_list_property_connect
+ * @since 1.8
+ *
+ * @param property
+ * @param part
+ *
+ */
+#define elm_view_list_property_connect(property, part) ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT), EO_TYPECHECK(const char *, property), EO_TYPECHECK(const char *, part)
+
 
 #endif
 #endif // ELM_VIEW_LIST_H
