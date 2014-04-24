@@ -11,12 +11,22 @@
 #include "elm_priv.h"
 #include <assert.h>
 
+typedef struct _Elm_View_Form_Private Elm_View_Form_Private;
+typedef struct _Elm_View_Form_List_Data Elm_View_Form_List_Data;
+
+struct _Elm_View_Form_List_Data
+{
+   Eo *listmodel;
+   Eo *listview;
+   Evas_Object *listwin;
+};
+
 struct _Elm_View_Form_Private
 {
    Evas_Object *win;
    Evas_Object *bigbox;
+   Elm_View_Form_List_Data list_data;
 };
-typedef struct _Elm_View_Form_Private Elm_View_Form_Private;
 
 /**
  * @brief Elm View Form Class
@@ -80,10 +90,12 @@ _elm_view_form_setup(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA_U
    priv->bigbox = elm_box_add(priv->win);
    EINA_SAFETY_ON_NULL_RETURN(priv->bigbox);
    
-   /* set some defult box properties but dot not display it yet */
+   /* set some defult box properties but do not display it yet */
    elm_box_horizontal_set(priv->bigbox, EINA_TRUE);
    evas_object_size_hint_weight_set(priv->bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    elm_win_resize_object_add(priv->win, priv->bigbox);
+   //evas_object_show(priv->bigbox);
+
 }
 
 /**
@@ -95,12 +107,38 @@ _elm_view_form_destructor(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
    eo_do_super(obj, MY_CLASS, eo_destructor());
 }
 
+/**
+ * @brief create list object and place it inside of bigbox
+ * 
+ */
+static void
+_elm_view_form_list_create(Eo *obj EINA_UNUSED, void *class_data, va_list *list EINA_UNUSED)
+{
+   Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
+   
+   priv->list_data.listwin = va_arg(*list, Evas_Object *);
+   priv->list_data.listmodel = va_arg(*list, Eo *);
+   
+   EINA_SAFETY_ON_NULL_RETURN(priv->list_data.listwin);
+   EINA_SAFETY_ON_NULL_RETURN(priv->list_data.listmodel);
+
+   /* create new list object */
+   priv->list_data.listview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, 
+                                            NULL, elm_view_list_add(priv->list_data.listwin, priv->list_data.listmodel));
+
+   //TODO: adjust listwin window size relative to bigbox. Use evas_object_resize()
+
+   /* place the list window inside of our bigbox */
+   elm_box_pack_end(priv->bigbox, priv->list_data.listwin);
+}
+
 static void
 _view_form_class_constructor(Eo_Class *klass)
 {
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_form_setup),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_form_destructor),
+      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_LIST), _elm_view_form_list_create),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -108,6 +146,7 @@ _view_form_class_constructor(Eo_Class *klass)
 }
 
 static const Eo_Op_Description op_descs[] = {
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_LIST, "Create object list"),
    EO_OP_DESCRIPTION_SENTINEL
 };
 
