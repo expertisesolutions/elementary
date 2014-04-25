@@ -73,6 +73,7 @@ fileselector_button_example.c \
 fileselector_entry_example.c \
 fileselector_example.c \
 fileviewlist.c \
+fileviewform.c \
 flip_example_01.c \
 flipselector_example.c \
 frame_example_01.c \
@@ -215,6 +216,7 @@ fileselector_button_example \
 fileselector_entry_example \
 fileselector_example \
 fileviewlist \
+fileviewform \
 flip_example_01 \
 flipselector_example \
 frame_example_01 \
