@@ -38,10 +38,12 @@ struct _View_List_ItemData
   Elm_Object_Item *item;
   Eo *model;
   Eina_Hash *parts;
+  View_List_ItemData *parent;
   int index;
 };
 
 static void _emodel_child_get(void *data, Eo *child, void *event_info);
+static Eina_Bool _emodel_children_count_get_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info);
 
 /* --- Genlist Callbacks --- */
 static void
@@ -64,7 +66,6 @@ _hash_free(void *data)
    eina_value_free(data);
 }
 
-
 static char *
 _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
 {
@@ -84,15 +85,15 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
      {
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
-        //FIXME get parent model
-        eo_do(self->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
+        if (idata->parent)
+          {
+              eo_do(idata->parent->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
+          }
         return NULL;
      }
 
    if (idata->model == NULL)
-     {
-        return NULL;
-     }
+     return NULL;
 
    value = eina_hash_find(idata->parts, prop);
    if (value)
@@ -111,6 +112,51 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    eo_do(idata->model, emodel_property_get(prop));
    eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
    return NULL;
+}
+
+static void
+_expand_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   Elm_Object_Item *item = event_info;
+   View_List_ItemData *idata = elm_object_item_data_get(item);
+   if (idata->model)
+     {
+        eo_do(idata->model, eo_event_callback_add(EMODEL_CHILDREN_COUNT_GET_EVT, _emodel_children_count_get_cb, idata));
+        eo_do(idata->model, emodel_children_count_get());
+     }
+}
+
+static void
+_contract_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   Elm_Object_Item *item = event_info;
+   elm_genlist_item_expanded_set(item, EINA_FALSE);
+}
+
+static void
+_expanded_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+        /*
+   Elm_Model_Tree_Path *c_path;
+   Eina_List *l, *children = NULL;
+   Elm_Object_Item *item = event_info;
+   Elm_View_Tree_Private *self = data;
+
+   View_Tree_ItemData *idata = elm_object_item_data_get(item);
+
+   EINA_SAFETY_ON_NULL_RETURN(idata);
+
+   eo_do(self->model, elm_model_tree_children_get(idata->path, &children));
+   EINA_SAFETY_ON_NULL_RETURN(children);
+   idata->children = eina_list_count(children);
+   */
+}
+
+static void
+_contracted_cb(void *data EINA_UNUSED, Evas_Object *o EINA_UNUSED, void *event_info)
+{
+   Elm_Object_Item *glit = event_info;
+   elm_genlist_item_subitems_clear(glit);
 }
 
 /* --- Emodel Callbacks --- */
@@ -155,11 +201,17 @@ _emodel_children_count_get_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_De
         EINA_SAFETY_ON_NULL_RETURN_VAL(idata, EINA_TRUE);
         idata->self = self;
         idata->index = i;
-        idata->item = elm_genlist_item_append(self->list, self->itc, idata, NULL,
-                                                       ELM_GENLIST_ITEM_NONE, _item_sel_cb, NULL);
+        idata->parent = pdata;
+        idata->item = elm_genlist_item_append(self->list, self->itc, idata, pdata->item,
+                                                       ELM_GENLIST_ITEM_TREE, _item_sel_cb, NULL);
      }
 
-   return EINA_TRUE;
+   if (pdata->item && *len > 0)
+     {
+        elm_genlist_item_expanded_set(pdata->item, EINA_TRUE);
+     }
+
+   return EINA_FALSE;
 }
 
 
@@ -203,6 +255,7 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    eo_ref(self->model);
 
    self->rootdata = malloc(sizeof(View_List_ItemData));
+   memset(self->rootdata, 0, sizeof(View_List_ItemData));
    self->rootdata->self = self;
    self->rootdata->model = self->model;
    self->prop_con = eina_hash_string_superfast_new(free);
@@ -220,6 +273,10 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    eo_do(self->model, emodel_children_count_get());
 
    evas_object_size_hint_weight_set(self->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_smart_callback_add(self->list, "expand,request", _expand_request_cb, self);
+   evas_object_smart_callback_add(self->list, "contract,request", _contract_request_cb, self);
+   evas_object_smart_callback_add(self->list, "contracted", _contracted_cb, self);
+
    elm_win_resize_object_add(parent, self->list);
    evas_object_show(self->list);
 }
