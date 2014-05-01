@@ -146,8 +146,6 @@ _elm_view_form_widget_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    priv->l = eina_list_append(priv->l, item);
 
    fprintf(stdout, "Added widget '%s' for model '%s'\n", item->widget_name, priv->model_name);
-
-   // REGISTER IN EMODEL EVENT
 }
       
 static void
@@ -162,42 +160,33 @@ _emodel_override_property_set(Eo *obj EINA_UNUSED, void *class_data, va_list *li
    evt.prop = va_arg(*list, const char *);
    evt.value = va_arg(*list, Eina_Value *);
 
-
-   //eina_value_array_get(priv->properties, prop_id, &evt.prop);
-   //evt.value = _emodel_property_value_get(priv, evt.prop);
-
    for(l = priv->l; l; l = eina_list_next(l))
      {
-        printf("Trying %s..\n", evt.prop);
         item = (Elm_View_Form_Item *)l->data;
-        printf("%s\n", item->propname);
+
+        /**
+         * Label widget
+         */
         if(!strncmp(item->widget_name, "Elm_Label", strlen(evt.prop)))
           {
              if(!strncmp(item->propname, "label_set", strlen("label_set")))
                {
-                  printf("Lets set the label\n");
                   const char *src;
                   eina_value_get(evt.value, &src);
                   elm_object_text_set(item->evas_obj, src);
                   eo_do(priv->model_obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
                }
           }
+
+        /**
+         * Clock widget
+         */
+        if(!strncmp(item->widget_name, "Elm_Clock", strlen(evt.prop)))
+          {
+             //TODO
+          }
      }
-   
    //XXX
-
-
-#if 0
-   eina_value_array_get(priv->properties, EMODEL_EIO_PROP_FILENAME, &evt.prop);
-
-   evt.value = _emodel_property_value_get(priv, evt.prop);
-   
-   eina_value_set(evt.value, priv->path);
-   eio_file_direct_stat(priv->path, _eio_stat_done_cb, _eio_property_set_error_cb, priv);
-
-   EINA_SAFETY_ON_FALSE_RETURN(eo_ref_get(priv->obj));
-   eo_do(priv->obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
-#endif
 }
 
 static void

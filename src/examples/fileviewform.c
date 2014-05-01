@@ -11,11 +11,11 @@
 
 #define FILENAME_PATH "/tmp"
 
-struct _Form_Widgets
+struct _Form_Widget
 {
    Evas_Object *label;
 };
-typedef struct _Form_Widgets Form_Widgets;
+typedef struct _Form_Widget Form_Widget;
 
 
 struct _Form_Example_Data
@@ -25,7 +25,7 @@ struct _Form_Example_Data
    Evas_Object *mainwin;
    Evas_Object *bigbox;
 
-   Form_Widgets widget;
+   Form_Widget widget;
 };
 typedef struct _Form_Example_Data Form_Example_Data;
 
@@ -58,26 +58,27 @@ const Eo_Class *file_view_form_class_get(void);
 static void
 _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
-   eo_do_super(obj, MY_CLASS, eo_constructor());
    Form_Example_Data *priv = class_data;
    
+   eo_do_super(obj, MY_CLASS, eo_constructor());
+
    /**
     * @brief Window setup
     */
-   priv->mainwin = elm_win_util_standard_add("form_test", "Form_test");
+   priv->mainwin = elm_win_util_standard_add("form_test", "Form Test");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(priv->mainwin, EINA_TRUE); /**< sets the window to be destroyed automatically by signal */
    elm_win_focus_highlight_enabled_set(priv->mainwin, EINA_TRUE); /**< enavle focus */
    evas_object_smart_callback_add(priv->mainwin, "focus,in", _win_focused_cb, "mainwindow");
-   evas_object_smart_callback_add(priv->mainwin, "delete,request", _main_win_del_cb, NULL); /**< define window delete callback */
-   evas_object_resize(priv->mainwin, 200, 170);
+   evas_object_smart_callback_add(priv->mainwin, "delete,request", _main_win_del_cb, "mainwindow"); /**< define window delete callback */
+   evas_object_resize(priv->mainwin, 250, 220);
    evas_object_show(priv->mainwin);
 
    /**
     * @brief Box setup
     */
    priv->bigbox = elm_box_add(priv->mainwin);
-   elm_box_horizontal_set(priv->bigbox, EINA_TRUE);
+   //elm_box_horizontal_set(priv->bigbox, EINA_TRUE);
    evas_object_size_hint_weight_set(priv->bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    elm_win_resize_object_add(priv->mainwin, priv->bigbox);
    evas_object_show(priv->bigbox);
@@ -85,8 +86,10 @@ _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    /**
     * @brief Label widget setup
     */
-   priv->widget.label = elm_label_add(priv->bigbox);
+   priv->widget.label = elm_label_add(priv->mainwin);
    elm_label_line_wrap_set(priv->widget.label, ELM_WRAP_CHAR);
+   evas_object_size_hint_weight_set(priv->widget.label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(priv->widget.label, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_box_pack_end(priv->bigbox, priv->widget.label);
    evas_object_show(priv->widget.label);
 }
@@ -101,7 +104,6 @@ static void
 _form_add_widgets(Eo *obj, void *class_data, va_list *list)
 {
    Form_Example_Data *priv = class_data;
-   
    priv->evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(obj));
    eo_do(priv->evf, elm_view_form_widget_add("label_set", priv->widget.label));
 }
@@ -111,7 +113,6 @@ _form_view_object_get(Eo *obj, void *class_data, va_list *list)
 {
    Form_Example_Data *priv = class_data;
    Eo **evf = va_arg(*list, Eo **);
-
    *evf = priv->evf;
 }
 
@@ -168,61 +169,14 @@ elm_main(int argc, char **argv)
    eo_do(formmodel, form_view_object_get(&evf));
 
    Eina_Value *nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(nameset, "love you my child");
+   eina_value_set(nameset, "I hear dead people.");
 
    eo_do(evf, emodel_property_set("label_set", nameset));
 
-
-//   evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(formmodel));
-   
-
-
-
-#if  0
-   //register events!
-   //eo_do(idata->model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _emodel_property_change_cb, idata));
-
-   //FIXME
-   
-   elm_object_text_set(label, "test");
-
-   eo_do(form, elm_view_form_widget_add("label", label));
-
-   Eina_Value *labeltxt = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(labeltxt, "new label");
-
-   eo_do(formmodel, emodel_property_set("label", labeltxt));
-#endif
    elm_run();
    elm_shutdown();
    ecore_shutdown();
 
-
-#if 0
-   elm_run();
-#endif
-#if 0
-   form = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_setup("viewform", "Viewform"));
-
-   fprintf(stdout, "Got: form=%p\n", form);
-
-   formwin = elm_win_util_standard_add("form_viewform", "form_Viewform");
-   fprintf(stdout, "Got: formwin=%p\n", formwin);
-
-   elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
-   elm_win_autodel_set(formwin, EINA_TRUE);
-
-   //eo_do(form, elm_view_list_evas_object_get(&widget));
-
-   formmodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
-   fprintf(stdout, "Got: formmodel=%p\n", formmodel);
-   eo_do(form, elm_view_form_list_create(formwin, formmodel));
-
-   elm_run();
-   elm_shutdown();
-
-   ecore_shutdown();
-#endif
    return 0;
 }
 ELM_MAIN()
