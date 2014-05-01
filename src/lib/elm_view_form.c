@@ -149,15 +149,17 @@ _elm_view_form_widget_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 }
       
 static void
-_emodel_override_property_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_elm_view_form_widget_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Emodel_Property_EVT evt;
+   Eina_Value *v;
+   const char *name;
    Eina_List *l;
    Elm_View_Form_Item *item;
 
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
 
-   evt.prop = va_arg(*list, const char *);
+   evt.prop = va_arg(*list, const char *); //FIXME
    evt.value = va_arg(*list, Eina_Value *);
 
    for(l = priv->l; l; l = eina_list_next(l))
@@ -169,13 +171,10 @@ _emodel_override_property_set(Eo *obj EINA_UNUSED, void *class_data, va_list *li
          */
         if(!strncmp(item->widget_name, "Elm_Label", strlen(evt.prop)))
           {
-             if(!strncmp(item->propname, "label_set", strlen("label_set")))
-               {
                   const char *src;
                   eina_value_get(evt.value, &src);
                   elm_object_text_set(item->evas_obj, src);
                   eo_do(priv->model_obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
-               }
           }
 
         /**
@@ -195,8 +194,8 @@ _view_form_class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_form_constructor),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_form_destructor),
-      EO_OP_FUNC(EMODEL_ID(EMODEL_OBJ_SUB_ID_PROPERTY_SET), _emodel_override_property_set),
       EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD), _elm_view_form_widget_add),
+      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET), _elm_view_form_widget_set),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -205,6 +204,7 @@ _view_form_class_constructor(Eo_Class *klass)
 
 static const Eo_Op_Description op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD, "Add new widget"),
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET, "Set widget data"),
    EO_OP_DESCRIPTION_SENTINEL
 };
 
@@ -219,4 +219,4 @@ static Eo_Class_Description view_form_class_descs = {
    NULL
 };
 
-EO_DEFINE_CLASS(elm_obj_view_form_class_get, &view_form_class_descs, EO_BASE_CLASS, EMODEL_CLASS, NULL);
+EO_DEFINE_CLASS(elm_obj_view_form_class_get, &view_form_class_descs, EO_BASE_CLASS, NULL);

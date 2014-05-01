@@ -20,7 +20,6 @@ typedef struct _Form_Widget Form_Widget;
 
 struct _Form_Example_Data
 {
-   Eo *model;
    Eo *evf; /**< Elm View Form object */
    Evas_Object *mainwin;
    Evas_Object *bigbox;
@@ -92,6 +91,7 @@ _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    evas_object_size_hint_align_set(priv->widget.label, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_box_pack_end(priv->bigbox, priv->widget.label);
    evas_object_show(priv->widget.label);
+
 }
 
 static void
@@ -171,7 +171,7 @@ elm_main(int argc, char **argv)
    Eina_Value *nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset, "I hear dead people.");
 
-   eo_do(evf, emodel_property_set("label_set", nameset));
+   eo_do(evf, elm_view_form_widget_set("first label", nameset));
 
    elm_run();
    elm_shutdown();
