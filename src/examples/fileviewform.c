@@ -45,7 +45,7 @@ enum {
 #define FILE_VIEW_FORM_CLASS_ID(sub_id) (FILE_VIEW_FORM_CLASS_BASE_ID + sub_id)
 
 #define form_constructor() EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR)
-#define form_add_widgets() FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_ADD_WIDGETS)
+#define form_add_widget(propname) FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_ADD_WIDGETS), EO_TYPECHECK(char *, propname)
 #define form_view_object_get(object) FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_GET_VIEW_OBJECT), EO_TYPECHECK(Eo **, object)
 
 #define FILE_VIEW_FORM_CLASS file_view_form_class_get()
@@ -60,6 +60,8 @@ _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    Form_Example_Data *priv = class_data;
    
    eo_do_super(obj, MY_CLASS, eo_constructor());
+   
+   priv->evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(obj));
 
    /**
     * @brief Window setup
@@ -101,11 +103,12 @@ _form_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 }
 
 static void
-_form_add_widgets(Eo *obj, void *class_data, va_list *list)
+_form_add_widget(Eo *obj, void *class_data, va_list *list)
 {
    Form_Example_Data *priv = class_data;
-   priv->evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(obj));
-   eo_do(priv->evf, elm_view_form_widget_add("label_set", priv->widget.label));
+   char *propname = va_arg(*list, char *);
+
+   eo_do(priv->evf, elm_view_form_widget_add(propname, priv->widget.label)); //FIXME
 }
 
 static void
@@ -122,7 +125,7 @@ _class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
         EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _form_constructor),
         EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _form_destructor),
-        EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_ADD_WIDGETS), _form_add_widgets),
+        EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_ADD_WIDGETS), _form_add_widget),
         EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_GET_VIEW_OBJECT), _form_view_object_get),
         EO_OP_FUNC_SENTINEL
    };
@@ -161,8 +164,23 @@ elm_main(int argc, char **argv)
    ecore_init();
 
    formmodel = eo_add_custom(FILE_VIEW_FORM_CLASS, NULL, form_constructor());
+   
+   eo_do(formmodel, form_add_widget("filename"));
+   
+   // Get elm_view_form object so we can invoke its functions from main
+   eo_do(formmodel, form_view_object_get(&evf));
+   
+   Eina_Value *nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
+   eina_value_set(nameset, "/some/filename");
+   
+   elm_run();
+   elm_shutdown();
+   ecore_shutdown();
+#if 0
 
    eo_do(formmodel, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
+   eo_do(formmodel, eo_event_callback_add(EMODEL_PROPERTIES_CHANGE_EVT, _properties_cb, NULL));
+
    eo_do(formmodel, form_add_widgets());
 
    // Get elm_view_form object so we can invoke its functions from main
@@ -172,11 +190,14 @@ elm_main(int argc, char **argv)
    eina_value_set(nameset, "I hear dead people.");
 
    eo_do(evf, elm_view_form_widget_set("first label", nameset));
+ 
+   eo_do(formmodel, emodel_properties_get());
+
 
    elm_run();
    elm_shutdown();
    ecore_shutdown();
-
+#endif
    return 0;
 }
 ELM_MAIN()

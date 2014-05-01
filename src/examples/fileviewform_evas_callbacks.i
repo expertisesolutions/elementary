@@ -23,3 +23,11 @@ _prop_change_cb(void *data, Eo *obj EINA_UNUSED,
    fprintf(stdout, "%s:%d: Got property change event.\n", __FUNCTION__, __LINE__);
    return EINA_TRUE;
 }
+
+static Eina_Bool
+_properties_cb(void *data, Eo *obj EINA_UNUSED, 
+                const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+{
+   fprintf(stdout, "%s:%d: Got properties event.\n", __FUNCTION__, __LINE__);
+   return EINA_TRUE;
+}
