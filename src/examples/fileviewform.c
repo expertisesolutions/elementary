@@ -31,7 +31,7 @@ typedef struct _Form_Example_Data Form_Example_Data;
 #include "fileviewform_evas_callbacks.i"
 
 /**
- * Local class
+ * Local model class
  * begin
  */
 EAPI Eo_Op FILE_VIEW_FORM_CLASS_BASE_ID = 0;
@@ -112,11 +112,25 @@ _form_add_widget(Eo *obj, void *class_data, va_list *list)
 }
 
 static void
-_form_view_object_get(Eo *obj, void *class_data, va_list *list)
+_form_object_get(Eo *obj, void *class_data, va_list *list)
 {
    Form_Example_Data *priv = class_data;
    Eo **evf = va_arg(*list, Eo **);
    *evf = priv->evf;
+}
+
+static void
+_form_property_set(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
+{
+   Emodel_Property_EVT evt;
+   
+   evt.prop= va_arg(*list, const char*);
+   evt.value = va_arg(*list, Eina_Value *);
+
+   EINA_SAFETY_ON_NULL_RETURN(evt.prop);
+   EINA_SAFETY_ON_NULL_RETURN(evt.value);
+
+   eo_do(obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
 }
 
 static void
@@ -125,8 +139,9 @@ _class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
         EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _form_constructor),
         EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _form_destructor),
+        EO_OP_FUNC(EMODEL_ID(EMODEL_OBJ_SUB_ID_PROPERTY_SET), _form_property_set),
         EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_ADD_WIDGETS), _form_add_widget),
-        EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_GET_VIEW_OBJECT), _form_view_object_get),
+        EO_OP_FUNC(FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_GET_VIEW_OBJECT), _form_object_get),
         EO_OP_FUNC_SENTINEL
    };
 
@@ -147,8 +162,7 @@ static Eo_Class_Description _class_descs = {
      _class_constructor,
      NULL
 };
-EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, ELM_OBJ_VIEW_FORM_CLASS, NULL);
-
+EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, ELM_OBJ_VIEW_FORM_CLASS, EMODEL_CLASS, NULL);
 /**
  * Local class
  * end
@@ -160,6 +174,7 @@ elm_main(int argc, char **argv)
 {
    Eo *formmodel;
    Eo *evf;
+   Eina_Value *nameset;
 
    ecore_init();
 
@@ -170,34 +185,18 @@ elm_main(int argc, char **argv)
    // Get elm_view_form object so we can invoke its functions from main
    eo_do(formmodel, form_view_object_get(&evf));
    
-   Eina_Value *nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(nameset, "/some/filename");
+   eo_do(evf, elm_view_form_property_pair_add(EMODEL_OBJ_SUB_ID_PROPERTY_SET, "filename"));
    
+   nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
+   eina_value_set(nameset, "some_random_filename");
+
+   eo_do(formmodel, emodel_property_set("filename", nameset));
+   
+   // cleanup stuff
    elm_run();
    elm_shutdown();
    ecore_shutdown();
-#if 0
 
-   eo_do(formmodel, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
-   eo_do(formmodel, eo_event_callback_add(EMODEL_PROPERTIES_CHANGE_EVT, _properties_cb, NULL));
-
-   eo_do(formmodel, form_add_widgets());
-
-   // Get elm_view_form object so we can invoke its functions from main
-   eo_do(formmodel, form_view_object_get(&evf));
-
-   Eina_Value *nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(nameset, "I hear dead people.");
-
-   eo_do(evf, elm_view_form_widget_set("first label", nameset));
- 
-   eo_do(formmodel, emodel_properties_get());
-
-
-   elm_run();
-   elm_shutdown();
-   ecore_shutdown();
-#endif
    return 0;
 }
 ELM_MAIN()
