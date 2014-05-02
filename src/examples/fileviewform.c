@@ -14,6 +14,7 @@
 struct _Form_Widget
 {
    Evas_Object *label;
+   Evas_Object *clock;
 };
 typedef struct _Form_Widget Form_Widget;
 
@@ -49,7 +50,7 @@ enum {
 #define form_view_object_get(object) FILE_VIEW_FORM_CLASS_ID(FILE_VIEW_OBJ_SUB_ID_GET_VIEW_OBJECT), EO_TYPECHECK(Eo **, object)
 
 #define FILE_VIEW_FORM_CLASS file_view_form_class_get()
-const Eo_Class *file_view_form_class_get(void);
+const Eo_Class *file_view_form_class_get(void) EINA_CONST;
 
 #define MY_CLASS FILE_VIEW_FORM_CLASS
 #define MY_CLASS_NAME "File View Form Example"
@@ -93,6 +94,16 @@ _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    evas_object_size_hint_align_set(priv->widget.label, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_box_pack_end(priv->bigbox, priv->widget.label);
    evas_object_show(priv->widget.label);
+
+   /**
+    * @brief Clock widget setup
+    */
+#if 0
+   priv->widget.clock = elm_clock_add(priv->mainwin);
+   elm_clock_show_am_pm_set(priv->widget.clock, EINA_TRUE);
+   elm_box_pack_end(priv->bigbox, priv->widget.clock);
+   evas_object_show(priv->widget.clock);
+#endif
 
 }
 
@@ -185,7 +196,8 @@ elm_main(int argc, char **argv)
    // Get elm_view_form object so we can invoke its functions from main
    eo_do(formmodel, form_view_object_get(&evf));
    
-   eo_do(evf, elm_view_form_property_pair_add(EMODEL_OBJ_SUB_ID_PROPERTY_SET, "filename"));
+   eo_do(evf, elm_view_form_property_add("filename"));
+   eo_do(evf, elm_view_form_property_add("mtime"));
    
    nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset, "some_random_filename");

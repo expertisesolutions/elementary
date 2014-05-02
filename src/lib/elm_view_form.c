@@ -189,10 +189,9 @@ _elm_view_form_destructor(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_
 
 
 static void
-_elm_view_form_property_pair_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_elm_view_form_property_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
-   int propname_id = va_arg(*list, int);
    const char *propname = va_arg(*list, const char *);
 
    EINA_SAFETY_ON_NULL_RETURN(propname);
@@ -201,7 +200,7 @@ _elm_view_form_property_pair_add(Eo *obj EINA_UNUSED, void *class_data, va_list 
    EINA_SAFETY_ON_NULL_RETURN(p);
 
    p->propname = propname;
-   p->propname_id = propname_id;
+   p->propname_id = 0; //XXX: unused
 
    priv->lprop = eina_list_append(priv->lprop, p);
 
@@ -231,7 +230,7 @@ _view_form_class_constructor(Eo_Class *klass)
    const Eo_Op_Func_Description func_descs[] = {
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_form_constructor),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_form_destructor),
-      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_PAIR_ADD), _elm_view_form_property_pair_add),
+      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_ADD), _elm_view_form_property_add),
       EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD), _elm_view_form_widget_add),
       EO_OP_FUNC_SENTINEL
    };
@@ -240,7 +239,7 @@ _view_form_class_constructor(Eo_Class *klass)
 }
 
 static const Eo_Op_Description op_descs[] = {
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_PAIR_ADD, "Add property pair"),
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_ADD, "Add property pair"),
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD, "Add new widget"),
    EO_OP_DESCRIPTION_SENTINEL
 };

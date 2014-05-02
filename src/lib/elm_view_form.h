@@ -4,11 +4,10 @@
 extern EAPI Eo_Op ELM_VIEW_FORM_BASE_ID;
 
 #define ELM_OBJ_VIEW_FORM_CLASS elm_obj_view_form_class_get()
-
 const Eo_Class *elm_obj_view_form_class_get(void) EINA_CONST;
 
 enum {
-   ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_PAIR_ADD,
+   ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_ADD,
    ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD,
    ELM_OBJ_VIEW_FORM_SUB_ID_LAST
 };
@@ -33,7 +32,7 @@ enum {
  * @param propname
  *
  */
-#define elm_view_form_property_pair_add(propname_id, propname) ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_PAIR_ADD), EO_TYPECHECK(int, propname_id), EO_TYPECHECK(const char *, propname)
+#define elm_view_form_property_add(propname) ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_PROPERTY_ADD), EO_TYPECHECK(const char *, propname)
 
 /**
  * @def elm_view_form_widget_add
