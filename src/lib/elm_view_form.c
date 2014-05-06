@@ -13,15 +13,9 @@
 
 typedef struct _Elm_View_Form_Private Elm_View_Form_Private;
 typedef struct _Elm_View_Form_Item Elm_View_Form_Item;
-typedef struct _Elm_View_Form_Properties Elm_View_Form_Properties;
 typedef struct _Elm_View_Form_Widget Elm_View_Form_Widget;
+typedef Eina_List Eina_List_Properties;
  
-struct _Elm_View_Form_Properties
-{
-   int propname_id;
-   const char *propname;
-};
-
 struct _Elm_View_Form_Widget
 {
    const char *widget_name;
@@ -30,7 +24,7 @@ struct _Elm_View_Form_Widget
 
 struct _Elm_View_Form_Item
 {
-   char *propname;
+   const char *propname;
    Eina_List *widget_list;
 };
 
@@ -40,7 +34,7 @@ struct _Elm_View_Form_Private
    Eina_Value *properties;
    const char *model_name;
    Eina_List *l;
-   Eina_List *lprop;
+   Eina_List_Properties *lprop;
 };
 
 
@@ -68,6 +62,7 @@ _elm_view_widget_add(Elm_View_Form_Private *priv,
         item->propname = propname;
         item->widget_list = eina_list_append(item->widget_list, widget);
         priv->l = eina_list_append(priv->l, item);
+        //fprintf(stdout, "[%s:%d] Added item '%s' with '%s' from object '%p'\n", __FUNCTION__, __LINE__, item->propname, widget->widget_name, widget->widget_obj);
      } 
    else
      {
@@ -75,7 +70,7 @@ _elm_view_widget_add(Elm_View_Form_Private *priv,
         Elm_View_Form_Widget *nWidget;
         for(Eina_List *l = priv->l; l; l = eina_list_next(l))
           {
-             nItem = (Elm_View_Form_Item *)l->data;
+             nItem = eina_list_data_get(l);
 
              /**
               * List is already created and property already exists so we append a new Evas_Object
@@ -88,6 +83,7 @@ _elm_view_widget_add(Elm_View_Form_Private *priv,
                   nWidget->widget_name = widget_name;
                   nWidget->widget_obj = widget_obj;
                   nItem->widget_list = eina_list_append(nItem->widget_list, nWidget);
+                  //fprintf(stdout, "[%s:%d] Added item '%s' with '%s' from object '%p'\n", __FUNCTION__, __LINE__, nItem->propname, nWidget->widget_name, nWidget->widget_obj);
                }
 
              /**
@@ -106,6 +102,7 @@ _elm_view_widget_add(Elm_View_Form_Private *priv,
 
                   nItem->propname = propname;
                   nItem->widget_list = eina_list_append(nItem->widget_list, nWidget);
+                  //fprintf(stdout, "[%s:%d] Added item '%s' with '%s' from object '%p'\n", __FUNCTION__, __LINE__, nItem->propname, nWidget->widget_name, nWidget->widget_obj);
 
                   l = eina_list_append(l, nItem);
                   l = eina_list_next(l);
@@ -113,6 +110,22 @@ _elm_view_widget_add(Elm_View_Form_Private *priv,
           }
      }
    return EINA_TRUE;
+}
+
+static Eina_Bool
+_elm_view_form_property_find(Eina_List_Properties *l, const char *propname)
+{
+   EINA_SAFETY_ON_NULL_RETURN_VAL(l, EINA_FALSE);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(propname, EINA_FALSE);
+
+   for(Eina_List_Properties *_l = l; _l; _l = eina_list_next(_l))
+     {
+        const char *p = eina_list_data_get(_l);
+        EINA_SAFETY_ON_NULL_RETURN_VAL(p, EINA_FALSE);
+        if(!strncmp(p, propname, strlen(propname)))
+          return EINA_TRUE;
+     }
+   return EINA_FALSE;
 }
 
 /**
@@ -130,10 +143,17 @@ _elm_view_form_property_change_cb(void *data, Eo *obj EINA_UNUSED,
 
    for(Eina_List *l = priv->l; l; l = eina_list_next(l))
      {
-        Elm_View_Form_Item *nItem  = (Elm_View_Form_Item *)l->data;
-        for(Eina_List *lwidget = nItem->widget_list; lwidget; lwidget = eina_list_next(lwidget->next))
+        Elm_View_Form_Item *nItem = eina_list_data_get(l);
+
+        /** 
+         * Is current property on the list?
+         */ 
+         if(_elm_view_form_property_find(priv->lprop, nItem->propname) == EINA_FALSE)
+           return EINA_FALSE;
+
+        for(Eina_List *lwidget = nItem->widget_list; lwidget; lwidget = eina_list_next(lwidget))
           {
-             Elm_View_Form_Widget *nWidget = (Elm_View_Form_Widget *)lwidget->data;
+             Elm_View_Form_Widget *nWidget = eina_list_data_get(lwidget);
              if(!nWidget || !nWidget->widget_name || !nWidget->widget_obj) continue;
 
              if(!strncmp(nWidget->widget_name, "Elm_Label", strlen("Elm_Label")))
@@ -175,6 +195,7 @@ _elm_view_form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
    priv->model_obj = model_obj;
    priv->model_name = eo_class_name_get(priv->model_obj);
+   eo_do(priv->model_obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _elm_view_form_property_change_cb, priv));
 }
 
 /**
@@ -192,25 +213,20 @@ static void
 _elm_view_form_property_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
-   const char *propname = va_arg(*list, const char *);
+   char *tmp = va_arg(*list, const char *);
+   char *propname;
 
+   EINA_SAFETY_ON_NULL_RETURN(tmp);
+   propname = calloc(1, strlen(tmp)+1);
    EINA_SAFETY_ON_NULL_RETURN(propname);
 
-   Elm_View_Form_Properties *p = calloc(1, sizeof(Elm_View_Form_Properties)); 
-   EINA_SAFETY_ON_NULL_RETURN(p);
-
-   p->propname = propname;
-   p->propname_id = 0; //XXX: unused
-
-   priv->lprop = eina_list_append(priv->lprop, p);
-
-   fprintf(stdout, "data=%p\n", priv);
-   eo_do(priv->model_obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _elm_view_form_property_change_cb, priv));
+   priv->lprop = eina_list_append(priv->lprop, strncpy(propname, tmp, strlen(tmp)));
 }
 
 static void
 _elm_view_form_widget_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Eina_Bool status;
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
    char *propname = va_arg(*list, const char *);
    Evas_Object *evas = va_arg(*list, Evas_Object *);
@@ -219,9 +235,8 @@ _elm_view_form_widget_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    EINA_SAFETY_ON_NULL_RETURN(propname);
    EINA_SAFETY_ON_NULL_RETURN(evas);
 
-   EINA_SAFETY_ON_FALSE_RETURN(_elm_view_widget_add(priv, objname, propname, evas));
-
-   fprintf(stdout, "Added widget '%s' for model '%s'\n", objname, priv->model_name);
+   status = _elm_view_widget_add(priv, objname, propname, evas);
+   EINA_SAFETY_ON_FALSE_RETURN(status);
 }
       
 static void
