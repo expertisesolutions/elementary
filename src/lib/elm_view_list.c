@@ -66,6 +66,61 @@ _hash_free(void *data)
    eina_value_free(data);
 }
 
+static Evas_Object *
+_item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
+{
+   //XXX: Add a Custon content function??
+   EINA_SAFETY_ON_NULL_RETURN_VAL(data, NULL);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(part, NULL);
+   View_List_ItemData *idata = data;
+   Elm_View_List_Private *self = idata->self;
+   Eina_Value *value;
+
+   const char *prop = eina_hash_find(self->prop_con, part);
+   if (prop == NULL) prop = part;
+
+   if (idata->parts == NULL)
+     {
+        idata->parts = eina_hash_string_superfast_new(_hash_free);
+        eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
+        if (idata->parent)
+              eo_do(idata->parent->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
+        return NULL;
+     }
+
+   if (idata->model == NULL)
+        return NULL;
+
+   value = eina_hash_find(idata->parts, prop);
+   if (!value)
+     {
+        eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
+        eo_do(idata->model, emodel_property_get(prop));
+        return NULL;
+     }
+
+   const char *content_s = eina_value_to_string(value);
+   if (!content_s)
+      return NULL;
+
+   Evas_Object *ic = NULL;
+   if (strncmp("icon ", content_s, 5) == 0)
+     {
+        content_s += 5;
+        ic = elm_icon_add(obj);
+        elm_icon_standard_set(ic, content_s);
+        evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
+     }
+   else if (strncmp("photo ", content_s, 6) == 0)
+     {
+        content_s += 6;
+        ic = elm_icon_add(obj);
+        elm_photo_file_set(ic, content_s);
+     }
+
+   return ic;
+}
+
 static char *
 _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
 {
@@ -76,19 +131,14 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    Eina_Value *value;
 
    const char *prop = eina_hash_find(self->prop_con, part);
-   if (prop == NULL)
-     {
-         prop = part;
-     }
+   if (prop == NULL) prop = part;
 
    if (idata->parts == NULL)
      {
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         if (idata->parent)
-          {
               eo_do(idata->parent->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
-          }
         return NULL;
      }
 
@@ -134,25 +184,6 @@ _contract_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void 
 }
 
 static void
-_expanded_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
-{
-        /*
-   Elm_Model_Tree_Path *c_path;
-   Eina_List *l, *children = NULL;
-   Elm_Object_Item *item = event_info;
-   Elm_View_Tree_Private *self = data;
-
-   View_Tree_ItemData *idata = elm_object_item_data_get(item);
-
-   EINA_SAFETY_ON_NULL_RETURN(idata);
-
-   eo_do(self->model, elm_model_tree_children_get(idata->path, &children));
-   EINA_SAFETY_ON_NULL_RETURN(children);
-   idata->children = eina_list_count(children);
-   */
-}
-
-static void
 _contracted_cb(void *data EINA_UNUSED, Evas_Object *o EINA_UNUSED, void *event_info)
 {
    Elm_Object_Item *glit = event_info;
@@ -170,13 +201,24 @@ _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Descr
    EINA_SAFETY_ON_NULL_RETURN_VAL(idata, EINA_TRUE);
    EINA_SAFETY_ON_NULL_RETURN_VAL(property, EINA_TRUE);
 
-   value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_copy(property->value, value);
-   eina_hash_set(idata->parts, property->prop, value);
+   value = eina_hash_find(idata->parts, property->prop);
+   if (value)
+     {
+        if (eina_value_type_get(property->value) == EINA_VALUE_TYPE_BLOB &&
+                        eina_value_type_get(value) == EINA_VALUE_TYPE_BLOB)
+          {
+              Eina_Value_Blob blob;
+              eina_value_get(property->value, &blob);
+              eina_value_set(value, blob);
+          }
+        else
+          {
+              eina_value_copy(property->value, value);
+          }
 
-   if (idata->item) {
-      elm_genlist_item_update(idata->item);
-   }
+        if (idata->item)
+          elm_genlist_item_update(idata->item);
+     }
 
    return EINA_TRUE;
 }
@@ -265,7 +307,7 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    self->itc = elm_genlist_item_class_new();
    self->itc->item_style = "default";
    self->itc->func.text_get = _item_text_get;
-   self->itc->func.content_get = NULL;
+   self->itc->func.content_get = _item_content_get;
    self->itc->func.state_get = NULL;
    self->itc->func.del = _item_del;
 

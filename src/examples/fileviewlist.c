@@ -30,6 +30,7 @@ elm_main(int argc, char **argv)
    filemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
    fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(win, filemodel));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
+   eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
    evas_object_resize(win, 320, 520);
    evas_object_show(win);
