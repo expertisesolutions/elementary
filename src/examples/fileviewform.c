@@ -196,8 +196,9 @@ elm_main(int argc, char **argv)
    // Get elm_view_form object so we can invoke its functions from main
    eo_do(formmodel, form_view_object_get(&evf));
    
-   eo_do(evf, elm_view_form_property_add("filename"));
    eo_do(evf, elm_view_form_property_add("mtime"));
+   eo_do(evf, elm_view_form_property_add("is_dir"));
+   eo_do(evf, elm_view_form_property_add("filename"));
    
    nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset, "some_random_filename");
