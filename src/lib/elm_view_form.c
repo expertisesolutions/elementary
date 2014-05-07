@@ -42,8 +42,7 @@ struct _Elm_View_Form_Private
  * @brief Helper functions
  */
 static Eina_Bool
-_elm_view_widget_add(Elm_View_Form_Private *priv, 
-                           const char *widget_name, char *propname, Evas_Object *widget_obj)
+_elm_view_widget_add(Elm_View_Form_Private *priv, const char *widget_name, char *propname, Evas_Object *widget_obj)
 {
    /**
     * First call
@@ -132,8 +131,7 @@ _elm_view_form_property_find(Eina_List_Properties *l, const char *propname)
  * @brief Widget/Property event callbacks
  */
 static Eina_Bool
-_elm_view_form_property_change_cb(void *data, Eo *obj EINA_UNUSED, 
-                                  const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+_elm_view_form_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)data;
    Emodel_Property_EVT *evt = event_info;
@@ -151,7 +149,8 @@ _elm_view_form_property_change_cb(void *data, Eo *obj EINA_UNUSED,
          if(_elm_view_form_property_find(priv->lprop, nItem->propname) == EINA_FALSE)
            return EINA_FALSE;
 
-        for(Eina_List *lwidget = nItem->widget_list; lwidget; lwidget = eina_list_next(lwidget))
+        for(Eina_List *lwidget = nItem->widget_list; 
+            lwidget; lwidget = eina_list_next(lwidget))
           {
              Elm_View_Form_Widget *nWidget = eina_list_data_get(lwidget);
              if(!nWidget || !nWidget->widget_name || !nWidget->widget_obj) continue;
@@ -184,7 +183,7 @@ EAPI Eo_Op ELM_VIEW_FORM_BASE_ID = EO_NOOP;
  * @brief constructor
  */
 static void
-_elm_view_form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+_elm_view_form_constructor(Eo *obj, void *class_data, va_list *list)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
    Eo *model_obj = va_arg(*list, Eo *);
@@ -195,16 +194,45 @@ _elm_view_form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
    priv->model_obj = model_obj;
    priv->model_name = eo_class_name_get(priv->model_obj);
-   eo_do(priv->model_obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _elm_view_form_property_change_cb, priv));
+   eo_do(priv->model_obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, 
+                                                _elm_view_form_property_change_cb, priv));
 }
 
 /**
  * @brief destructor
  */
 static void
-_elm_view_form_destructor(Eo *obj EINA_UNUSED, void *class_data EINA_UNUSED, va_list *list EINA_UNUSED)
+_elm_view_form_destructor(Eo *obj, void *class_data, va_list *list EINA_UNUSED)
 {
-   //TODO: cleanup/free data
+   void *data = NULL;
+   Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
+   EINA_SAFETY_ON_NULL_RETURN(obj);
+
+   /**
+    * Free properties data
+    */
+   EINA_LIST_FREE(priv->lprop, data)
+        free(data);
+   eina_list_free(priv->lprop);
+   
+   /**
+    * Free item data
+    */
+   EINA_LIST_FREE(priv->l, data)
+     {
+        void *idata;
+        Elm_View_Form_Item *item = (Elm_View_Form_Item *)data;
+
+        /**
+         * Free widget data
+         */
+        EINA_LIST_FREE(item->widget_list, idata)
+             free(idata);
+        eina_list_free(item->widget_list);
+     }
+   eina_list_free(priv->l);
+
    eo_do_super(obj, MY_CLASS, eo_destructor());
 }
 
@@ -215,12 +243,15 @@ _elm_view_form_property_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
    char *tmp = va_arg(*list, const char *);
    char *propname;
+   size_t len;
 
    EINA_SAFETY_ON_NULL_RETURN(tmp);
-   propname = calloc(1, strlen(tmp)+1);
+   len = strlen(tmp);
+   propname = calloc(1, len+1);
    EINA_SAFETY_ON_NULL_RETURN(propname);
 
-   priv->lprop = eina_list_append(priv->lprop, strncpy(propname, tmp, strlen(tmp)));
+   priv->lprop = eina_list_append(priv->lprop, 
+                                  strncpy(propname, tmp, len));
 }
 
 static void
