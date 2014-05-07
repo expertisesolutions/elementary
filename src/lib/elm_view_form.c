@@ -230,6 +230,7 @@ _elm_view_form_destructor(Eo *obj, void *class_data, va_list *list EINA_UNUSED)
         EINA_LIST_FREE(item->widget_list, idata)
              free(idata);
         eina_list_free(item->widget_list);
+        free(data);
      }
    eina_list_free(priv->l);
 
