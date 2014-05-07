@@ -110,6 +110,9 @@ _form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 static void
 _form_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 {
+   Form_Example_Data *priv = class_data;
+
+   eo_unref(priv->evf);
    eo_do_super(obj, MY_CLASS, eo_destructor());
 }
 
@@ -119,7 +122,7 @@ _form_add_widget(Eo *obj, void *class_data, va_list *list)
    Form_Example_Data *priv = class_data;
    char *propname = va_arg(*list, char *);
 
-   eo_do(priv->evf, elm_view_form_widget_add(propname, priv->widget.label)); //FIXME
+   eo_do(priv->evf, elm_view_form_widget_add(propname, priv->widget.label)); 
 }
 
 static void
@@ -173,7 +176,7 @@ static Eo_Class_Description _class_descs = {
      _class_constructor,
      NULL
 };
-EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, ELM_OBJ_VIEW_FORM_CLASS, EMODEL_CLASS, NULL);
+EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, EO_BASE_CLASS, EMODEL_CLASS, NULL);
 /**
  * Local class
  * end
@@ -188,25 +191,25 @@ elm_main(int argc, char **argv)
    Eina_Value *nameset;
 
    ecore_init();
-
    formmodel = eo_add_custom(FILE_VIEW_FORM_CLASS, NULL, form_constructor());
-   
-   eo_do(formmodel, form_add_widget("filename"));
-   
-   // Get elm_view_form object so we can invoke its functions from main
-   eo_do(formmodel, form_view_object_get(&evf));
-   
-   eo_do(evf, elm_view_form_property_add("mtime"));
-   eo_do(evf, elm_view_form_property_add("is_dir"));
-   eo_do(evf, elm_view_form_property_add("filename"));
-   
+
+   // Add new widget && get elm_view_form object so we can invoke its functions from main
+   eo_do(formmodel,  form_add_widget("filename"), 
+         form_view_object_get(&evf));
+
+   // Add few properties for test
+   eo_do(evf, elm_view_form_property_add("mtime"), 
+         elm_view_form_property_add("is_dir"),
+         elm_view_form_property_add("filename"));
+
    nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset, "some_random_filename");
 
    eo_do(formmodel, emodel_property_set("filename", nameset));
-   
-   // cleanup stuff
+
+   // cleanup 
    elm_run();
+   eo_unref(formmodel);
    elm_shutdown();
    ecore_shutdown();
 
