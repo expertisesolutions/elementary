@@ -1,3 +1,0 @@
-/**
- * fileviewform.c extension impl.
- */
