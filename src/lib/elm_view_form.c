@@ -63,60 +63,6 @@ _elm_view_widget_add(Elm_View_Form_Private *priv, const char *widget_name, char 
 }
 
 /**
- * @brief Widget/Property event callbacks
- */
-static Eina_Bool
-_elm_view_form_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
-{
-   Elm_View_Form_Private *priv = (Elm_View_Form_Private *)data;
-   Emodel_Property_EVT *evt = event_info;
-
-   EINA_SAFETY_ON_NULL_RETURN_VAL(evt, EINA_FALSE);
-   EINA_SAFETY_ON_NULL_RETURN_VAL(priv, EINA_FALSE);
-
-   for(Eina_List *l = priv->l; l; l = eina_list_next(l))
-     {
-        Elm_View_Form_Widget *w = eina_list_data_get(l);
-
-        if(!w || !w->widget_name || !w->widget_obj) continue;
-        if(strncmp(w->widget_propname, evt->prop, strlen(w->widget_propname))) continue;
-
-        if(!strncmp(w->widget_name, "Elm_Label", w->widget_len))
-          {
-             char *text = eina_value_to_string(evt->value);
-             fprintf(stdout, "Caught property '%s' from widget '%p' of property '%s'\n",text, w->widget_obj, w->widget_propname);
-             elm_object_text_set(w->widget_obj, text);
-          }
-        else if(!strncmp(w->widget_name, "Elm_Clock", w->widget_len))
-          {
-             //TODO: implement
-             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", evt->prop, w->widget_obj);
-          }
-        else if(!strncmp(w->widget_name, "Elm_Button", w->widget_len))
-          {
-             //TODO: implement
-             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", evt->prop, w->widget_obj);
-          }
-        else if(!strncmp(w->widget_name, "Elm_Bubble", w->widget_len))
-          {
-             //TODO: implement
-             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", evt->prop, w->widget_obj);
-          }
-        else if(!strncmp(w->widget_name, "Elm_Box", w->widget_len))
-          {
-             //TODO: implement
-             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", evt->prop, w->widget_obj);
-          }
-        else
-          {
-             fprintf(stderr, "Error: no Evas object found for property '%s'\n", evt->prop);
-          }
-     }
-
-   return EINA_TRUE;
-}
-
-/**
  * @brief constructor
  */
 static void
@@ -131,8 +77,6 @@ _elm_view_form_constructor(Eo *obj, void *class_data, va_list *list)
 
    priv->model_obj = model_obj;
    priv->model_name = eo_class_name_get(priv->model_obj);
-   eo_do(priv->model_obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, 
-                                                _elm_view_form_property_change_cb, priv));
 }
 
 /**
@@ -171,6 +115,55 @@ _elm_view_form_widget_add(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
    status = _elm_view_widget_add(priv, objname, propname, evas);
    EINA_SAFETY_ON_FALSE_RETURN(status);
 }
+
+static void
+_elm_view_form_widget_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
+{
+   Emodel_Property_EVT evt;
+   Elm_View_Form_Private *priv = (Elm_View_Form_Private *)class_data;
+   char *propname = va_arg(*list, const char *);
+   Eina_Value *value = va_arg(*list, Eina_Value *);
+
+   for(Eina_List *l = priv->l; l; l = eina_list_next(l))
+     {
+        Elm_View_Form_Widget *w = eina_list_data_get(l);
+
+        if(!w || !w->widget_name || !w->widget_obj) continue;
+        if(strncmp(w->widget_propname, propname, strlen(w->widget_propname))) continue;
+
+        if(!strncmp(w->widget_name, "Elm_Label", w->widget_len))
+          {
+             evt.prop = propname;
+             evt.value = value;
+             elm_object_text_set(w->widget_obj, eina_value_to_string(value));
+             eo_do(priv->model_obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
+          }
+        else if(!strncmp(w->widget_name, "Elm_Clock", w->widget_len))
+          {
+             //TODO: implement
+             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", propname, w->widget_obj);
+          }
+        else if(!strncmp(w->widget_name, "Elm_Button", w->widget_len))
+          {
+             //TODO: implement
+             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", propname, w->widget_obj);
+          }
+        else if(!strncmp(w->widget_name, "Elm_Bubble", w->widget_len))
+          {
+             //TODO: implement
+             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", propname, w->widget_obj);
+          }
+        else if(!strncmp(w->widget_name, "Elm_Box", w->widget_len))
+          {
+             //TODO: implement
+             fprintf(stdout, "Warning: property '%s' for Evas object '%p' not handled yet.\n", propname, w->widget_obj);
+          }
+        else
+          {
+             fprintf(stderr, "Error: no Evas object found for property '%s'\n", propname);
+          }
+     }
+}
       
 static void
 _view_form_class_constructor(Eo_Class *klass)
@@ -179,6 +172,7 @@ _view_form_class_constructor(Eo_Class *klass)
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_form_constructor),
       EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_form_destructor),
       EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD), _elm_view_form_widget_add),
+      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET), _elm_view_form_widget_set),
       EO_OP_FUNC_SENTINEL
    };
 
@@ -187,6 +181,7 @@ _view_form_class_constructor(Eo_Class *klass)
 
 static const Eo_Op_Description op_descs[] = {
    EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD, "Add new widget"),
+   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET, "Set property value."),
    EO_OP_DESCRIPTION_SENTINEL
 };
 

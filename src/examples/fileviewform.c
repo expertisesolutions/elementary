@@ -61,8 +61,9 @@ _form_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
 
 
 static void
-_form_property_set(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
+_form_property_set(Eo *obj, void *class_data, va_list *list)
 {
+#if 0
    Emodel_Property_EVT evt;
    
    evt.prop= va_arg(*list, const char*);
@@ -71,12 +72,34 @@ _form_property_set(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
    EINA_SAFETY_ON_NULL_RETURN(evt.prop);
    EINA_SAFETY_ON_NULL_RETURN(evt.value);
 
+   //TODO: modify this , we should not callback_call, instead we should call 
+   //evf function and then dispatch the change_evt
    eo_do(obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
+#endif
 }
 
 static void
 _form_property_get(Eo *obj, void *class_data EINA_UNUSED, va_list *list)
 {
+#if 0
+   Emodel_Property_EVT evt;
+   Emodel_Eio *priv = class_data;
+   const char *prop_arg = va_arg(*list, const char*);
+
+   EINA_SAFETY_ON_NULL_RETURN(prop_arg);  
+   EINA_SAFETY_ON_NULL_RETURN(priv);  
+   EINA_SAFETY_ON_NULL_RETURN(priv->obj);  
+
+   eina_value_array_get(priv->properties, EMODEL_EIO_PROP_FILENAME, &evt.prop);
+   if (!strncmp(prop_arg, evt.prop, strlen(evt.prop))) 
+     {
+        evt.value = _emodel_property_value_get(priv, evt.prop);
+        eo_do(priv->obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
+        return;
+     }
+
+   priv->file = eio_file_direct_stat(priv->path, _eio_stat_done_cb, _eio_error_cb, priv);
+#endif
 }
 
 static void
@@ -111,6 +134,18 @@ EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, EO_BASE_CLASS, EMODEL_C
  * end
  */
 
+static Eina_Bool
+_prop_change_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+{
+   Emodel_Property_EVT *evt = event_info;
+
+   if(!strncmp(evt->prop, "toplabel", strlen("toplabel")) || !strncmp(evt->prop, "bottomlabel", strlen("bottomlabel")))
+     {
+        fprintf(stdout, "property \"%s\" changed to \"%s\"\n", evt->prop, eina_value_to_string(evt->value));
+     }
+
+   return EINA_TRUE;
+}
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
@@ -126,6 +161,8 @@ elm_main(int argc, char **argv)
 
    model = eo_add_custom(FILE_VIEW_FORM_CLASS, NULL, form_constructor());
    evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
+   
+   eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
    
    /**
     * @brief Window setup
@@ -164,17 +201,17 @@ elm_main(int argc, char **argv)
    elm_box_pack_end(bigbox, label_B);
    evas_object_show(label_B);
    
-   eo_do(evf, elm_view_form_widget_add("top", label_A)); 
-   eo_do(evf, elm_view_form_widget_add("bottom", label_B)); 
+   eo_do(evf, elm_view_form_widget_add("toplabel", label_A)); 
+   eo_do(evf, elm_view_form_widget_add("bottomlabel", label_B)); 
 
    nameset = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset, "Top Label");
 
-   eo_do(model, emodel_property_set("top", nameset));
+   eo_do(evf, elm_view_form_widget_set("toplabel", nameset));
 
    nameset2 = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(nameset2, "Bottom Label");
-   eo_do(model, emodel_property_set("bottom", nameset2));
+   eo_do(evf, elm_view_form_widget_set("bottomlabel", nameset2));
 
    // cleanup 
    elm_run();
