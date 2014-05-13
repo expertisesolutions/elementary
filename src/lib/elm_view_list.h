@@ -20,11 +20,11 @@ enum {
  * @def elm_view_list_add
  * @since 1.8
  *
- * @param parent
+ * @param genlist
  * @param model
  *
  */
-#define elm_view_list_add(parent, model) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(Evas_Object *, parent), EO_TYPECHECK(Eo *, model)
+#define elm_view_list_add(genlist, model) EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), EO_TYPECHECK(Evas_Object *, genlist), EO_TYPECHECK(Eo *, model)
 
 /**
  * @def elm_view_list_evas_object_get

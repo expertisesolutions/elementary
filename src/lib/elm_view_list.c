@@ -25,7 +25,7 @@ typedef struct _View_List_ItemData View_List_ItemData;
 
 struct _Elm_View_List_Private
 {
-   Evas_Object *list;
+   Evas_Object *genlist;
    View_List_ItemData *rootdata;
    Elm_Genlist_Item_Class *itc;
    Eina_Hash *prop_con;
@@ -244,7 +244,7 @@ _emodel_children_count_get_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_De
         idata->self = self;
         idata->index = i;
         idata->parent = pdata;
-        idata->item = elm_genlist_item_append(self->list, self->itc, idata, pdata->item,
+        idata->item = elm_genlist_item_append(self->genlist, self->itc, idata, pdata->item,
                                                        ELM_GENLIST_ITEM_TREE, _item_sel_cb, NULL);
      }
 
@@ -289,8 +289,9 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    eo_do_super(obj, MY_CLASS, eo_constructor());
    Elm_View_List_Private *self = (Elm_View_List_Private *)class_data;
 
-   Evas_Object *parent = va_arg(*list, Evas_Object *);
-   EINA_SAFETY_ON_NULL_RETURN(parent);
+   self->genlist = va_arg(*list, Evas_Object *);
+   EINA_SAFETY_ON_NULL_RETURN(self->genlist);
+   //eo_ref(self->genlist);
 
    self->model = va_arg(*list, Eo *);
    EINA_SAFETY_ON_NULL_RETURN(self->model);
@@ -302,8 +303,6 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    self->rootdata->model = self->model;
    self->prop_con = eina_hash_string_superfast_new(free);
 
-   self->list = elm_genlist_add(parent);
-
    self->itc = elm_genlist_item_class_new();
    self->itc->item_style = "default";
    self->itc->func.text_get = _item_text_get;
@@ -314,13 +313,9 @@ _elm_view_list_add(Eo *obj, void *class_data, va_list *list)
    eo_do(self->model, eo_event_callback_add(EMODEL_CHILDREN_COUNT_GET_EVT, _emodel_children_count_get_cb, self->rootdata));
    eo_do(self->model, emodel_children_count_get());
 
-   evas_object_size_hint_weight_set(self->list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_smart_callback_add(self->list, "expand,request", _expand_request_cb, self);
-   evas_object_smart_callback_add(self->list, "contract,request", _contract_request_cb, self);
-   evas_object_smart_callback_add(self->list, "contracted", _contracted_cb, self);
-
-   elm_win_resize_object_add(parent, self->list);
-   evas_object_show(self->list);
+   evas_object_smart_callback_add(self->genlist, "expand,request", _expand_request_cb, self);
+   evas_object_smart_callback_add(self->genlist, "contract,request", _contract_request_cb, self);
+   evas_object_smart_callback_add(self->genlist, "contracted", _contracted_cb, self);
 }
 
 static void
@@ -347,7 +342,7 @@ _elm_view_list_evas_object_get(Eo *obj, void *class_data, va_list *list)
    EINA_SAFETY_ON_NULL_RETURN(list);
 
    Evas_Object **e = va_arg(*list, Evas_Object **);
-   *e = self->list;
+   *e = self->genlist;
 }
 
 static void

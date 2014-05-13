@@ -16,10 +16,8 @@ EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Eo *filemodel, *fileview;
-   Ecore_Timer *timer;
    Evas_Object *win;
-   Evas_Object *list;
-   int i;
+   Evas_Object *genlist;
 
    win = elm_win_util_standard_add("viewlist", "Viewlist");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
@@ -27,12 +25,17 @@ elm_main(int argc, char **argv)
 
    ecore_init();
 
+   genlist = elm_genlist_add(win);
+   evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_show(genlist);
+
    filemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
-   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(win, filemodel));
+   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, filemodel));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
    evas_object_resize(win, 320, 520);
+   elm_win_resize_object_add(win, genlist);
    evas_object_show(win);
 
    elm_run();
@@ -40,6 +43,8 @@ elm_main(int argc, char **argv)
 
    eo_unref(filemodel);
    ecore_shutdown();
+
+   return 0;
 }
 ELM_MAIN()
 
