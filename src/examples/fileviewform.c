@@ -9,6 +9,8 @@
 #include <elm_view_form.h>
 #include <stdio.h>
 
+#define FILEMODEL_PATH "/tmp"
+
 struct _Form_Widget
 {
    Evas_Object *win, *bigbox;
@@ -16,59 +18,6 @@ struct _Form_Widget
    Evas_Object *entry;
 };
 typedef struct _Form_Widget Form_Widget;
-
-/**
- * Local dummy model class
- * begin
- */
-EAPI Eo_Op FILE_VIEW_FORM_CLASS_BASE_ID = 0;
-#define form_constructor() EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR)
-#define FILE_VIEW_FORM_CLASS file_view_form_class_get()
-const Eo_Class *file_view_form_class_get(void) EINA_CONST;
-#define MY_CLASS FILE_VIEW_FORM_CLASS
-#define MY_CLASS_NAME "File View Form Example"
-
-static void
-_form_constructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
-{
-   eo_do_super(obj, MY_CLASS, eo_constructor());
-}
-
-static void
-_form_destructor(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
-{
-   eo_do_super(obj, MY_CLASS, eo_destructor());
-}
-
-static void
-_class_constructor(Eo_Class *klass)
-{
-   const Eo_Op_Func_Description func_descs[] = {
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _form_constructor),
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _form_destructor),
-        EO_OP_FUNC_SENTINEL
-   };
-
-   eo_class_funcs_set(klass, func_descs);
-}
-static const Eo_Op_Description _op_descs[] = {
-     EO_OP_DESCRIPTION_SENTINEL
-};
-static Eo_Class_Description _class_descs = {
-     EO_VERSION,
-     MY_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(&FILE_VIEW_FORM_CLASS_BASE_ID, _op_descs, 0),
-     NULL,
-     0L,
-     _class_constructor,
-     NULL
-};
-EO_DEFINE_CLASS(file_view_form_class_get, &_class_descs, EO_BASE_CLASS, EMODEL_CLASS, NULL);
-/**
- * Local class
- * end
- */
 
 /**
  * Window callbacks
@@ -110,8 +59,12 @@ elm_main(int argc, char **argv)
 
    ecore_init();
 
-   model = eo_add_custom(FILE_VIEW_FORM_CLASS, NULL, form_constructor());
+   model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(FILEMODEL_PATH));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(model, 1);
+
    evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
+
    eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
 
    // for entry widget
@@ -119,7 +72,6 @@ elm_main(int argc, char **argv)
         .max_char_count = 32, // max chars number
         .max_byte_count = 0
    };
-
    /**
     * @brief Window setup
     */
@@ -163,12 +115,12 @@ elm_main(int argc, char **argv)
    evas_object_show(w.entry);
 
    // Add both widgets
-   eo_do(evf, elm_view_form_widget_add("filename", w.label)); 
-   eo_do(evf, elm_view_form_widget_add("entrytext", w.entry)); 
+   eo_do(evf, elm_view_form_widget_add("filename", w.label));
+   eo_do(evf, elm_view_form_widget_add("entrytext", w.entry));
 
    // Set text value for label
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, "/tmp/file.txt");
+   eina_value_set(value, FILEMODEL_PATH);
    eo_do(evf, elm_view_form_widget_set("filename", value));
 
    // Set default text value for entry
@@ -180,7 +132,7 @@ elm_main(int argc, char **argv)
    eo_do(evf, elm_view_form_widget_get("filename"));
    eo_do(evf, elm_view_form_widget_get("entrytext"));
 
-   // cleanup 
+   // cleanup
    elm_run();
    eo_unref(model);
    eo_unref(evf);
