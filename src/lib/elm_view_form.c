@@ -95,7 +95,7 @@ _elm_evas_object_entry_value_update(Elm_View_Form_Widget **w, void *data EINA_UN
  *    and the widget itself.
  */
 static void
-_elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event_info)
+_elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)data;
    const char *prop = _elm_form_view_property_from_object_get(priv, obj);
