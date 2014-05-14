@@ -33,8 +33,8 @@ struct _Elm_View_Form_Widget
    const char *widget_propname;
    Eina_Value *widget_value;
    Evas_Object *widget_obj;
-   Elm_View_Form_Event_Cb widget_update_value_cb;
-   Elm_View_Form_Widget_Object_Set_Cb widget_object_set_cb;
+   Elm_View_Form_Event_Cb widget_obj_value_update_cb;
+   Elm_View_Form_Widget_Object_Set_Cb widget_obj_set_cb;
 };
 
 struct _Elm_View_Form_Private
@@ -63,7 +63,7 @@ _elm_form_view_property_from_object_get(Elm_View_Form_Private *priv, Evas_Object
  * Works, so far, for widget(s): Entry, Label
  */
 static void
-_elm_evas_object_set_entry_cb(Eo *obj, Evas_Object *evas, Eina_Value *value, const char *propname)
+_elm_evas_object_entry(Eo *obj, Evas_Object *evas, Eina_Value *value, const char *propname)
 {
    const char *text;
    Emodel_Property_EVT evt;
@@ -73,7 +73,7 @@ _elm_evas_object_set_entry_cb(Eo *obj, Evas_Object *evas, Eina_Value *value, con
    evt.value = value;
    evt.prop = propname;
    eo_do(obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
-   fprintf(stdout, "%s:%d: new text: %s\n", __FUNCTION__, __LINE__, text);
+   fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, evas);
 }
 
 /**
@@ -81,12 +81,12 @@ _elm_evas_object_set_entry_cb(Eo *obj, Evas_Object *evas, Eina_Value *value, con
  *    Works, so far, for widget(s): Entry, Label
  */
 static void
-_elm_evas_object_event_entry_cb(Elm_View_Form_Widget **w, void *data EINA_UNUSED, Evas_Object *obj)
+_elm_evas_object_entry_value_update(Elm_View_Form_Widget **w, void *data EINA_UNUSED, Evas_Object *obj)
 {
    const char *text = elm_object_text_get(obj);
    (*w)->widget_value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set((*w)->widget_value, text);
-   fprintf(stdout, "%s:%d: new text: %s\n", __FUNCTION__, __LINE__, text);
+   fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, (*w)->widget_obj);
 }
 
 /**
@@ -95,7 +95,7 @@ _elm_evas_object_event_entry_cb(Elm_View_Form_Widget **w, void *data EINA_UNUSED
  *    and the widget itself.
  */
 static void
-_elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
+_elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event_info)
 {
    Elm_View_Form_Private *priv = (Elm_View_Form_Private *)data;
    const char *prop = _elm_form_view_property_from_object_get(priv, obj);
@@ -103,15 +103,23 @@ _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, v
    for(Eina_List *l = priv->l; l; l = eina_list_next(l))
      {
         Elm_View_Form_Widget *w = eina_list_data_get(l);
+        if(w->widget_obj == obj)
+          {
+             Emodel_Property_EVT evt;
+             w->widget_obj_value_update_cb(&w, data, obj);
 
-        if(w->widget_update_value_cb) w->widget_update_value_cb(&w, data, obj);
+             // disptach event right here
+             evt.value = w->widget_value;
+             evt.prop = prop;
+             eo_do(priv->model_obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
+          }
+        else if(!strncmp(prop, w->widget_propname, strlen(prop)))
+          {
+             w->widget_obj_value_update_cb(&w, data, obj);
 
-        // If objects are different but share same property then its necessary to update'em
-        // TODO: Yet untested from here.
-        if((w->widget_obj != obj) && (!strncmp(prop, w->widget_propname, strlen(prop))))
-           {
-                w->widget_object_set_cb(priv->model_obj, w->widget_obj, w->widget_value, prop);
-           }
+             // function will dispatch the event
+             w->widget_obj_set_cb(priv->model_obj, w->widget_obj, w->widget_value, prop);
+          }
      }
 }
 
@@ -123,23 +131,22 @@ _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, v
 static Eina_Bool
 _elm_view_widget_add(Elm_View_Form_Private *priv, char *propname, Evas_Object *widget_obj)
 {
-   int evt;
+   int action = EVAS_CALLBACK_LAST;
    Elm_View_Form_Widget *w = calloc(1, sizeof(Elm_View_Form_Widget));
    EINA_SAFETY_ON_NULL_RETURN_VAL(w, EINA_FALSE);
    const char *objname = elm_object_widget_type_get(widget_obj);
    EINA_SAFETY_ON_NULL_RETURN_VAL(objname, EINA_FALSE);
 
-   if(!strncmp(objname, "Elm_Entry", strlen("Elm_Entry")))
+   if(!strncmp(objname, "Elm_Entry", 9))
      {
-        evt = EVAS_CALLBACK_KEY_DOWN;
-        w->widget_object_set_cb = _elm_evas_object_set_entry_cb;
-        w->widget_update_value_cb = _elm_evas_object_event_entry_cb; //two-way widget
+        action = EVAS_CALLBACK_KEY_DOWN;
+        w->widget_obj_set_cb = _elm_evas_object_entry;
+        w->widget_obj_value_update_cb = _elm_evas_object_entry_value_update; /**< simple widget text set */
      }
-   else if(!strncmp(objname, "Elm_Label", strlen("Elm_Label")))
+   else if(!strncmp(objname, "Elm_Label", 9))
      {
-        evt = EVAS_CALLBACK_LAST;
-        w->widget_object_set_cb = _elm_evas_object_set_entry_cb;
-        w->widget_update_value_cb = _elm_evas_object_event_entry_cb; //two-way widget
+        w->widget_obj_set_cb = _elm_evas_object_entry;
+        w->widget_obj_value_update_cb = _elm_evas_object_entry_value_update; /**< simple widget text set (fits Label too!) */
      }
    else
      {
@@ -152,9 +159,9 @@ _elm_view_widget_add(Elm_View_Form_Private *priv, char *propname, Evas_Object *w
    w->widget_obj = widget_obj;
    priv->l = eina_list_append(priv->l, w);
 
-   if(NULL != w->widget_update_value_cb)
+   if(action != EVAS_CALLBACK_LAST)
      {
-      evas_object_event_callback_add(w->widget_obj, evt, _elm_evas_object_changed_cb, priv);
+        evas_object_event_callback_add(w->widget_obj, action, _elm_evas_object_changed_cb, priv);
      }
 
    return EINA_TRUE;
@@ -222,7 +229,7 @@ _elm_view_form_widget_set(Eo *obj EINA_UNUSED, void *class_data, va_list *list)
         if(strncmp(w->widget_propname, propname, strlen(w->widget_propname))) continue;
 
         w->widget_value = value;
-        w->widget_object_set_cb(priv->model_obj, w->widget_obj, value, propname);
+        w->widget_obj_set_cb(priv->model_obj, w->widget_obj, value, propname);
      }
 }
 
