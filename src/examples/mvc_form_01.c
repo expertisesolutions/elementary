@@ -14,7 +14,7 @@
 struct _Form_Widget
 {
    Evas_Object *win, *bigbox;
-   Evas_Object *label;
+   Evas_Object *genlist, *label;
    Evas_Object *entry;
 };
 typedef struct _Form_Widget Form_Widget;
@@ -51,7 +51,7 @@ elm_main(int argc, char **argv)
 {
 
    Form_Widget w;
-   Eo *model;
+   Eo *fileview, *model;
    Eo *evf;
    Eina_Value *value;
 
@@ -81,7 +81,7 @@ elm_main(int argc, char **argv)
    elm_win_focus_highlight_enabled_set(w.win, EINA_TRUE); /**< enavle focus */
    evas_object_smart_callback_add(w.win, "focus,in", _win_focused_cb, "window");
    evas_object_smart_callback_add(w.win, "delete,request", _main_win_del_cb, "window"); /**< define window delete callback */
-   evas_object_resize(w.win, 250, 220);
+   evas_object_resize(w.win, 320, 520);
    evas_object_show(w.win);
 
    /**
@@ -91,6 +91,22 @@ elm_main(int argc, char **argv)
    evas_object_size_hint_weight_set(w.bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    elm_win_resize_object_add(w.win, w.bigbox);
    evas_object_show(w.bigbox);
+
+   /**
+    * File genlist
+    */
+   w.genlist = elm_genlist_add(w.win);
+   evas_object_size_hint_weight_set(w.genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_show(w.genlist);
+
+   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(w.genlist, model));
+   eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
+   eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
+
+   evas_object_size_hint_weight_set(w.genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(w.genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(w.bigbox, w.genlist);
+   evas_object_show(w.genlist);
 
    /**
     * Top label
