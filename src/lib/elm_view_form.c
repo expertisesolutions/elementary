@@ -63,17 +63,17 @@ _elm_form_view_property_from_object_get(Elm_View_Form_Private *priv, Evas_Object
  * Works, so far, for widget(s): Entry, Label
  */
 static void
-_elm_evas_object_entry(Eo *obj, Evas_Object *evas, Eina_Value *value, const char *propname)
+_elm_evas_object_entry(Eo *obj, Evas_Object *entry, Eina_Value *value, const char *propname)
 {
-   const char *text;
    Emodel_Property_EVT evt;
+   const char *text = eina_value_to_string(value);
+   EINA_SAFETY_ON_NULL_RETURN(text);
 
-   text = eina_value_to_string(value);
-   elm_object_text_set(evas, text);
+   elm_object_text_set(entry, text);
    evt.value = value;
    evt.prop = propname;
    eo_do(obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
-   fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, evas);
+   fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, entry);
 }
 
 /**
@@ -84,9 +84,29 @@ static void
 _elm_evas_object_entry_value_update(Elm_View_Form_Widget **w, void *data EINA_UNUSED, Evas_Object *obj)
 {
    const char *text = elm_object_text_get(obj);
+   EINA_SAFETY_ON_NULL_RETURN(text);
+
    (*w)->widget_value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set((*w)->widget_value, text);
    fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, (*w)->widget_obj);
+}
+
+
+static void
+_elm_evas_object_thumb(Eo *obj, Evas_Object *thumb, Eina_Value *value, const char *propname)
+{
+   Emodel_Property_EVT evt;
+   const char *filename = eina_value_to_string(value);
+   EINA_SAFETY_ON_NULL_RETURN(filename);
+   EINA_SAFETY_ON_TRUE_RETURN(strlen(filename) >= PATH_MAX);
+
+   elm_thumb_file_set(thumb, filename, NULL);
+   elm_thumb_reload(thumb);
+
+   evt.value = value;
+   evt.prop = propname;
+   eo_do(obj, eo_event_callback_call(EMODEL_PROPERTY_CHANGE_EVT, &evt, NULL));
+   fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, filename, thumb);
 }
 
 /**
@@ -106,7 +126,8 @@ _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, v
         if(w->widget_obj == obj)
           {
              Emodel_Property_EVT evt;
-             w->widget_obj_value_update_cb(&w, data, obj);
+             w->widget_obj_value_update_cb ?
+                 w->widget_obj_value_update_cb(&w, data, obj) : 0;
 
              // disptach event right here
              evt.value = w->widget_value;
@@ -115,7 +136,8 @@ _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, v
           }
         else if(!strncmp(prop, w->widget_propname, strlen(prop)))
           {
-             w->widget_obj_value_update_cb(&w, data, obj);
+             w->widget_obj_value_update_cb ?
+                 w->widget_obj_value_update_cb(&w, data, obj) : 0;
 
              // function will dispatch the event
              w->widget_obj_set_cb(priv->model_obj, w->widget_obj, w->widget_value, prop);
@@ -147,6 +169,11 @@ _elm_view_widget_add(Elm_View_Form_Private *priv, char *propname, Evas_Object *w
      {
         w->widget_obj_set_cb = _elm_evas_object_entry;
         w->widget_obj_value_update_cb = _elm_evas_object_entry_value_update; /**< simple widget text set (fits Label too!) */
+     }
+   else if(!strncmp(objname, "Elm_Thumb", 9))
+     {
+        w->widget_obj_set_cb = _elm_evas_object_thumb;
+        w->widget_obj_value_update_cb = NULL; /**< no update */
      }
    else
      {
