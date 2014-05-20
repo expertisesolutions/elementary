@@ -10,12 +10,13 @@
 #include <stdio.h>
 
 #define FILEMODEL_PATH "/tmp"
+#define DEFAULT_THUMB "../../data/images/logo.png"
 
 struct _Form_Widget
 {
    Evas_Object *panes, *panes_h;
    Evas_Object *win, *bigbox;
-   Evas_Object *genlist, *label;
+   Evas_Object *genlist, *label, *thumb;
    Evas_Object *entry;
 };
 typedef struct _Form_Widget Form_Widget;
@@ -47,6 +48,19 @@ _prop_change_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Desc
    return EINA_TRUE;
 }
 
+/**
+ * Thumb widget error callback
+ */
+static void
+_generation_error_cb(void *data, Evas_Object *o, void *event_info)
+{
+   Eo *evf = data;
+   Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_STRING);
+   eina_value_set(value, DEFAULT_THUMB); // hardcoded for while
+   fprintf(stdout, "%s:%d thumbnail generation error, loading default.\n", __FUNCTION__, __LINE__);
+   eo_do(evf, elm_view_form_widget_set("thumb", value));
+}
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
@@ -67,14 +81,13 @@ elm_main(int argc, char **argv)
 
    eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
 
-   // for entry widget
+   /* for entry widget */
    static Elm_Entry_Filter_Limit_Size limit_size = {
         .max_char_count = 32, // max chars number
         .max_byte_count = 0
    };
-   /**
-    * @brief Window setup
-    */
+
+   /* Main window setup */
    w.win = elm_win_util_standard_add("form_test", "Form Test");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(w.win, EINA_TRUE); /**< sets the window to be destroyed automatically by signal */
@@ -130,8 +143,19 @@ elm_main(int argc, char **argv)
    evas_object_show(w.entry);
    elm_box_pack_end(w.bigbox, w.entry);
 
+   /* Thumb widget */
+   elm_need_ethumb();
+   w.thumb = elm_thumb_add(w.win);
+   evas_object_smart_callback_add(w.thumb, "generate,error", _generation_error_cb, evf);
+   evas_object_size_hint_weight_set(w.thumb, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(w.thumb, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(w.thumb);
+   elm_thumb_editable_set(w.thumb, EINA_FALSE);
+   //elm_thumb_size_set(w.thumb, 160, 160);
+
    /* Add box on top right panel */
    elm_object_part_content_set(w.panes_h, "left", w.bigbox);
+   elm_object_part_content_set(w.panes_h, "bottom", w.thumb);
    /* Add file view in left panel */
    elm_object_part_content_set(w.panes, "left", w.genlist);
    /* Add right panel in main panel */
@@ -140,6 +164,7 @@ elm_main(int argc, char **argv)
    /* Define widget properties */
    eo_do(evf, elm_view_form_widget_add("current", w.label));
    eo_do(evf, elm_view_form_widget_add("search", w.entry));
+   eo_do(evf, elm_view_form_widget_add("thumb", w.thumb));
 
    /* Define default widget values*/
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
@@ -149,6 +174,15 @@ elm_main(int argc, char **argv)
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(value, "Type filename");
    eo_do(evf, elm_view_form_widget_set("search", value));
+   
+   value = eina_value_new(EINA_VALUE_TYPE_STRING);
+   eina_value_set(value, "/usr/share/I_Dont_Exist.png"); 
+   eo_do(evf, elm_view_form_widget_set("thumb", value));
+
+    /* query values */
+   eo_do(evf, elm_view_form_widget_get("current"));
+   eo_do(evf, elm_view_form_widget_get("search"));
+   eo_do(evf, elm_view_form_widget_get("thumb"));
 
    // cleanup
    elm_run();
