@@ -13,6 +13,7 @@
 
 struct _Form_Widget
 {
+   Evas_Object *panes, *panes_h;
    Evas_Object *win, *bigbox;
    Evas_Object *genlist, *label;
    Evas_Object *entry;
@@ -50,10 +51,9 @@ EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
 
-   Form_Widget w;
-   Eo *fileview, *model;
-   Eo *evf;
+   Eo *fileview, *model, *evf;
    Eina_Value *value;
+   Form_Widget w;
 
    memset(&w, 0, sizeof(Form_Widget));
 
@@ -81,72 +81,74 @@ elm_main(int argc, char **argv)
    elm_win_focus_highlight_enabled_set(w.win, EINA_TRUE); /**< enavle focus */
    evas_object_smart_callback_add(w.win, "focus,in", _win_focused_cb, "window");
    evas_object_smart_callback_add(w.win, "delete,request", _main_win_del_cb, "window"); /**< define window delete callback */
-   evas_object_resize(w.win, 320, 520);
+   evas_object_resize(w.win, 920, 720);
    evas_object_show(w.win);
 
-   /**
-    * @brief Box setup
-    */
+   /* Box setup */
    w.bigbox = elm_box_add(w.win);
    evas_object_size_hint_weight_set(w.bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   elm_win_resize_object_add(w.win, w.bigbox);
    evas_object_show(w.bigbox);
 
-   /**
-    * File genlist
-    */
+   /* Genlist for file view */
    w.genlist = elm_genlist_add(w.win);
    evas_object_size_hint_weight_set(w.genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(w.genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(w.genlist);
 
+   /* File view setup */
    fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(w.genlist, model));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
-   evas_object_size_hint_weight_set(w.genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   elm_box_pack_end(w.bigbox, w.genlist);
-   evas_object_show(w.genlist);
+   /* Panes layout */
+   w.panes = elm_panes_add(w.win);
+   evas_object_size_hint_weight_set(w.panes, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_win_resize_object_add(w.win, w.panes);
+   evas_object_show(w.panes);
 
-   /**
-    * Top label
-    */
+   /* Right-side panes */
+   w.panes_h = elm_panes_add(w.win);
+   elm_panes_horizontal_set(w.panes_h, EINA_TRUE);
+   evas_object_size_hint_weight_set(w.panes_h, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(w.panes_h, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(w.panes_h);
+
+   /* Label widget */
    w.label = elm_label_add(w.win);
    elm_label_line_wrap_set(w.label, ELM_WRAP_CHAR);
    evas_object_size_hint_weight_set(w.label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(w.label, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   elm_box_pack_end(w.bigbox, w.label);
    evas_object_show(w.label);
+   elm_box_pack_end(w.bigbox, w.label);
 
-   /*
-    * text entry
-    */
+   /* Entry widget */
    w.entry = elm_entry_add(w.win);
    evas_object_size_hint_weight_set(w.entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(w.entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
    elm_entry_single_line_set(w.entry, EINA_TRUE);
-   elm_entry_markup_filter_append(w.entry, elm_entry_filter_limit_size,
-                                  &limit_size);
-   elm_box_pack_end(w.bigbox, w.entry);
+   elm_entry_markup_filter_append(w.entry, elm_entry_filter_limit_size, &limit_size);
    evas_object_show(w.entry);
+   elm_box_pack_end(w.bigbox, w.entry);
 
-   // Add both widgets
-   eo_do(evf, elm_view_form_widget_add("filename", w.label));
-   eo_do(evf, elm_view_form_widget_add("entrytext", w.entry));
+   /* Add box on top right panel */
+   elm_object_part_content_set(w.panes_h, "left", w.bigbox);
+   /* Add file view in left panel */
+   elm_object_part_content_set(w.panes, "left", w.genlist);
+   /* Add right panel in main panel */
+   elm_object_part_content_set(w.panes, "right", w.panes_h);
 
-   // Set text value for label
+   /* Define widget properties */
+   eo_do(evf, elm_view_form_widget_add("current", w.label));
+   eo_do(evf, elm_view_form_widget_add("search", w.entry));
+
+   /* Define default widget values*/
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(value, FILEMODEL_PATH);
-   eo_do(evf, elm_view_form_widget_set("filename", value));
+   eo_do(evf, elm_view_form_widget_set("current", value));
 
-   // Set default text value for entry
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, "Default text");
-   eo_do(evf, elm_view_form_widget_set("entrytext", value));
-
-   // get both values
-   eo_do(evf, elm_view_form_widget_get("filename"));
-   eo_do(evf, elm_view_form_widget_get("entrytext"));
+   eina_value_set(value, "Type filename");
+   eo_do(evf, elm_view_form_widget_set("search", value));
 
    // cleanup
    elm_run();
