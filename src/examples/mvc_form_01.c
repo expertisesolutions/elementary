@@ -10,7 +10,9 @@
 #include <stdio.h>
 
 #define FILEMODEL_PATH "/tmp"
-#define DEFAULT_THUMB "../../data/images/logo.png"
+#define DEFAULT_THUMBNAIL "../../data/images/logo.png"
+
+typedef struct _Form_Widget Form_Widget;
 
 struct _Form_Widget
 {
@@ -19,11 +21,7 @@ struct _Form_Widget
    Evas_Object *genlist, *label, *thumb;
    Evas_Object *entry;
 };
-typedef struct _Form_Widget Form_Widget;
 
-/**
- * Window callbacks
- */
 static void
 _win_focused_cb(void *data, Evas_Object *obj, void *event EINA_UNUSED)
 {
@@ -37,14 +35,42 @@ _main_win_del_cb(void *data, Evas_Object *obj, void *event EINA_UNUSED)
    fprintf(stdout, "%s:%d Window deleted: %p:%s\n", __FUNCTION__, __LINE__, obj, name);
 }
 
-/**
- * property change callback
- */
 static Eina_Bool
 _prop_change_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    Emodel_Property_EVT *evt = event_info;
    fprintf(stdout, "property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_child_prop_change_cb(void *data EINA_UNUSED, Eo *obj, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+{
+   Emodel_Property_EVT *evt = event_info;
+   Eo *evf = data;
+   fprintf(stdout, "child property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
+   if(!strncmp(evt->prop, "is_dir", 6))
+     {
+        if(!atoi(eina_value_to_string(evt->value)))
+          {
+             eo_do(obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, evf));
+             eo_do(obj, emodel_property_get("filename"));
+          }
+     }
+   else if(!strncmp(evt->prop, "filename", 8))
+     {
+        eo_do(evf, elm_view_form_widget_set("thumb", evt->value));
+     }
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+{
+   Emodel_Children_EVT *evt = event_info;
+   Eo *evf = data;
+   eo_do(evt->child, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, evf));
+   eo_do(evt->child, emodel_property_get("is_dir"));
    return EINA_TRUE;
 }
 
@@ -56,7 +82,7 @@ _generation_error_cb(void *data, Evas_Object *o, void *event_info)
 {
    Eo *evf = data;
    Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, DEFAULT_THUMB); // hardcoded for while
+   eina_value_set(value, DEFAULT_THUMBNAIL); 
    fprintf(stdout, "%s:%d thumbnail generation error, loading default.\n", __FUNCTION__, __LINE__);
    eo_do(evf, elm_view_form_widget_set("thumb", value));
 }
@@ -64,13 +90,10 @@ _generation_error_cb(void *data, Evas_Object *o, void *event_info)
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
-
    Eo *fileview, *model, *evf;
    Eina_Value *value;
    Form_Widget w;
-
    memset(&w, 0, sizeof(Form_Widget));
-
    ecore_init();
 
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(FILEMODEL_PATH));
@@ -80,6 +103,8 @@ elm_main(int argc, char **argv)
    EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
 
    eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
+   eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _child_selected_cb, evf));
+
 
    /* for entry widget */
    static Elm_Entry_Filter_Limit_Size limit_size = {
@@ -151,7 +176,6 @@ elm_main(int argc, char **argv)
    evas_object_size_hint_align_set(w.thumb, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(w.thumb);
    elm_thumb_editable_set(w.thumb, EINA_FALSE);
-   //elm_thumb_size_set(w.thumb, 160, 160);
 
    /* Add box on top right panel */
    elm_object_part_content_set(w.panes_h, "left", w.bigbox);
