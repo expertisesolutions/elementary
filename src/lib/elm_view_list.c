@@ -52,11 +52,15 @@ _item_sel_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_i
    Elm_Object_Item *item = event_info;
    View_List_ItemData *idata = elm_object_item_data_get(item);
    EINA_SAFETY_ON_NULL_RETURN(idata);
+   eo_do(idata->parent->model, emodel_child_select_set(idata->model));
 }
 
 static void
 _item_del(void *data, Evas_Object *obj EINA_UNUSED)
 {
+   View_List_ItemData *idata = data;
+   eo_unref(idata->model);
+   eina_hash_free(idata->parts);
    free(data);
 }
 
@@ -326,8 +330,13 @@ _elm_view_list_destructor(Eo *obj, void *class_data, va_list *list EINA_UNUSED)
    EINA_SAFETY_ON_NULL_RETURN(obj);
 
    elm_genlist_item_class_free(self->itc);
+   //evas_object_smart_callback_del(self->genlist, "expand,request", _expand_request_cb);
+   //evas_object_smart_callback_del(self->genlist, "contract,request", _contract_request_cb);
+   //evas_object_smart_callback_del(self->genlist, "contracted", _contracted_cb);
+
    free(self->rootdata);
    self->rootdata = NULL;
+   //eo_unref(self->genlist);
    eo_unref(self->model);
 
    eo_do_super(obj, MY_CLASS, eo_destructor());

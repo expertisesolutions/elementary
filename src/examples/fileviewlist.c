@@ -39,9 +39,10 @@ elm_main(int argc, char **argv)
    evas_object_show(win);
 
    elm_run();
+   eo_unref(fileview);
+   //eo_unref(filemodel);
    elm_shutdown();
 
-   eo_unref(filemodel);
    ecore_shutdown();
 
    return 0;
