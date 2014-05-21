@@ -74,6 +74,7 @@ fileselector_entry_example.c \
 fileselector_example.c \
 fileviewlist.c \
 mvc_form_01.c \
+filemvc.c \
 flip_example_01.c \
 flipselector_example.c \
 frame_example_01.c \
@@ -217,6 +218,7 @@ fileselector_entry_example \
 fileselector_example \
 fileviewlist \
 mvc_form_01 \
+filemvc \
 flip_example_01 \
 flipselector_example \
 frame_example_01 \
