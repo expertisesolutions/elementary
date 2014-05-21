@@ -69,6 +69,8 @@ _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_D
 {
    Emodel_Children_EVT *evt = event_info;
    Eo *evf = data;
+   EINA_SAFETY_ON_NULL_RETURN_VAL(evf, EINA_FALSE);
+   eo_ref(evt->child);
    eo_do(evt->child, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, evf));
    eo_do(evt->child, emodel_property_get("is_dir"));
    return EINA_TRUE;
