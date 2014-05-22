@@ -12,54 +12,65 @@
 #define FILEMODEL_PATH "/tmp"
 #define DEFAULT_THUMBNAIL "../../data/images/logo.png"
 
-typedef struct _Form_Widget Form_Widget;
-
-struct _Form_Widget
+struct _Form_Child_Data
 {
-   Evas_Object *panes, *panes_h;
-   Evas_Object *win, *bigbox;
-   Evas_Object *genlist, *label, *thumb;
-   Evas_Object *entry;
+   Eo *evf, *model;
+   Eina_Value *value_prev;
+   Eina_Bool is_dir;
 };
+typedef struct _Form_Child_Data Form_Child_Data;
 
 static void
-_win_focused_cb(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_win_focused_cb(void *data, Evas_Object *obj, void *event)
 {
-   const char *name = (const char *)data;
-   fprintf(stdout, "%s:%d Window focused: %p:%s\n", __FUNCTION__, __LINE__, obj, name);
 }
 static void
-_main_win_del_cb(void *data, Evas_Object *obj, void *event EINA_UNUSED)
+_main_win_del_cb(void *data, Evas_Object *obj, void *event)
 {
-   const char *name = (const char *)data;
-   fprintf(stdout, "%s:%d Window deleted: %p:%s\n", __FUNCTION__, __LINE__, obj, name);
 }
 
+/**
+ * @brief Parent property change
+ */
 static Eina_Bool
-_prop_change_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+_prop_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    Emodel_Property_EVT *evt = event_info;
    fprintf(stdout, "property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
    return EINA_TRUE;
 }
 
+/**
+ * @brief Child property change
+ */ 
 static Eina_Bool
 _child_prop_change_cb(void *data EINA_UNUSED, Eo *obj, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    Emodel_Property_EVT *evt = event_info;
-   Eo *evf = data;
-   fprintf(stdout, "child property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
+   Form_Child_Data *child_data = data;
    if(!strncmp(evt->prop, "is_dir", 6))
      {
-        if(!atoi(eina_value_to_string(evt->value)))
-          {
-             eo_do(obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, evf));
-             eo_do(obj, emodel_property_get("filename"));
-          }
+        child_data->is_dir = atoi(eina_value_to_string(evt->value));
+        eo_do(obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
+        eo_do(obj, emodel_property_get("filename"));
+
      }
    else if(!strncmp(evt->prop, "filename", 8))
      {
-        eo_do(evf, elm_view_form_widget_set("thumb", evt->value));
+        if(EINA_TRUE == child_data->is_dir) //TODO: reload model to new directory
+          {
+             child_data->value_prev = eina_value_new(EINA_VALUE_TYPE_STRING);
+             eina_value_set(child_data->value_prev, dirname(eina_value_to_string(evt->value))); 
+             eo_do(child_data->evf, elm_view_form_widget_set("current", evt->value));
+          }
+        else
+          {
+             eo_do(child_data->evf, elm_view_form_widget_set("thumb", evt->value));
+             if(NULL != child_data->value_prev)
+               {
+                  eo_do(child_data->evf, elm_view_form_widget_set("current", child_data->value_prev));
+               }
+          }
      }
    return EINA_TRUE;
 }
@@ -67,11 +78,14 @@ _child_prop_change_cb(void *data EINA_UNUSED, Eo *obj, const Eo_Event_Descriptio
 static Eina_Bool
 _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
+   Form_Child_Data *child_evt = data;
    Emodel_Children_EVT *evt = event_info;
-   Eo *evf = data;
-   EINA_SAFETY_ON_NULL_RETURN_VAL(evf, EINA_FALSE);
+   EINA_SAFETY_ON_NULL_RETURN_VAL(child_evt->evf, EINA_FALSE);
    eo_ref(evt->child);
-   eo_do(evt->child, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, evf));
+
+   child_evt->is_dir = EINA_FALSE;
+
+   eo_do(evt->child, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_evt));
    eo_do(evt->child, emodel_property_get("is_dir"));
    return EINA_TRUE;
 }
@@ -85,17 +99,21 @@ _generation_error_cb(void *data, Evas_Object *o, void *event_info)
    Eo *evf = data;
    Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(value, DEFAULT_THUMBNAIL); 
-   fprintf(stdout, "%s:%d thumbnail generation error, loading default.\n", __FUNCTION__, __LINE__);
+   fprintf(stderr, "%s:%d thumbnail generation error, loading default %s.\n", 
+           __FUNCTION__, __LINE__, DEFAULT_THUMBNAIL);
    eo_do(evf, elm_view_form_widget_set("thumb", value));
 }
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
-   Eo *fileview, *model, *evf;
+   Eo *fileview, *evf, *model;
    Eina_Value *value;
-   Form_Widget w;
-   memset(&w, 0, sizeof(Form_Widget));
+   Evas_Object *win, *panes, *panes_h, *bigbox;
+   Evas_Object *label, *thumb, *entry, *genlist;
+   Form_Child_Data *child_data = calloc(1, sizeof(Form_Child_Data));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(child_data, 1);
+
    ecore_init();
 
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(FILEMODEL_PATH));
@@ -104,8 +122,10 @@ elm_main(int argc, char **argv)
    evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
    EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
 
+   child_data->evf = evf;
+   child_data->model = model;
    eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
-   eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _child_selected_cb, evf));
+   eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _child_selected_cb, child_data));
 
 
    /* for entry widget */
@@ -115,82 +135,82 @@ elm_main(int argc, char **argv)
    };
 
    /* Main window setup */
-   w.win = elm_win_util_standard_add("form_test", "Form Test");
+   win = elm_win_util_standard_add("form_test", "Form Test");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
-   elm_win_autodel_set(w.win, EINA_TRUE); /**< sets the window to be destroyed automatically by signal */
-   elm_win_focus_highlight_enabled_set(w.win, EINA_TRUE); /**< enavle focus */
-   evas_object_smart_callback_add(w.win, "focus,in", _win_focused_cb, "window");
-   evas_object_smart_callback_add(w.win, "delete,request", _main_win_del_cb, "window"); /**< define window delete callback */
-   evas_object_resize(w.win, 920, 720);
-   evas_object_show(w.win);
+   elm_win_autodel_set(win, EINA_TRUE); /**< sets the window to be destroyed automatically by signal */
+   elm_win_focus_highlight_enabled_set(win, EINA_TRUE); /**< enavle focus */
+   evas_object_smart_callback_add(win, "focus,in", _win_focused_cb, "window");
+   evas_object_smart_callback_add(win, "delete,request", _main_win_del_cb, "window"); /**< define window delete callback */
+   evas_object_resize(win, 920, 720);
+   evas_object_show(win);
 
    /* Box setup */
-   w.bigbox = elm_box_add(w.win);
-   evas_object_size_hint_weight_set(w.bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_show(w.bigbox);
+   bigbox = elm_box_add(win);
+   evas_object_size_hint_weight_set(bigbox, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_show(bigbox);
 
    /* Genlist for file view */
-   w.genlist = elm_genlist_add(w.win);
-   evas_object_size_hint_weight_set(w.genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   evas_object_show(w.genlist);
+   genlist = elm_genlist_add(win);
+   evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(genlist);
 
    /* File view setup */
-   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(w.genlist, model));
+   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, model));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
    /* Panes layout */
-   w.panes = elm_panes_add(w.win);
-   evas_object_size_hint_weight_set(w.panes, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   elm_win_resize_object_add(w.win, w.panes);
-   evas_object_show(w.panes);
+   panes = elm_panes_add(win);
+   evas_object_size_hint_weight_set(panes, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_win_resize_object_add(win, panes);
+   evas_object_show(panes);
 
    /* Right-side panes */
-   w.panes_h = elm_panes_add(w.win);
-   elm_panes_horizontal_set(w.panes_h, EINA_TRUE);
-   evas_object_size_hint_weight_set(w.panes_h, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.panes_h, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   evas_object_show(w.panes_h);
+   panes_h = elm_panes_add(win);
+   elm_panes_horizontal_set(panes_h, EINA_TRUE);
+   evas_object_size_hint_weight_set(panes_h, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(panes_h, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(panes_h);
 
    /* Label widget */
-   w.label = elm_label_add(w.win);
-   elm_label_line_wrap_set(w.label, ELM_WRAP_CHAR);
-   evas_object_size_hint_weight_set(w.label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.label, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   evas_object_show(w.label);
-   elm_box_pack_end(w.bigbox, w.label);
+   label = elm_label_add(win);
+   elm_label_line_wrap_set(label, ELM_WRAP_CHAR);
+   evas_object_size_hint_weight_set(label, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(label);
+   elm_box_pack_end(bigbox, label);
 
    /* Entry widget */
-   w.entry = elm_entry_add(w.win);
-   evas_object_size_hint_weight_set(w.entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   elm_entry_single_line_set(w.entry, EINA_TRUE);
-   elm_entry_markup_filter_append(w.entry, elm_entry_filter_limit_size, &limit_size);
-   evas_object_show(w.entry);
-   elm_box_pack_end(w.bigbox, w.entry);
+   entry = elm_entry_add(win);
+   evas_object_size_hint_weight_set(entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_entry_single_line_set(entry, EINA_TRUE);
+   elm_entry_markup_filter_append(entry, elm_entry_filter_limit_size, &limit_size);
+   evas_object_show(entry);
+   elm_box_pack_end(bigbox, entry);
 
    /* Thumb widget */
    elm_need_ethumb();
-   w.thumb = elm_thumb_add(w.win);
-   evas_object_smart_callback_add(w.thumb, "generate,error", _generation_error_cb, evf);
-   evas_object_size_hint_weight_set(w.thumb, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(w.thumb, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   evas_object_show(w.thumb);
-   elm_thumb_editable_set(w.thumb, EINA_FALSE);
+   thumb = elm_thumb_add(win);
+   evas_object_smart_callback_add(thumb, "generate,error", _generation_error_cb, evf);
+   evas_object_size_hint_weight_set(thumb, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(thumb, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(thumb);
+   elm_thumb_editable_set(thumb, EINA_FALSE);
 
    /* Add box on top right panel */
-   elm_object_part_content_set(w.panes_h, "left", w.bigbox);
-   elm_object_part_content_set(w.panes_h, "bottom", w.thumb);
+   elm_object_part_content_set(panes_h, "left", bigbox);
+   elm_object_part_content_set(panes_h, "bottom", thumb);
    /* Add file view in left panel */
-   elm_object_part_content_set(w.panes, "left", w.genlist);
+   elm_object_part_content_set(panes, "left", genlist);
    /* Add right panel in main panel */
-   elm_object_part_content_set(w.panes, "right", w.panes_h);
+   elm_object_part_content_set(panes, "right", panes_h);
 
    /* Define widget properties */
-   eo_do(evf, elm_view_form_widget_add("current", w.label));
-   eo_do(evf, elm_view_form_widget_add("search", w.entry));
-   eo_do(evf, elm_view_form_widget_add("thumb", w.thumb));
+   eo_do(evf, elm_view_form_widget_add("current", label));
+   eo_do(evf, elm_view_form_widget_add("search", entry));
+   eo_do(evf, elm_view_form_widget_add("thumb", thumb));
 
    /* Define default widget values*/
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
@@ -216,6 +236,7 @@ elm_main(int argc, char **argv)
    eo_unref(evf);
    elm_shutdown();
    ecore_shutdown();
+   free(child_data);
    return 0;
 }
 ELM_MAIN()
