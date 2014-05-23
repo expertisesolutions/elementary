@@ -29,6 +29,21 @@ _main_win_del_cb(void *data, Evas_Object *obj, void *event)
 {
 }
 
+static Eina_Bool
+_pinpoint_prop_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+{
+   Emodel_Property_EVT *evt = event_info;
+   Eo *evf = data;
+   fprintf(stdout, "\"pinpoint\" property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
+   if(!strncmp(evt->prop, "size", 4))
+     {
+        Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_INT);
+        eina_value_set(value, atoi(eina_value_to_string(evt->value)));
+        eo_do(evf, elm_view_form_widget_set("size", value));
+     }
+   return EINA_TRUE;
+}
+
 /**
  * @brief Parent property change
  */
@@ -66,7 +81,7 @@ _child_prop_change_cb(void *data, Eo *obj, const Eo_Event_Description *desc EINA
              child_data->value_prev = eina_value_new(EINA_VALUE_TYPE_STRING);
              eina_value_set(child_data->value_prev, dirname(eina_value_to_string(evt->value))); 
              eo_do(child_data->evf, elm_view_form_widget_set("current", evt->value));
-             eo_do(obj, elm_view_form_widget_set("size", evt->value));
+             //eo_do(obj, elm_view_form_widget_set("size", evt->value));
           }
         else
           {
@@ -117,7 +132,7 @@ _generation_error_cb(void *data, Evas_Object *o, void *event_info)
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
-   Eo *fileview, *evf, *model;
+   Eo *fileview, *evf, *model, *pinpoint_model;
    Eina_Value *value;
    Evas_Object *win, *panes, *panes_h, *bigbox;
    Evas_Object *rootpath_label, *thumb, *entry, *genlist;
@@ -138,6 +153,9 @@ elm_main(int argc, char **argv)
    eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
    eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _child_selected_cb, child_data));
 
+   pinpoint_model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(FILEMODEL_PATH));
+   eo_do(pinpoint_model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _pinpoint_prop_change_cb, evf));
+   eo_do(pinpoint_model, emodel_property_get("size"));
 
    /* for entry widget */
    static Elm_Entry_Filter_Limit_Size limit_size = {
@@ -236,10 +254,6 @@ elm_main(int argc, char **argv)
    eina_value_set(value, FILEMODEL_PATH);
    eo_do(evf, elm_view_form_widget_set("current", value));
 
-   //value = eina_value_new(EINA_VALUE_TYPE_INT);
-   //eina_value_set(value, 0);
-   //eo_do(evf, elm_view_form_widget_set("size", value));
-
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
    eina_value_set(value, "Type filename");
    eo_do(evf, elm_view_form_widget_set("search", value));
@@ -257,6 +271,7 @@ elm_main(int argc, char **argv)
    elm_run();
    eo_unref(model);
    eo_unref(evf);
+   eo_unref(pinpoint_model);
    elm_shutdown();
    ecore_shutdown();
    free(child_data);
