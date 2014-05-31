@@ -12,6 +12,8 @@ extern EAPI Eo_Op ELM_VIEW_LIST_BASE_ID;
 enum {
      ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET,
      ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT,
+     ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_SET,
+     ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_GET,
      ELM_OBJ_VIEW_LIST_SUB_ID_LAST
 };
 
@@ -44,6 +46,24 @@ enum {
  *
  */
 #define elm_view_list_property_connect(property, part) ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT), EO_TYPECHECK(const char *, property), EO_TYPECHECK(const char *, part)
+
+/**
+ * @def elm_view_list_model_set
+ * @since 1.8
+ *
+ * @param model
+ *
+ */
+#define elm_view_list_model_set(model) ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_SET), EO_TYPECHECK(Eo *, model)
+
+/**
+ * @def elm_view_list_model_get
+ * @since 1.8
+ *
+ * @param model
+ *
+ */
+#define elm_view_list_model_get(model) ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_GET), EO_TYPECHECK(Eo **, model)
 
 
 #endif
