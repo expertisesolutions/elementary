@@ -79,10 +79,8 @@ _child_prop_change_cb(void *data, Eo *obj, const Eo_Event_Description *desc EINA
         child_data->is_dir = atoi(eina_value_to_string(evt->value));
         eo_do(obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
         eo_do(obj, emodel_property_get("filename"));
-
-        eo_do(child_data->evf, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
-        eo_do(child_data->evf, emodel_property_get("size"));
-
+        //eo_do(child_data->model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
+        //eo_do(child_data->model, emodel_property_get("size"));
      }
    else if(!strncmp(evt->prop, "filename", 8))
      {
