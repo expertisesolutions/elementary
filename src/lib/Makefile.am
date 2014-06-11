@@ -567,6 +567,10 @@ BUILT_SOURCES = \
 		elm_app_client.eo.h \
 		elm_app_client_view.eo.c \
 		elm_app_client_view.eo.h \
+		elm_view_list.eo.c \
+		elm_view_list.eo.h \
+		elm_view_form.eo.c \
+		elm_view_form.eo.h \
 		elm_app_server.eo.c \
 		elm_app_server.eo.h \
 		elm_app_server_view.eo.c \
@@ -800,6 +804,8 @@ elementaryeolianfiles_DATA = \
 	     elm_actionslider.eo \
 	     elm_app_client.eo \
 	     elm_app_client_view.eo \
+	     elm_view_list.eo \
+	     elm_view_form.eo \
 	     elm_app_server.eo \
 	     elm_app_server_view.eo \
 	     elm_atspi_app_object.eo \
@@ -896,6 +902,8 @@ nodist_includesunstable_HEADERS = \
 				  elm_actionslider.eo.h \
 				  elm_app_client.eo.h \
 				  elm_app_client_view.eo.h \
+				  elm_view_list.eo.h \
+				  elm_view_form.eo.h \
 				  elm_app_server.eo.h \
 				  elm_app_server_view.eo.h \
 				  elm_atspi_app_object.eo.h \

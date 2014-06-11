@@ -1,0 +1,62 @@
+class Elm_View_Form (Eo_Base)
+{
+    legacy_prefix: null;
+    methods {
+        model_set {
+            /*@ Set model */
+            /**
+             * @def elm_view_form_model_set
+             * @since 1.8
+             *
+             * @in model
+             */
+             params {
+                 Eo *model;
+             }
+        }
+        widget_add {
+            /*@ Add new widget */
+            /**
+             * @def elm_view_form_widget_add
+             * @since 1.8
+             *
+             * @in propname
+             * @in evas
+             */
+             params {
+                 const char *propname;
+                 Evas_Object *evas;
+             }
+        }
+        widget_set {
+            /*@ Set widget's value */
+            /**
+             * @def elm_view_form_widget_set
+             * @since 1.8
+             *
+             * @in propname
+             * @in value
+             */
+             params {
+                 const char *propname;
+                 Eina_Value *value;
+             }
+        }
+        widget_get {
+            /*@ Get widget's value */
+            /**
+             * @def elm_view_form_widget_get
+             * @since 1.8
+             *
+             * @in propname
+             */
+             params {
+                 const char *propname;
+             }
+        }
+    }
+   implements {
+      Eo_Base::destructor;
+      Eo_Base::constructor;
+   }
+}
