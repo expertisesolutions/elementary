@@ -16,11 +16,11 @@ _ev_handler(void *data EINA_UNUSED,
             int type EINA_UNUSED,
             void *event EINA_UNUSED)
 {
-   Eina_Bool ret;
+   Eina_Bool ret = EINA_FALSE;
 
    printf("systray ready event\n");
 
-   eo_do(item, elm_obj_systray_register(&ret));
+   eo_do(item, ret = elm_obj_systray_register());
 
    printf("Item Registration: ");
    if (ret)
@@ -82,7 +82,7 @@ test_systray(void *data EINA_UNUSED,
    elm_menu_item_add(it, it2, NULL, "item 2",  _menu_clicked, "item 2");
 
    // Status Notifier Item Handler
-   item = eo_add(ELM_OBJ_SYSTRAY_CLASS, win);
+   item = eo_add(ELM_SYSTRAY_CLASS, win);
    eo_do(item, elm_obj_systray_icon_name_set("elementary"));
    eo_do(item, elm_obj_systray_att_icon_name_set("elementary"));
    eo_do(item, elm_obj_systray_menu_set(it));

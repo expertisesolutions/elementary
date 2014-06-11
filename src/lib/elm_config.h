@@ -551,6 +551,50 @@ EAPI double       elm_config_scroll_thumbscroll_acceleration_weight_get(void);
 EAPI void         elm_config_scroll_thumbscroll_acceleration_weight_set(double weight);
 
 /**
+ * Focus Autoscroll Mode
+ *
+ * @since 1.10
+ * @ingroup Focus
+ */
+typedef enum
+{
+   ELM_FOCUS_AUTOSCROLL_MODE_SHOW, /**< directly show the focused region or item automatically */
+   ELM_FOCUS_AUTOSCROLL_MODE_NONE, /**< do not show the focused region or item automatically */
+   ELM_FOCUS_AUTOSCROLL_MODE_BRING_IN /**< bring_in the focused region or item automatically which might invole the scrolling */
+} Elm_Focus_Autoscroll_Mode;
+
+/**
+ * Get focus auto scroll mode.
+ *
+ * When a region or an item is focused and it resides inside any scroller,
+ * elementary will automatically scroll the focused area to the visible
+ * viewport.
+ *
+ * @see elm_config_focus_autoscroll_mode_set()
+ * @ingroup Focus
+ * @since 1.10
+ */
+EAPI Elm_Focus_Autoscroll_Mode elm_config_focus_autoscroll_mode_get(void);
+
+/**
+ * Set focus auto scroll mode.
+ *
+ * @param mode focus auto scroll mode. This can be one of the
+ * Elm_Focus_Autoscroll_Mode enum values.
+ *
+ * When a region or an item is focused and it resides inside any scroller,
+ * elementary will automatically scroll the focused area to the visible
+ * viewport.
+ * Focus auto scroll mode is set to @c ELM_FOCUS_AUTOSCROLL_MODE_SHOW by
+ * default historically.
+ *
+ * @see elm_config_focus_autoscroll_mode_get()
+ * @ingroup Focus
+ * @since 1.10
+ */
+EAPI void         elm_config_focus_autoscroll_mode_set(Elm_Focus_Autoscroll_Mode mode);
+
+/**
  * @}
  */
 
@@ -805,6 +849,43 @@ EAPI const char *elm_config_preferred_engine_get(void);
  * @see elm_win_add()
  */
 EAPI void        elm_config_preferred_engine_set(const char *engine);
+
+/**
+ * @brief Get Elementary's preferred engine to use.
+ *
+ * @return The acceleration preference hint string
+ * @note there's no need to free the returned string, here.
+ *
+ * See elm_config_accel_preference_set() for more information, but this simply
+ * returns what was set by this call, nothing more.
+ * 
+ * @see elm_config_accel_preference_set()
+ * @since 1.10
+ */
+EAPI const char *elm_config_accel_preference_get(void);
+
+/**
+ * @brief Set Elementary's acceleration preferences for new windows.
+ *
+ * @param pref The preference desired as a normal C string
+ *
+ * Note that it will take effect only to Elementary windows created after
+ * this is called. The @p pref string is a freeform C string that indicates
+ * what kind of acceleration is preferred. This may or may not be honored,
+ * but a best attempt will be made. Known strings are as follows:
+ * 
+ * "gl", "opengl" - try use opengl.
+ * "3d" - try and use a 3d acceleration unit.
+ * "hw", "hardware", "accel" - try any acceleration unit (best possible)
+ * 
+ * This takes precedence over engine preferences set with
+ * elm_config_preferred_engine_set().
+ * 
+ * @see elm_win_add()
+ * @since 1.10
+ */
+EAPI void        elm_config_accel_preference_set(const char *pref);
+
 
 typedef struct _Elm_Text_Class
 {
@@ -1121,6 +1202,9 @@ EAPI void       elm_config_cache_edje_collection_cache_size_set(int size);
  *
  * This gets whether the highlight on focused objects is enabled or not
  *
+ * @return enable @c EINA_TRUE if the focus highlight is enabled, @c EINA_FALSE
+ * otherwise.
+ *
  * @see elm_config_focus_highlight_enabled_set()
  * @ingroup Focus
  */
@@ -1136,20 +1220,21 @@ EAPI Eina_Bool            elm_config_focus_highlight_enabled_get(void);
  * Note that it will take effect only to Elementary windows created after
  * this is called.
  *
- * @see elm_win_add()
- *
+ * @see elm_config_focus_highlight_enabled_get()
  * @ingroup Focus
  */
 EAPI void                 elm_config_focus_highlight_enabled_set(Eina_Bool enable);
 
 /**
- * Get the enable status of the highlight animation
+ * Get the enable status of the focus highlight animation
  *
- * @return The focus highlight mode set
+ * @return animate @c EINA_TRUE if the focus highlight animation is enabled, @c
+ * EINA_FALSE otherwise.
  *
  * Get whether the focus highlight, if enabled, will animate its switch from
  * one object to the next
  *
+ * @see elm_config_focus_highlight_animate_set()
  * @ingroup Focus
  */
 EAPI Eina_Bool            elm_config_focus_highlight_animate_get(void);
@@ -1165,11 +1250,98 @@ EAPI Eina_Bool            elm_config_focus_highlight_animate_get(void);
  * Note that it will take effect only to Elementary windows created after
  * this is called.
  *
- * @see elm_win_add()
- *
+ * @see elm_config_focus_highlight_animate_get()
  * @ingroup Focus
  */
 EAPI void                 elm_config_focus_highlight_animate_set(Eina_Bool animate);
+
+/**
+ * Get the disable status of the focus highlight clip feature.
+ *
+ * @return The focus highlight clip disable status
+ *
+ * Get whether the focus highlight clip feature is disabled. If disabled return
+ * @c EINA_TRUE, else return @c EINA_FALSE. If the return is @c EINA_TRUE, focus
+ * highlight clip feature is not disabled so the focus highlight can be clipped.
+ *
+ * @see elm_config_focus_highlight_clip_disabled_set()
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI Eina_Bool elm_config_focus_highlight_clip_disabled_get(void);
+
+/**
+ * Set the disable status of the focus highlight clip feature.
+ *
+ * @param disable Disable focus highlight clip feature if @c EINA_TRUE, enable
+ * it otherwise.
+ *
+ * @see elm_config_focus_highlight_clip_disabled_get()
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI void elm_config_focus_highlight_clip_disabled_set(Eina_Bool disable);
+
+/**
+ * Focus Movement Policy
+ *
+ * @since 1.10
+ * @ingroup Focus
+ */
+typedef enum
+{
+   ELM_FOCUS_MOVE_POLICY_CLICK,
+   ELM_FOCUS_MOVE_POLICY_IN
+} Elm_Focus_Move_Policy;
+
+/**
+ * Get the focus movement policy
+ *
+ * @return The focus movement policy
+ *
+ * Get how the focus is moved to another object. It can be @c
+ * ELM_FOCUS_MOVE_POLICY_CLICK or @c ELM_FOCUS_MOVE_POLICY_IN. The first means
+ * elementary focus is moved on elementary object click. The second means
+ * elementary focus is moved on elementary object mouse in.
+ *
+ * @see elm_config_focus_move_policy_set()
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI Elm_Focus_Move_Policy elm_config_focus_move_policy_get(void);
+
+/**
+ * Set elementary focus movement policy
+ *
+ * @param policy A policy to apply for the focus movement
+ *
+ * @see elm_config_focus_move_policy_get()
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI void elm_config_focus_move_policy_set(Elm_Focus_Move_Policy policy);
+
+/**
+ * Get disable status of item select on focus feature.
+ *
+ * @return The item select on focus disable status
+ *
+ * @see elm_config_item_select_on_focus_disabled_set
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI Eina_Bool elm_config_item_select_on_focus_disabled_get(void);
+
+/**
+ * Set the disable status of the item select on focus feature.
+ *
+ * @param disable Disable item select on focus if @c EINA_TRUE, enable otherwise
+ *
+ * @see elm_config_item_select_on_focus_disabled_get
+ * @since 1.10
+ * @ingroup Focus
+ */
+EAPI void elm_config_item_select_on_focus_disabled_set(Eina_Bool enabled);
 
 /**
  * Get the system mirrored mode. This determines the default mirrored mode
@@ -1253,9 +1425,126 @@ EAPI double   elm_config_glayer_double_tap_timeout_get(void);
  */
 EAPI void   elm_config_glayer_double_tap_timeout_set(double double_tap_timeout);
 
+typedef struct _Elm_Color_Class
+{
+   const char *name;
+   const char *desc;
+} Elm_Color_Class;
+
+typedef struct _Elm_Color_Overlay
+{
+   const char *color_class;
+   struct {
+      unsigned char r, g, b, a;
+   } color, outline, shadow;
+} Elm_Color_Overlay;
+
+/**
+ * Get Elementary's list of supported color classes.
+ *
+ * @return The color classes list, with @c Elm_Color_Class blobs as data.
+ * @ingroup Colors
+ * @since 1.10
+ *
+ * Release the list with elm_color_classes_list_free().
+ */
+EAPI Eina_List *elm_config_color_classes_list_get(void);
+
+/**
+ * Free Elementary's list of supported color classes.
+ *
+ * @ingroup Colors
+ * @since 1.10
+ *
+ * @see elm_config_color_classes_list_get().
+ */
+EAPI void      elm_config_color_classes_list_free(Eina_List *list);
+
+/**
+ * Get Elementary's list of color overlays, set with
+ * elm_config_color_overlay_set().
+ *
+ * @return The color overlays list, with @c Elm_Color_Overlay blobs as
+ * data.
+ *
+ * @ingroup Colors
+ * @since 1.10
+ *
+ * For each color class, one can set a <b>color overlay</b> for it,
+ * overriding the default color properties for that class coming from
+ * the theme in use. There is no need to free this list.
+ *
+ * @see elm_config_color_overlay_set()
+ * @see elm_config_color_overlay_unset().
+ */
+EAPI const Eina_List *elm_config_color_overlay_list_get(void);
+
+/**
+ * Set a color overlay for a given Elementary color class.
+ *
+ * @param color_class Color class name
+ * @param r Object Red value
+ * @param g Object Green value
+ * @param b Object Blue value
+ * @param a Object Alpha value
+ * @param r2 Outline Red value
+ * @param g2 Outline Green value
+ * @param b2 Outline Blue value
+ * @param a2 Outline Alpha value
+ * @param r3 Shadow Red value
+ * @param g3 Shadow Green value
+ * @param b3 Shadow Blue value
+ * @param a3 Shadow Alpha value
+ *
+ * @ingroup Colors
+ * @since 1.10
+
+ * The first color is the object, the second is the text outline, and
+ * the third is the text shadow. (Note that the second two only apply
+ * to text parts).
+
+ * Setting color emits a signal "color_class,set" with source being
+ * the given color class in all edje objects.
+ *
+ * @see elm_config_color_overlay_list_get()
+ * @see elm_config_color_overlay_unset()
+ * @see edje_color_class_set()
+
+ * @note unlike Evas, Edje colors are @b not pre-multiplied. That is,
+ *       half-transparent white is 255 255 255 128.
+ */
+EAPI void      elm_config_color_overlay_set(const char *color_class,
+                                            int r, int g, int b, int a,
+                                            int r2, int g2, int b2, int a2,
+                                            int r3, int g3, int b3, int a3);
+
+/**
+ * Unset a color overlay for a given Elementary color class.
+ *
+ * @param color_class Color class name
+ *
+ * @ingroup Colors
+ * @since 1.10
+ *
+ * This will bring back color elements belonging to color class
+ * @p color_class back to their default color settings.
+ */
+EAPI void      elm_config_color_overlay_unset(const char *color_class);
+
+/**
+ * Apply the changes made with elm_config_color_overlay_set() and
+ * elm_config_color_overlay_unset() on the current Elementary window.
+ *
+ * @ingroup Colors
+ * @since 1.10
+ *
+ * This applies all color overlays set to all objects in the UI.
+ */
+EAPI void      elm_config_color_overlay_apply(void);
+
 /**
  * Get the magnifier enabled state for entries
- * 
+ *
  * @return The enabled state for magnifier
  * @since 1.9
  */
@@ -1263,7 +1552,7 @@ EAPI Eina_Bool elm_config_magnifier_enable_get(void);
 
 /**
  * Set the magnifier enabled state for entires
- * 
+ *
  * @param enable The magnifier config state
  * @since 1.9
  */
@@ -1271,7 +1560,7 @@ EAPI void      elm_config_magnifier_enable_set(Eina_Bool enable);
 
 /**
  * Get the amount of scaling the magnifer does
- * 
+ *
  * @return The scaling amount (1.0 is none, 2.0 is twice as big etc.)
  * @since 1.9
  */
@@ -1279,7 +1568,7 @@ EAPI double    elm_config_magnifier_scale_get(void);
 
 /**
  * Set the amount of scaling the magnifier does
- * 
+ *
  * @param scale The scaling amount for magnifiers
  * @since 1.9
  */
@@ -1287,7 +1576,7 @@ EAPI void      elm_config_magnifier_scale_set(double scale);
 
 /**
  * Get the mute state of an audio channel for effects
- * 
+ *
  * @param channel The channel to get the mute state of
  * @return The mute state
  * @since 1.9
@@ -1296,12 +1585,55 @@ EAPI Eina_Bool elm_config_audio_mute_get(Edje_Channel channel);
 
 /**
  * Set the mute state of the specified channel
- * 
+ *
  * @param channel The channel to set the mute state of
  * @param mute The mute state to set
  * @since 1.9
  */
 EAPI void      elm_config_audio_mute_set(Edje_Channel channel, Eina_Bool mute);
+
+/**
+ * @defgroup ATSPI AT-SPI2 Accessibility
+ * @ingroup Elementary
+ *
+ * Elementary widgets support Linux Accessibility standard. For more
+ * information please visit:
+ * http://www.linuxfoundation.org/collaborate/workgroups/accessibility/atk/at-spi/at-spi_on_d-bus
+ *
+ * @{
+ */
+
+/**
+ * Gets ATSPI mode
+ *
+ * @return the ATSPI mode
+ *
+ * @since 1.10
+ *
+ * @ingroup ATSPI
+ *
+ * @see elm_config_atspi_mode_set()
+ */
+EAPI Eina_Bool        elm_config_atspi_mode_get(void);
+
+/**
+ * Sets ATSPI mode
+ *
+ * @param is_atspi If @c EINA_TRUE, enables ATSPI2 mode
+ *
+ * @note Enables Linux Accessibility support for Elementary widgets.
+ *
+ * @since 1.10
+ *
+ * @ingroup ATSPI
+ *
+ * @see elm_config_atspi_mode_get()
+ */
+EAPI void             elm_config_atspi_mode_set(Eina_Bool is_atspi);
+
+/**
+ * @}
+ */
 
 /**
  * @}

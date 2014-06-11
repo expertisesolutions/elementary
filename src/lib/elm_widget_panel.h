@@ -2,7 +2,6 @@
 #define ELM_WIDGET_PANEL_H
 
 #include "elm_widget_layout.h"
-#include "els_box.h"
 
 /**
  * @addtogroup Widget
@@ -18,8 +17,8 @@
 /**
  * Base layout smart data extended with panel instance data.
  */
-typedef struct _Elm_Panel_Smart_Data Elm_Panel_Smart_Data;
-struct _Elm_Panel_Smart_Data
+typedef struct _Elm_Panel_Data Elm_Panel_Data;
+struct _Elm_Panel_Data
 {
    Evas_Object                          *bx, *content;
    Evas_Object                          *event;
@@ -35,7 +34,7 @@ struct _Elm_Panel_Smart_Data
  */
 
 #define ELM_PANEL_DATA_GET(o, sd) \
-  Elm_Panel_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_PANEL_CLASS)
+  Elm_Panel_Data * sd = eo_data_scope_get(o, ELM_PANEL_CLASS)
 
 #define ELM_PANEL_DATA_GET_OR_RETURN(o, ptr)         \
   ELM_PANEL_DATA_GET(o, ptr);                        \
@@ -56,7 +55,7 @@ struct _Elm_Panel_Smart_Data
     }
 
 #define ELM_PANEL_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_PANEL_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_PANEL_CLASS))) \
     return
 
 #endif

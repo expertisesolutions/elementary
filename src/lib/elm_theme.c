@@ -9,7 +9,7 @@
 static Elm_Theme theme_default =
 {
   { NULL, NULL }, { NULL, NULL }, { NULL, NULL },
-  NULL, NULL, NULL, NULL, NULL, 1
+  NULL, NULL, NULL, NULL, NULL, 1, NULL
 };
 
 static Eina_List *themes = NULL;
@@ -28,17 +28,39 @@ _elm_theme_find_try(Elm_Theme *th, Eina_File *f, const char *group)
 static inline void
 _elm_theme_item_finalize(Elm_Theme_Files *files,
                          const char *item,
-                         Eina_File *f)
+                         Eina_File *f,
+                         Eina_Bool prepend,
+                         Eina_Bool istheme)
 {
-   if (!f) return ;
+   if (!f) return;
+   if (istheme)
+     {
+        char *version;
 
-   files->items = eina_list_append(files->items,
-                                   eina_stringshare_add(item));
-   files->handles = eina_list_append(files->handles, f);
+        if (!(version = edje_mmap_data_get(f, "version"))) return;
+        if (atoi(version) < 110) // bump this version number when we need to
+          {
+             free(version);
+             return;
+          }
+        free(version);
+     }
+   if (prepend)
+     {
+        files->items = eina_list_prepend(files->items,
+                                         eina_stringshare_add(item));
+        files->handles = eina_list_prepend(files->handles, f);
+     }
+   else
+     {
+        files->items = eina_list_append(files->items,
+                                        eina_stringshare_add(item));
+        files->handles = eina_list_append(files->handles, f);
+     }
 }
 
 static void
-_elm_theme_file_item_add(Elm_Theme_Files *files, const char *item)
+_elm_theme_file_item_add(Elm_Theme_Files *files, const char *item, Eina_Bool prepend, Eina_Bool istheme)
 {
    Eina_Strbuf *buf = NULL;
    Eina_File *f = NULL;
@@ -68,7 +90,7 @@ _elm_theme_file_item_add(Elm_Theme_Files *files, const char *item)
                                   "%s/"ELEMENTARY_BASE_DIR"/themes/%s.edj",
                                   home, item);
         f = eina_file_open(eina_strbuf_string_get(buf), EINA_FALSE);
-        _elm_theme_item_finalize(files, item, f);
+        _elm_theme_item_finalize(files, item, f, prepend, istheme);
 
         eina_strbuf_reset(buf);
         eina_strbuf_append_printf(buf,
@@ -78,7 +100,7 @@ _elm_theme_file_item_add(Elm_Theme_Files *files, const char *item)
         /* Finalize will be done by the common one */
      }
 
-   _elm_theme_item_finalize(files, item, f);
+   _elm_theme_item_finalize(files, item, f, prepend, istheme);
 
  on_error:
    if (buf) eina_strbuf_free(buf);
@@ -159,6 +181,7 @@ _elm_theme_clear(Elm_Theme *th)
 
    ELM_SAFE_FREE(th->cache, eina_hash_free);
    ELM_SAFE_FREE(th->cache_data, eina_hash_free);
+   ELM_SAFE_FREE(th->cache_style_load_failed, eina_hash_free);
    ELM_SAFE_FREE(th->theme, eina_stringshare_del);
    if (th->ref_theme)
      {
@@ -318,29 +341,43 @@ _elm_theme_set(Elm_Theme *th, Evas_Object *o, const char *clas, const char *grou
    if (!th) th = &(theme_default);
 
    snprintf(buf2, sizeof(buf2), "elm/%s/%s/%s", clas, group, style);
-   file = _elm_theme_group_file_find(th, buf2);
-   if (file)
+   if (!eina_hash_find(th->cache_style_load_failed, buf2))
      {
-        if (edje_object_mmap_set(o, file, buf2)) return EINA_TRUE;
-        else
+        file = _elm_theme_group_file_find(th, buf2);
+        if (file)
           {
-             DBG("could not set theme group '%s' from file '%s': %s",
-                 buf2,
-                 eina_file_filename_get(file),
-                 edje_load_error_str(edje_object_load_error_get(o)));
+             if (edje_object_mmap_set(o, file, buf2)) return EINA_TRUE;
+             else
+               {
+                  DBG("could not set theme group '%s' from file '%s': %s",
+                      buf2,
+                      eina_file_filename_get(file),
+                      edje_load_error_str(edje_object_load_error_get(o)));
+               }
           }
+        //style not found, add to the not found list
+        eina_hash_add(th->cache_style_load_failed, buf2, (void *)1);
      }
 
    //Use the elementary default theme.
    snprintf(buf2, sizeof(buf2), "elm/%s/%s/default", clas, group);
-   file = _elm_theme_group_file_find(th, buf2);
-   if (!file) return EINA_FALSE;
-   if (edje_object_mmap_set(o, file, buf2)) return EINA_TRUE;
-   DBG("could not set theme group '%s' from file '%s': %s",
-       buf2,
-       eina_file_filename_get(file),
-       edje_load_error_str(edje_object_load_error_get(o)));
-
+   if (!eina_hash_find(th->cache_style_load_failed, buf2))
+     {
+        file = _elm_theme_group_file_find(th, buf2);
+        if (file)
+          {
+             if (edje_object_mmap_set(o, file, buf2)) return EINA_TRUE;
+             else
+               {
+                  DBG("could not set theme group '%s' from file '%s': %s",
+                      buf2,
+                      eina_file_filename_get(file),
+                      edje_load_error_str(edje_object_load_error_get(o)));
+               }
+          }
+        //style not found, add to the not found list
+        eina_hash_add(th->cache_style_load_failed, buf2, (void *)1);
+     }
    return EINA_FALSE;
 }
 
@@ -430,12 +467,13 @@ _elm_theme_parse(Elm_Theme *th, const char *theme)
    th->cache = eina_hash_string_superfast_new(EINA_FREE_CB(eina_file_close));
    if (th->cache_data) eina_hash_free(th->cache_data);
    th->cache_data = eina_hash_string_superfast_new(EINA_FREE_CB(eina_stringshare_del));
-
+   if (th->cache_style_load_failed) eina_hash_free(th->cache_style_load_failed);
+   th->cache_style_load_failed = eina_hash_string_superfast_new(NULL);
    EINA_LIST_FREE(th->themes.items, p) eina_stringshare_del(p);
    EINA_LIST_FREE(th->themes.handles, f) eina_file_close(f);
 
    EINA_LIST_FREE(names, p)
-     _elm_theme_file_item_add(&th->themes, p);
+     _elm_theme_file_item_add(&th->themes, p, EINA_FALSE, EINA_TRUE);
    return EINA_TRUE;
 }
 
@@ -457,7 +495,7 @@ elm_theme_new(void)
    Elm_Theme *th = calloc(1, sizeof(Elm_Theme));
    if (!th) return NULL;
    th->ref = 1;
-   _elm_theme_file_item_add(&th->themes, "default");
+   _elm_theme_file_item_add(&th->themes, "default", EINA_FALSE, EINA_TRUE);
    themes = eina_list_append(themes, th);
    return th;
 }
@@ -545,14 +583,14 @@ elm_theme_overlay_add(Elm_Theme *th, const char *item)
 {
    if (!item) return;
    if (!th) th = &(theme_default);
-   _elm_theme_file_item_add(&th->overlay, item);
+   _elm_theme_file_item_add(&th->overlay, item, EINA_TRUE, EINA_FALSE);
    elm_theme_flush(th);
 }
 
 EAPI void
 elm_theme_overlay_del(Elm_Theme *th, const char *item)
 {
-   if (!item) return ;
+   if (!item) return;
    if (!th) th = &(theme_default);
    _elm_theme_file_item_del(&th->overlay, item);
    elm_theme_flush(th);
@@ -564,14 +602,14 @@ elm_theme_overlay_mmap_add(Elm_Theme *th, const Eina_File *f)
    Eina_File *file = eina_file_dup(f);
 
    if (!th) th = &(theme_default);
-   _elm_theme_item_finalize(&th->overlay, eina_file_filename_get(file), file);
+   _elm_theme_item_finalize(&th->overlay, eina_file_filename_get(file), file, EINA_TRUE, EINA_FALSE);
    elm_theme_flush(th);
 }
 
 EAPI void
 elm_theme_overlay_mmap_del(Elm_Theme *th, const Eina_File *f)
 {
-   if (!f) return ;
+   if (!f) return;
    if (!th) th = &(theme_default);
    _elm_theme_file_mmap_del(&th->overlay, f);
    elm_theme_flush(th);
@@ -587,16 +625,16 @@ elm_theme_overlay_list_get(const Elm_Theme *th)
 EAPI void
 elm_theme_extension_add(Elm_Theme *th, const char *item)
 {
-   if (!item) return ;
+   if (!item) return;
    if (!th) th = &(theme_default);
-   _elm_theme_file_item_add(&th->extension, item);
+   _elm_theme_file_item_add(&th->extension, item, EINA_FALSE, EINA_FALSE);
    elm_theme_flush(th);
 }
 
 EAPI void
 elm_theme_extension_del(Elm_Theme *th, const char *item)
 {
-   if (!item) return ;
+   if (!item) return;
    if (!th) th = &(theme_default);
    _elm_theme_file_item_del(&th->extension, item);
    elm_theme_flush(th);
@@ -607,16 +645,16 @@ elm_theme_extension_mmap_add(Elm_Theme *th, const Eina_File *f)
 {
    Eina_File *file = eina_file_dup(f);
 
-   if (!f) return ;
+   if (!f) return;
    if (!th) th = &(theme_default);
-   _elm_theme_item_finalize(&th->overlay, eina_file_filename_get(file), file);
+   _elm_theme_item_finalize(&th->overlay, eina_file_filename_get(file), file, EINA_FALSE, EINA_FALSE);
    elm_theme_flush(th);
 }
 
 EAPI void
 elm_theme_extension_mmap_del(Elm_Theme *th, const Eina_File *f)
 {
-   if (!f) return ;
+   if (!f) return;
    if (!th) th = &(theme_default);
    _elm_theme_file_mmap_del(&th->extension, f);
    elm_theme_flush(th);
@@ -733,6 +771,8 @@ elm_theme_flush(Elm_Theme *th)
    th->cache = eina_hash_string_superfast_new(EINA_FREE_CB(eina_file_close));
    if (th->cache_data) eina_hash_free(th->cache_data);
    th->cache_data = eina_hash_string_superfast_new(EINA_FREE_CB(eina_stringshare_del));
+   if (th->cache_style_load_failed) eina_hash_free(th->cache_style_load_failed);
+   th->cache_style_load_failed = eina_hash_string_superfast_new(NULL);
    _elm_win_rescale(th, EINA_TRUE);
    _elm_ews_wm_rescale(th, EINA_TRUE);
    if (th->referrers)
@@ -931,11 +971,10 @@ elm_theme_system_dir_get(void)
    char buf[PATH_MAX];
 
    if (path) return path;
-   if (!path)
-     {
-        snprintf(buf, sizeof(buf), "%s/themes", _elm_data_dir);
-        path = strdup(buf);
-     }
+
+   snprintf(buf, sizeof(buf), "%s/themes", _elm_data_dir);
+   path = strdup(buf);
+
    return path;
 }
 
@@ -946,13 +985,12 @@ elm_theme_user_dir_get(void)
    char buf[PATH_MAX];
 
    if (path) return path;
-   if (!path)
-     {
-        char *home = getenv("HOME");
-        if (!home) home = "";
 
-        snprintf(buf, sizeof(buf), "%s/"ELEMENTARY_BASE_DIR"/themes", home);
-        path = strdup(buf);
-     }
+   char *home = getenv("HOME");
+   if (!home) home = "";
+
+   snprintf(buf, sizeof(buf), "%s/"ELEMENTARY_BASE_DIR"/themes", home);
+   path = strdup(buf);
+
    return path;
 }

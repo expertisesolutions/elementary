@@ -456,6 +456,8 @@ typedef struct _Elm_Access_Info Elm_Access_Info;
 /**< accessibility info item */
 typedef struct _Elm_Access_Item Elm_Access_Item;
 
+typedef struct _Elm_Action Elm_Action;
+
 typedef void                  (*Elm_Widget_Text_Set_Cb)(void *data, const char *part, const char *text);
 typedef void                  (*Elm_Widget_Content_Set_Cb)(void *data, const char *part, Evas_Object *content);
 typedef const char           *(*Elm_Widget_Text_Get_Cb)(const void *data, const char *part);
@@ -467,6 +469,8 @@ typedef Eina_Bool             (*Elm_Widget_Del_Pre_Cb)(void *data);
 typedef void                  (*Elm_Widget_Item_Signal_Cb)(void *data, Elm_Widget_Item *item, const char *emission, const char *source);
 typedef void                  (*Elm_Widget_Style_Set_Cb)(void *data, const char *style);
 typedef const char           *(*Elm_Widget_Style_Get_Cb)(const void *data);
+typedef void                  (*Elm_Widget_Focus_Set_Cb)(void *data, Eina_Bool focused);
+typedef Eina_Bool             (*Elm_Widget_Focus_Get_Cb)(const void *data);
 
 #define ELM_ACCESS_DONE          -1   /* sentence done - send done event here */
 #define ELM_ACCESS_CANCEL        -2   /* stop reading immediately */
@@ -501,6 +505,12 @@ struct _Elm_Access_Info
    Evas_Object               *prev;
 };
 
+struct _Elm_Action
+{
+   const char *name;
+   Eina_Bool (*func)(Evas_Object *obj, const char *params);
+};
+
 void                  _elm_access_shutdown();
 void                  _elm_access_mouse_event_enabled_set(Eina_Bool enabled);
 
@@ -510,6 +520,10 @@ Eina_Bool             _elm_access_auto_highlight_get(void);
 void                  _elm_access_widget_item_access_order_set(Elm_Widget_Item *item, Eina_List *objs);
 const Eina_List      *_elm_access_widget_item_access_order_get(const Elm_Widget_Item *item);
 void                  _elm_access_widget_item_access_order_unset(Elm_Widget_Item *item);
+void                  _elm_widget_focus_highlight_start(const Evas_Object *obj);
+void                  _elm_widget_highlight_in_theme_update(Eo *obj);
+void                  _elm_win_focus_highlight_start(Evas_Object *obj);
+void                   _elm_win_focus_highlight_in_theme_update(Evas_Object *obj, Eina_Bool in_theme);
 
 EAPI void             _elm_access_clear(Elm_Access_Info *ac);
 EAPI void             _elm_access_text_set(Elm_Access_Info *ac, int type, const char *text);
@@ -519,7 +533,7 @@ EAPI void             _elm_access_read(Elm_Access_Info *ac, int type, const Evas
 EAPI void             _elm_access_say(const char *txt);
 EAPI Elm_Access_Info *_elm_access_info_get(const Evas_Object *obj);
 EAPI void             _elm_access_object_highlight(Evas_Object *obj);
-EAPI void             _elm_access_object_unhilight(Evas_Object *obj);
+EAPI void             _elm_access_object_unhighlight(Evas_Object *obj);
 EAPI void             _elm_access_object_highlight_disable(Evas *e);
 EAPI void             _elm_access_object_register(Evas_Object *obj, Evas_Object *hoverobj);
 EAPI void             _elm_access_object_unregister(Evas_Object *obj, Evas_Object *hoverobj);
@@ -578,6 +592,8 @@ struct _Elm_Widget_Item
    Elm_Widget_Disable_Cb          disable_func;
    Elm_Widget_Style_Set_Cb        style_set_func;
    Elm_Widget_Style_Get_Cb        style_get_func;
+   Elm_Widget_Focus_Set_Cb        focus_set_func;
+   Elm_Widget_Focus_Get_Cb        focus_get_func;
    Evas_Object                   *access_obj;
    const char                    *access_info;
    Eina_List                     *access_order;
@@ -659,6 +675,8 @@ EAPI void             elm_widget_parent2_set(Evas_Object *obj, Evas_Object *pare
 EAPI void             elm_widget_focus_steal(Evas_Object *obj);
 EAPI Evas_Object     *elm_widget_newest_focus_order_get(const Evas_Object *obj, unsigned int *newest_focus_order, Eina_Bool can_focus_only);
 EAPI void             elm_widget_display_mode_set(Evas_Object *obj, Evas_Display_Mode dispmode);
+EAPI Eina_Bool        elm_widget_focus_highlight_enabled_get(const Evas_Object *obj);
+EAPI void             elm_widget_focus_highlight_focus_part_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
 EAPI const Elm_Widget_Smart_Class *elm_widget_smart_class_get(void);
 
 /**
@@ -682,7 +700,7 @@ EAPI void             elm_widget_show_region_set(Evas_Object *obj, Evas_Coord x,
 EAPI void             elm_widget_show_region_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
 EAPI Eina_Bool        elm_widget_focus_region_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
 EAPI void             elm_widget_focus_region_show(const Evas_Object *obj);
-EAPI void             elm_widget_parents_bounce_get(Evas_Object *obj, Eina_Bool *horiz, Eina_Bool *vert);
+EAPI void             elm_widget_parents_bounce_get(const Evas_Object *obj, Eina_Bool *horiz, Eina_Bool *vert);
 EAPI void             elm_widget_scroll_hold_push(Evas_Object *obj);
 EAPI void             elm_widget_scroll_hold_pop(Evas_Object *obj);
 EAPI int              elm_widget_scroll_hold_get(const Evas_Object *obj);
@@ -711,6 +729,8 @@ EAPI Eina_Bool        elm_widget_drag_lock_x_get(const Evas_Object *obj);
 EAPI Eina_Bool        elm_widget_drag_lock_y_get(const Evas_Object *obj);
 EAPI int              elm_widget_drag_child_locked_x_get(const Evas_Object *obj);
 EAPI int              elm_widget_drag_child_locked_y_get(const Evas_Object *obj);
+EAPI void             elm_widget_item_loop_enabled_set(Evas_Object *obj, Eina_Bool enable);
+EAPI Eina_Bool        elm_widget_item_loop_enabled_get(const Evas_Object *obj);
 EAPI Eina_Bool        elm_widget_theme_object_set(Evas_Object *obj, Evas_Object *edj, const char *wname, const char *welement, const char *wstyle);
 EAPI Eina_Bool        elm_widget_type_check(const Evas_Object *obj, const char *type, const char *func);
 EAPI Evas_Object     *elm_widget_name_find(const Evas_Object *obj, const char *name, int recurse);
@@ -734,6 +754,7 @@ EAPI Evas_Object     *elm_widget_content_part_unset(Evas_Object *obj, const char
 EAPI void             elm_widget_access_info_set(Evas_Object *obj, const char *txt);
 EAPI const char      *elm_widget_access_info_get(const Evas_Object *obj);
 EAPI void             elm_widget_orientation_set(Evas_Object *obj, int rotation);
+EAPI Elm_Object_Item *elm_widget_focused_item_get(const Evas_Object *obj);
 EAPI void             elm_widget_orientation_mode_disabled_set(Evas_Object *obj, Eina_Bool disabled);
 EAPI Eina_Bool        elm_widget_orientation_mode_disabled_get(const Evas_Object *obj);
 EAPI void             elm_widget_focus_highlight_geometry_get(const Evas_Object *obj, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h);
@@ -768,7 +789,8 @@ EAPI const char      *_elm_widget_item_part_text_get(const Elm_Widget_Item *item
 EAPI void             _elm_widget_item_part_text_custom_set(Elm_Widget_Item *item, const char *part, const char *label);
 EAPI const char      *_elm_widget_item_part_text_custom_get(Elm_Widget_Item *item, const char *part);
 EAPI void             _elm_widget_item_part_text_custom_update(Elm_Widget_Item *item);
-
+EAPI void            _elm_widget_item_focus_set(Elm_Widget_Item *item, Eina_Bool focused);
+EAPI Eina_Bool       _elm_widget_item_focus_get(const Elm_Widget_Item *item);
 EAPI void            _elm_widget_item_style_set(Elm_Widget_Item *item, const char *style);
 EAPI const char      *_elm_widget_item_style_get(Elm_Widget_Item *item);
 
@@ -788,6 +810,8 @@ EAPI void             _elm_widget_item_disable_hook_set(Elm_Widget_Item *item, E
 EAPI void             _elm_widget_item_del_pre_hook_set(Elm_Widget_Item *item, Elm_Widget_Del_Pre_Cb func);
 EAPI void             _elm_widget_item_style_set_hook_set(Elm_Widget_Item *item, Elm_Widget_Style_Set_Cb func);
 EAPI void             _elm_widget_item_style_get_hook_set(Elm_Widget_Item *item, Elm_Widget_Style_Get_Cb func);
+EAPI void             _elm_widget_item_focus_get_hook_set(Elm_Widget_Item *item, Elm_Widget_Focus_Get_Cb func);
+EAPI void             _elm_widget_item_focus_set_hook_set(Elm_Widget_Item *item, Elm_Widget_Focus_Set_Cb func);
 EAPI void             _elm_widget_item_domain_translatable_part_text_set(Elm_Widget_Item *item, const char *part, const char *domain, const char *label);
 EAPI const char *     _elm_widget_item_translatable_part_text_get(const Elm_Widget_Item *item, const char *part);
 EAPI void             _elm_widget_item_translate(Elm_Widget_Item *item);
@@ -797,12 +821,13 @@ EAPI Evas_Object     *elm_widget_item_track(Elm_Widget_Item *item);
 EAPI void             elm_widget_item_untrack(Elm_Widget_Item *item);
 EAPI int              elm_widget_item_track_get(const Elm_Widget_Item *item);
 EAPI void             _elm_widget_item_track_cancel(Elm_Widget_Item *item);
+void                  _elm_widget_item_highlight_in_theme(Evas_Object *obj, Elm_Object_Item *it);
 
 /**
  * Function to operate on a given widget's scrollabe children when necessary.
  * @warning free the returned list with eina_list_free().
  */
-EAPI Eina_List       *elm_widget_scrollable_children_get(Evas_Object *obj);
+EAPI Eina_List       *elm_widget_scrollable_children_get(const Evas_Object *obj);
 
 /* debug function. don't use it unless you are tracking parenting issues */
 EAPI void             elm_widget_tree_dump(const Evas_Object *top);
@@ -810,7 +835,7 @@ EAPI void             elm_widget_tree_dot_dump(const Evas_Object *top, FILE *out
 
 #define ELM_WIDGET_DATA_GET_OR_RETURN(o, ptr, ...)   \
   Elm_Widget_Smart_Data *ptr;                        \
-  ptr = eo_data_scope_get(o, ELM_OBJ_WIDGET_CLASS);  \
+  ptr = eo_data_scope_get(o, ELM_WIDGET_CLASS);  \
   if (EINA_UNLIKELY(!ptr))                           \
     {                                                \
        CRI("no widget data for object %p (%s)",      \
@@ -819,7 +844,7 @@ EAPI void             elm_widget_tree_dot_dump(const Evas_Object *top, FILE *out
     }
 
 #define ELM_WIDGET_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_WIDGET_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_WIDGET_CLASS))) \
     return
 
 /**
@@ -1042,6 +1067,21 @@ EAPI void             elm_widget_tree_dot_dump(const Evas_Object *top, FILE *out
  */
 #define elm_widget_item_style_get(item) \
   _elm_widget_item_style_get((Elm_Widget_Item *)item)
+
+/**
+ * Convenience function to query focus set hook.
+ * @see _elm_widget_item_focus_set_hook_set()
+ */
+#define elm_widget_item_focus_set_hook_set(item, func) \
+  _elm_widget_item_focus_set_hook_set((Elm_Widget_Item *)item, (Elm_Widget_Focus_Set_Cb)func)
+
+/**
+ * Convenience function to query focus get hook.
+ * @see _elm_widget_item_focus_get_hook_set()
+ */
+#define elm_widget_item_focus_get_hook_set(item, func) \
+  _elm_widget_item_focus_get_hook_set((Elm_Widget_Item *)item, (Elm_Widget_Focus_Get_Cb)func)
+
 /**
  * Convenience function to query track_cancel.
  * @see _elm_widget_item_del_pre_hook_set()
@@ -1076,6 +1116,20 @@ EAPI void             elm_widget_tree_dot_dump(const Evas_Object *top, FILE *out
  */
 #define elm_widget_item_part_text_custom_update(item) \
   _elm_widget_item_part_text_custom_update((Elm_Widget_Item *)item)
+
+/**
+ * Convenience function to set the focus on widget item.
+ * @see _elm_widget_item_focus_set()
+ */
+#define elm_widget_item_focus_set(item, focused) \
+  _elm_widget_item_focus_set((Elm_Widget_Item *)item, focused)
+
+/**
+ * Convenience function to query focus set hook.
+ * @see _elm_widget_item_focus_get()
+ */
+#define elm_widget_item_focus_get(item) \
+  _elm_widget_item_focus_get((const Elm_Widget_Item *)item)
 
 #define ELM_WIDGET_CHECK_OR_RETURN(obj, ...)                    \
    do {                                                         \
@@ -1124,1566 +1178,9 @@ EAPI void             elm_widget_tree_dot_dump(const Evas_Object *top, FILE *out
 
 EAPI Eina_Bool elm_selection_selection_has_owner(Evas_Object *obj);
 
-#define ELM_OBJ_WIDGET_CLASS elm_widget_class_get()
-
-const Eo_Class *elm_widget_class_get(void) EINA_CONST;
-
-extern EAPI Eo_Op ELM_WIDGET_BASE_ID;
-
-enum
-{
-   ELM_WIDGET_SUB_ID_ON_FOCUS,
-   ELM_WIDGET_SUB_ID_DISABLE,
-   ELM_WIDGET_SUB_ID_THEME_APPLY,
-   ELM_WIDGET_SUB_ID_TRANSLATE,
-   ELM_WIDGET_SUB_ID_EVENT,
-   ELM_WIDGET_SUB_ID_ON_FOCUS_REGION,
-   ELM_WIDGET_SUB_ID_FOCUS_NEXT_MANAGER_IS,
-   ELM_WIDGET_SUB_ID_FOCUS_NEXT,
-   ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_MANAGER_IS,
-   ELM_WIDGET_SUB_ID_FOCUS_DIRECTION,
-   ELM_WIDGET_SUB_ID_SUB_OBJECT_ADD,
-   ELM_WIDGET_SUB_ID_SUB_OBJECT_DEL,
-   ELM_WIDGET_SUB_ID_ACCESS,
-   ELM_WIDGET_SUB_ID_PARENT_SET,
-   ELM_WIDGET_SUB_ID_PARENT_GET,
-   ELM_WIDGET_SUB_ID_PARENT2_SET,
-   ELM_WIDGET_SUB_ID_PARENT2_GET,
-   ELM_WIDGET_SUB_ID_ACTIVATE,
-
-   ELM_WIDGET_SUB_ID_MIRRORED_GET,
-   ELM_WIDGET_SUB_ID_MIRRORED_SET,
-   ELM_WIDGET_SUB_ID_MIRRORED_AUTOMATIC_GET,
-   ELM_WIDGET_SUB_ID_MIRRORED_AUTOMATIC_SET,
-
-   ELM_WIDGET_SUB_ID_HIGHLIGHT_IGNORE_SET,
-   ELM_WIDGET_SUB_ID_HIGHLIGHT_IGNORE_GET,
-   ELM_WIDGET_SUB_ID_HIGHLIGHT_IN_THEME_SET,
-   ELM_WIDGET_SUB_ID_HIGHLIGHT_IN_THEME_GET,
-   ELM_WIDGET_SUB_ID_ACCESS_HIGHLIGHT_IN_THEME_SET,
-   ELM_WIDGET_SUB_ID_ACCESS_HIGHLIGHT_IN_THEME_GET,
-
-   ELM_WIDGET_SUB_ID_SCROLL_HOLD_PUSH,
-   ELM_WIDGET_SUB_ID_SCROLL_HOLD_POP,
-   ELM_WIDGET_SUB_ID_SCROLL_HOLD_GET,
-   ELM_WIDGET_SUB_ID_SCROLL_FREEZE_PUSH,
-   ELM_WIDGET_SUB_ID_SCROLL_FREEZE_POP,
-   ELM_WIDGET_SUB_ID_SCROLL_FREEZE_GET,
-
-   ELM_WIDGET_SUB_ID_ON_SHOW_REGION_HOOK_SET,
-   ELM_WIDGET_SUB_ID_RESIZE_OBJECT_SET,
-   ELM_WIDGET_SUB_ID_HOVER_OBJECT_SET,
-
-   ELM_WIDGET_SUB_ID_CAN_FOCUS_SET,
-   ELM_WIDGET_SUB_ID_CAN_FOCUS_GET,
-   ELM_WIDGET_SUB_ID_CHILD_CAN_FOCUS_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_GET,
-   ELM_WIDGET_SUB_ID_HIGHLIGHT_GET,
-   ELM_WIDGET_SUB_ID_FOCUSED_OBJECT_GET,
-   ELM_WIDGET_SUB_ID_TOP_GET,
-
-   ELM_WIDGET_SUB_ID_PARENT_WIDGET_GET,
-
-   ELM_WIDGET_SUB_ID_FOCUS_SET,
-   ELM_WIDGET_SUB_ID_FOCUSED_OBJECT_CLEAR,
-   ELM_WIDGET_SUB_ID_FOCUS_STEAL,
-   ELM_WIDGET_SUB_ID_FOCUS_RESTORE,
-
-   ELM_WIDGET_SUB_ID_DISABLED_SET,
-   ELM_WIDGET_SUB_ID_DISABLED_GET,
-   ELM_WIDGET_SUB_ID_SHOW_REGION_SET,
-   ELM_WIDGET_SUB_ID_SHOW_REGION_GET,
-
-   ELM_WIDGET_SUB_ID_PARENTS_BOUNCE_GET,
-
-   ELM_WIDGET_SUB_ID_SCROLLABLE_CHILDREN_GET,
-   ELM_WIDGET_SUB_ID_SCALE_SET,
-   ELM_WIDGET_SUB_ID_SCALE_GET,
-
-   ELM_WIDGET_SUB_ID_PART_TEXT_SET,
-   ELM_WIDGET_SUB_ID_PART_TEXT_GET,
-   ELM_WIDGET_SUB_ID_DOMAIN_TRANSLATABLE_PART_TEXT_SET,
-   ELM_WIDGET_SUB_ID_TRANSLATABLE_PART_TEXT_GET,
-   ELM_WIDGET_SUB_ID_DOMAIN_PART_TEXT_TRANSLATABLE_SET,
-   ELM_WIDGET_SUB_ID_PART_TEXT_TRANSLATE,
-   ELM_WIDGET_SUB_ID_ACCESS_INFO_SET,
-   ELM_WIDGET_SUB_ID_ACCESS_INFO_GET,
-
-   ELM_WIDGET_SUB_ID_THEME_SET,
-   ELM_WIDGET_SUB_ID_THEME_GET,
-
-   ELM_WIDGET_SUB_ID_STYLE_SET,
-   ELM_WIDGET_SUB_ID_STYLE_GET,
-   ELM_WIDGET_SUB_ID_TOOLTIP_ADD,
-   ELM_WIDGET_SUB_ID_TOOLTIP_DEL,
-   ELM_WIDGET_SUB_ID_CURSOR_ADD,
-   ELM_WIDGET_SUB_ID_CURSOR_DEL,
-
-   ELM_WIDGET_SUB_ID_DRAG_LOCK_X_SET,
-   ELM_WIDGET_SUB_ID_DRAG_LOCK_Y_SET,
-   ELM_WIDGET_SUB_ID_DRAG_LOCK_X_GET,
-   ELM_WIDGET_SUB_ID_DRAG_LOCK_Y_GET,
-   ELM_WIDGET_SUB_ID_DRAG_CHILD_LOCKED_X_GET,
-   ELM_WIDGET_SUB_ID_DRAG_CHILD_LOCKED_Y_GET,
-
-   ELM_WIDGET_SUB_ID_EVENT_CALLBACK_ADD,
-   ELM_WIDGET_SUB_ID_EVENT_CALLBACK_DEL,
-   ELM_WIDGET_SUB_ID_EVENT_PROPAGATE,
-
-   ELM_WIDGET_SUB_ID_SIGNAL_EMIT,
-   ELM_WIDGET_SUB_ID_SIGNAL_CALLBACK_ADD,
-   ELM_WIDGET_SUB_ID_SIGNAL_CALLBACK_DEL,
-
-   ELM_WIDGET_SUB_ID_NAME_FIND,
-
-   ELM_WIDGET_SUB_ID_FOCUS_HIDE_HANDLE,
-   ELM_WIDGET_SUB_ID_FOCUS_MOUSE_UP_HANDLE,
-   ELM_WIDGET_SUB_ID_FOCUS_TREE_UNFOCUSABLE_HANDLE,
-   ELM_WIDGET_SUB_ID_FOCUS_DISABLED_HANDLE,
-   ELM_WIDGET_SUB_ID_FOCUS_ORDER_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_REGION_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_REGION_SHOW,
-   ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_STYLE_SET,
-   ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_STYLE_GET,
-
-   ELM_WIDGET_SUB_ID_THEME_OBJECT_SET,
-   ELM_WIDGET_SUB_ID_ORIENTATION_SET,
-   ELM_WIDGET_SUB_ID_ORIENTATION_MODE_DISABLED_SET,
-   ELM_WIDGET_SUB_ID_ORIENTATION_MODE_DISABLED_GET,
-
-/* internal */
-   ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_SET,
-   ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_UNSET,
-   ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_APPEND,
-   ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_PREPEND,
-   ELM_WIDGET_SUB_ID_FOCUS_CYCLE,
-   ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_GO,
-   ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_LIST_DIRECTION_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_NEXT_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_LIST_NEXT_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_NEXT_OBJECT_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_NEXT_OBJECT_SET,
-   ELM_WIDGET_SUB_ID_PARENT_HIGHLIGHT_SET,
-
-   ELM_WIDGET_SUB_ID_DISPLAY_MODE_SET,
-
-   ELM_WIDGET_SUB_ID_TREE_UNFOCUSABLE_SET,
-   ELM_WIDGET_SUB_ID_TREE_UNFOCUSABLE_GET,
-
-   ELM_WIDGET_SUB_ID_CAN_FOCUS_CHILD_LIST_GET,
-   ELM_WIDGET_SUB_ID_NEWEST_FOCUS_ORDER_GET,
-   ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_GEOMETRY_GET,
-#if 0
-   ELM_WIDGET_SUB_ID_THEME_APPLY, /* API + virtual*/
-   ELM_WIDGET_SUB_ID_THEME_SPECIFIC,
-   ELM_WIDGET_SUB_ID_TRANSLATE, /* API + virtual*/
-#endif
-
-
-   ELM_WIDGET_SUB_ID_LAST
-};
-
 typedef void (*region_hook_func_type)(void *data, Evas_Object *obj);
 typedef void * (*list_data_get_func_type)(const Eina_List * l);
-#define ELM_WIDGET_ID(sub_id) (ELM_WIDGET_BASE_ID + sub_id)
 
-
-/**
- * @def elm_wdg_on_focus
- * @since 1.8
- *
- * 'Virtual' function handling focus in/out events on the widget.
- *
- * @param[out] ret @c EINA_TRUE if this widget can handle focus, EINA_FALSE
- * otherise.
- *
- */
-#define elm_wdg_on_focus(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ON_FOCUS), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_disable
- * @since 1.8
- *
- * 'Virtual' function on the widget being disabled.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_disable(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DISABLE), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_theme_apply
- * @since 1.8
- *
- * 'Virtual' function on the widget being re-themed.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_theme_apply(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_APPLY), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_translate
- * @since 1.8
- *
- * 'Virtual' function handling language changes on Elementary.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_translate(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TRANSLATE), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_event
- * @since 1.8
- *
- * 'Virtual' function handling input events on the widget.
- *
- * @param[in] source
- * @param[in] type
- * @param[in] event_info
- * @param[out] ret
- *
- */
-#define elm_wdg_event(source, type, event_info, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT), EO_TYPECHECK(Evas_Object *, source), EO_TYPECHECK(Evas_Callback_Type, type), EO_TYPECHECK(void *, event_info), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_on_focus_region
- * @since 1.8
- *
- * 'Virtual' function returning an inner area of a widget that should be brought
- * into the visible area of a broader viewport, may this context arise.
- *
- * @param[out] x
- * @param[out] y
- * @param[out] w
- * @param[out] h
- * @param[out] ret
- *
- */
-#define elm_wdg_on_focus_region(x, y, w, h, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ON_FOCUS_REGION), EO_TYPECHECK(Evas_Coord *, x), EO_TYPECHECK(Evas_Coord *, y), EO_TYPECHECK(Evas_Coord *, w), EO_TYPECHECK(Evas_Coord *, h), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_next_manager_is
- * @since 1.8
- *
- * 'Virtual' function which checks if handling of passing focus to sub-objects
- * is supported by widget.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_next_manager_is(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_MANAGER_IS), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_next
- * @since 1.8
- *
- * 'Virtual' function handling passing focus to sub-objects.
- *
- * @param[in] dir
- * @param[out] next
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_next(dir, next, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT), EO_TYPECHECK(Elm_Focus_Direction, dir), EO_TYPECHECK(Evas_Object **, next), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_direction_manager_is
- * @since 1.8
- *
- * 'Virtual' function which checks if handling of passing focus to sub-objects
- * in given direction is supported by widget.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_direction_manager_is(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_MANAGER_IS), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_direction
- * @since 1.8
- *
- * 'Virtual' function handling passing focus to sub-objects given a direction,
- * in degrees.
- *
- * @param[in] base
- * @param[in] degree
- * @param[out] direction
- * @param[out] weight
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_direction(base, degree, direction, weight, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION), EO_TYPECHECK(const Evas_Object *, base), EO_TYPECHECK(double, degree), EO_TYPECHECK(Evas_Object **, direction), EO_TYPECHECK(double *, weight), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_sub_object_add
- * @since 1.8
- *
- * 'Virtual' function handling sub objects being added.
- *
- * @param[in] sobj
- * @param[out] ret
- *
- */
-#define elm_wdg_sub_object_add(sobj, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SUB_OBJECT_ADD), EO_TYPECHECK(Evas_Object *, sobj), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_sub_object_del
- * @since 1.8
- *
- * 'Virtual' function handling sub objects being removed.
- *
- * @param[in] sobj
- * @param[out] ret
- *
- */
-#define elm_wdg_sub_object_del(sobj, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SUB_OBJECT_DEL), EO_TYPECHECK(Evas_Object *, sobj), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_access
- * @since 1.8
- *
- * 'Virtual' function on the widget being set access.
- *
- * @param[in] is_access
- *
- */
-#define elm_wdg_access(is_access) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS), EO_TYPECHECK(Eina_Bool, is_access)
-
-
-/**
- * @def elm_wdg_parent_set
- * @since 1.8
- *
- * 'Virtual' function handling parent widget attachment to new object.
- *
- * @param[in] parent
- *
- */
-#define elm_wdg_parent_set(parent) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_SET), EO_TYPECHECK(Evas_Object *, parent)
-
-/**
- * @def elm_wdg_parent_get
- * @since 1.8
- *
- * 'Virtual' function handling getting object's parent widget.
- *
- * @param[out] parent
- *
- */
-#define elm_wdg_parent_get(parent) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_GET), EO_TYPECHECK(Evas_Object **, parent)
-
-
-/**
- * @def elm_wdg_parent2_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] parent
- *
- */
-#define elm_wdg_parent2_set(parent) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_SET), EO_TYPECHECK(Evas_Object *, parent)
-
-/**
- * @def elm_wdg_parent2_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] parent
- *
- */
-#define elm_wdg_parent2_get(parent) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_GET), EO_TYPECHECK(Evas_Object **, parent)
-
-
-/**
- * @def elm_wdg_activate
- * @since 1.8
- *
- * 'Virtual' function to activate widget.
- *
- * @param[in] act
- * @param[out] ret
- *
- */
-#define elm_wdg_activate(act, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACTIVATE), EO_TYPECHECK(Elm_Activate, act), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_mirrored_get
- * @since 1.8
- *
- * Returns the widget's mirrored mode.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_mirrored_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_MIRRORED_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_mirrored_set
- * @since 1.8
- *
- * Sets the widget's mirrored mode.
- *
- * @param[in] mirrored
- *
- */
-#define elm_wdg_mirrored_set(mirrored) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_MIRRORED_SET), EO_TYPECHECK(Eina_Bool, mirrored)
-
-/**
- * @def elm_wdg_mirrored_automatic_get
- * @since 1.8
- *
- * Returns the widget's mirrored mode setting.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_mirrored_automatic_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_MIRRORED_AUTOMATIC_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_mirrored_automatic_set
- * @since 1.8
- *
- * Sets the widget's mirrored mode setting.
- *
- * @param[in] automatic
- *
- */
-#define elm_wdg_mirrored_automatic_set(automatic) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_MIRRORED_AUTOMATIC_SET), EO_TYPECHECK(Eina_Bool, automatic)
-
-
-/**
- * @def elm_wdg_highlight_ignore_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] ignore
- *
- */
-#define elm_wdg_highlight_ignore_set(ignore) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HIGHLIGHT_IGNORE_SET), EO_TYPECHECK(Eina_Bool, ignore)
-
-/**
- * @def elm_wdg_highlight_ignore_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_highlight_ignore_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HIGHLIGHT_IGNORE_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_highlight_in_theme_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] highlight
- *
- */
-#define elm_wdg_highlight_in_theme_set(highlight) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HIGHLIGHT_IN_THEME_SET), EO_TYPECHECK(Eina_Bool, highlight)
-
-/**
- * @def elm_wdg_highlight_in_theme_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_highlight_in_theme_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HIGHLIGHT_IN_THEME_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_access_highlight_in_theme_set
- * @since 1.9
- *
- * No description supplied by the EAPI.
- *
- * @param[in] access highlight
- *
- */
-#define elm_wdg_access_highlight_in_theme_set(highlight) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS_HIGHLIGHT_IN_THEME_SET), EO_TYPECHECK(Eina_Bool, highlight)
-
-/**
- * @def elm_wdg_access_highlight_in_theme_get
- * @since 1.9
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_access_highlight_in_theme_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS_HIGHLIGHT_IN_THEME_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_scroll_hold_push
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_scroll_hold_push() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_HOLD_PUSH)
-
-/**
- * @def elm_wdg_scroll_hold_pop
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_scroll_hold_pop() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_HOLD_POP)
-
-/**
- * @def elm_wdg_scroll_hold_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_scroll_hold_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_HOLD_GET), EO_TYPECHECK(int *, ret)
-
-/**
- * @def elm_wdg_scroll_freeze_push
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_scroll_freeze_push() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_FREEZE_PUSH)
-
-/**
- * @def elm_wdg_scroll_freeze_pop
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_scroll_freeze_pop() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_FREEZE_POP)
-
-/**
- * @def elm_wdg_scroll_freeze_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_scroll_freeze_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLL_FREEZE_GET), EO_TYPECHECK(int *, ret)
-
-
-/**
- * @def elm_wdg_on_show_region_hook_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] func
- * @param[in] data
- *
- */
-#define elm_wdg_on_show_region_hook_set(func, data) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ON_SHOW_REGION_HOOK_SET), EO_TYPECHECK(region_hook_func_type, func), EO_TYPECHECK(void *, data)
-
-/**
- * @def elm_wdg_resize_object_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] sobj
- * @param[in] sub_object
- *
- */
-#define elm_wdg_resize_object_set(sobj, sub_obj) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_RESIZE_OBJECT_SET), EO_TYPECHECK(Evas_Object *, sobj), EO_TYPECHECK(Eina_Bool, sub_obj)
-
-/**
- * @def elm_wdg_hover_object_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] sobj
- *
- */
-#define elm_wdg_hover_object_set(sobj) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HOVER_OBJECT_SET), EO_TYPECHECK(Evas_Object *, sobj)
-
-
-/**
- * @def elm_wdg_can_focus_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] can_focus
- *
- */
-#define elm_wdg_can_focus_set(can_focus) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CAN_FOCUS_SET), EO_TYPECHECK(Eina_Bool, can_focus)
-
-/**
- * @def elm_wdg_can_focus_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_can_focus_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CAN_FOCUS_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_child_can_focus_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_child_can_focus_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CHILD_CAN_FOCUS_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_focus_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_highlight_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_highlight_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_HIGHLIGHT_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focused_object_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focused_object_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUSED_OBJECT_GET), EO_TYPECHECK(Evas_Object **, ret)
-
-
-/**
- * @def elm_wdg_top_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_top_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TOP_GET), EO_TYPECHECK(Evas_Object **, ret)
-
-/**
- * @def elm_wdg_parent_widget_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_parent_widget_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_WIDGET_GET), EO_TYPECHECK(Evas_Object **, ret)
-
-
-/**
- * @def elm_wdg_focus_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] focus
- *
- */
-#define elm_wdg_focus_set(focus) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_SET), EO_TYPECHECK(Eina_Bool, focus)
-
-/**
- * @def elm_wdg_focused_object_clear
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focused_object_clear() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUSED_OBJECT_CLEAR)
-
-/**
- * @def elm_wdg_focus_steal
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_steal() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_STEAL)
-
-/**
- * @def elm_wdg_focus_restore
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_restore() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_RESTORE)
-
-
-/**
- * @def elm_wdg_disabled_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] disabled
- *
- */
-#define elm_wdg_disabled_set(disabled) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DISABLED_SET), EO_TYPECHECK(Eina_Bool, disabled)
-
-/**
- * @def elm_wdg_disabled_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_disabled_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DISABLED_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_show_region_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] x
- * @param[in] y
- * @param[in] w
- * @param[in] h
- * @param[in] forceshow
- *
- */
-#define elm_wdg_show_region_set(x, y, w, h, forceshow) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SHOW_REGION_SET), EO_TYPECHECK(Evas_Coord, x), EO_TYPECHECK(Evas_Coord, y), EO_TYPECHECK(Evas_Coord, w), EO_TYPECHECK(Evas_Coord, h), EO_TYPECHECK(Eina_Bool, forceshow)
-
-/**
- * @def elm_wdg_show_region_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] x
- * @param[out] y
- * @param[out] w
- * @param[out] h
- *
- */
-#define elm_wdg_show_region_get(x, y, w, h) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SHOW_REGION_GET), EO_TYPECHECK(Evas_Coord *, x), EO_TYPECHECK(Evas_Coord *, y), EO_TYPECHECK(Evas_Coord *, w), EO_TYPECHECK(Evas_Coord *, h)
-
-/**
- * @def elm_wdg_parents_bounce_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] horiz
- * @param[out] vert
- *
- */
-#define elm_wdg_parents_bounce_get(horiz, vert) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENTS_BOUNCE_GET), EO_TYPECHECK(Eina_Bool *, horiz), EO_TYPECHECK(Eina_Bool *, vert)
-
-/**
- * @def elm_wdg_scrollable_children_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_scrollable_children_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCROLLABLE_CHILDREN_GET), EO_TYPECHECK(Eina_List **, ret)
-
-/**
- * @def elm_wdg_scale_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] scale
- *
- */
-#define elm_wdg_scale_set(scale) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCALE_SET), EO_TYPECHECK(double, scale)
-
-/**
- * @def elm_wdg_scale_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_scale_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SCALE_GET), EO_TYPECHECK(double *, ret)
-
-
-/**
- * @def elm_wdg_part_text_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[in] label
- *
- */
-#define elm_wdg_part_text_set(part, label) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PART_TEXT_SET), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char *, label)
-
-/**
- * @def elm_wdg_part_text_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[out] ret
- *
- */
-#define elm_wdg_part_text_get(part, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PART_TEXT_GET), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char **, ret)
-
-
-/**
- * @def elm_wdg_domain_translatable_part_text_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[in] domain
- * @param[in] label
- *
- */
-#define elm_wdg_domain_translatable_part_text_set(part, domain, label) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DOMAIN_TRANSLATABLE_PART_TEXT_SET), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char *, domain), EO_TYPECHECK(const char *, label)
-
-/**
- * @def elm_wdg_translatable_part_text_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[out] ret
- *
- */
-#define elm_wdg_translatable_part_text_get(part, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TRANSLATABLE_PART_TEXT_GET), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char **, ret)
-
-/**
- * @def elm_wdg_domain_part_text_translatable_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[in] domain
- * @param[in] translatable
- *
- */
-#define elm_wdg_domain_part_text_translatable_set(part, domain, translatable) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DOMAIN_PART_TEXT_TRANSLATABLE_SET), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char *, domain), EO_TYPECHECK(Eina_Bool, translatable)
-
-/**
- * @def elm_wdg_part_text_translate
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] part
- * @param[in] text
- * @param[out] ret
- *
- */
-#define elm_wdg_part_text_translate(part, text, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PART_TEXT_TRANSLATE), EO_TYPECHECK(const char *, part), EO_TYPECHECK(const char *, text), EO_TYPECHECK(const char **, ret)
-
-/**
- * @def elm_wdg_access_info_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] txt
- *
- */
-#define elm_wdg_access_info_set(txt) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS_INFO_SET), EO_TYPECHECK(const char *, txt)
-
-/**
- * @def elm_wdg_access_info_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_access_info_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS_INFO_GET), EO_TYPECHECK(const char **, ret)
-
-
-/**
- * @def elm_wdg_theme_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] th
- *
- */
-#define elm_wdg_theme_set(th) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_SET), EO_TYPECHECK(Elm_Theme *, th)
-
-/**
- * @def elm_wdg_theme_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_theme_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_GET), EO_TYPECHECK(Elm_Theme **, ret)
-
-
-/**
- * @def elm_wdg_style_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] style
- * @param[out] ret
- *
- */
-#define elm_wdg_style_set(style, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_STYLE_SET), EO_TYPECHECK(const char *, style), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_style_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_style_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_STYLE_GET), EO_TYPECHECK(const char **, ret)
-
-/**
- * @def elm_wdg_tooltip_add
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] tt
- *
- */
-#define elm_wdg_tooltip_add(tt) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TOOLTIP_ADD), EO_TYPECHECK(Elm_Tooltip *, tt)
-
-/**
- * @def elm_wdg_tooltip_del
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] tt
- *
- */
-#define elm_wdg_tooltip_del(tt) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TOOLTIP_DEL), EO_TYPECHECK(Elm_Tooltip *, tt)
-
-/**
- * @def elm_wdg_cursor_add
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] cur
- *
- */
-#define elm_wdg_cursor_add(cur) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CURSOR_ADD), EO_TYPECHECK(Elm_Cursor *, cur)
-
-/**
- * @def elm_wdg_cursor_del
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] cur
- *
- */
-#define elm_wdg_cursor_del(cur) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CURSOR_DEL), EO_TYPECHECK(Elm_Cursor *, cur)
-
-
-/**
- * @def elm_wdg_drag_lock_x_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] lock
- *
- */
-#define elm_wdg_drag_lock_x_set(lock) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_LOCK_X_SET), EO_TYPECHECK(Eina_Bool, lock)
-
-/**
- * @def elm_wdg_drag_lock_y_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] lock
- *
- */
-#define elm_wdg_drag_lock_y_set(lock) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_LOCK_Y_SET), EO_TYPECHECK(Eina_Bool, lock)
-
-/**
- * @def elm_wdg_drag_lock_x_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_drag_lock_x_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_LOCK_X_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_drag_lock_y_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_drag_lock_y_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_LOCK_Y_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_drag_child_locked_x_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_drag_child_locked_x_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_CHILD_LOCKED_X_GET), EO_TYPECHECK(int *, ret)
-
-/**
- * @def elm_wdg_drag_child_locked_y_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_drag_child_locked_y_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DRAG_CHILD_LOCKED_Y_GET), EO_TYPECHECK(int *, ret)
-
-
-/**
- * @def elm_wdg_event_callback_add
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] func
- * @param[in] data
- *
- */
-#define elm_wdg_event_callback_add(func, data) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT_CALLBACK_ADD), EO_TYPECHECK(Elm_Event_Cb, func), EO_TYPECHECK(const void *, data)
-
-/**
- * @def elm_wdg_event_callback_del
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] func
- * @param[in] data
- * @param[out] ret
- *
- */
-#define elm_wdg_event_callback_del(func, data, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT_CALLBACK_DEL), EO_TYPECHECK(Elm_Event_Cb, func), EO_TYPECHECK(const void *, data), EO_TYPECHECK(void **, ret)
-
-/**
- * @def elm_wdg_event_propagate
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] type
- * @param[in] event_info
- * @param[in] event_flags
- * @param[out] ret
- *
- */
-#define elm_wdg_event_propagate(type, event_info, event_flags, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT_PROPAGATE), EO_TYPECHECK(Evas_Callback_Type, type), EO_TYPECHECK(void *, event_info), EO_TYPECHECK(Evas_Event_Flags *, event_flags), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_signal_emit
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] emission
- * @param[in] source
- *
- */
-#define elm_wdg_signal_emit(emission, source) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SIGNAL_EMIT), EO_TYPECHECK(const char *, emission), EO_TYPECHECK(const char *, source)
-
-/**
- * @def elm_wdg_signal_callback_add
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] emission
- * @param[in] source
- * @param[in] func
- * @param[in] data
- *
- */
-#define elm_wdg_signal_callback_add(emission, source, func, data) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SIGNAL_CALLBACK_ADD), EO_TYPECHECK(const char *, emission), EO_TYPECHECK(const char *, source), EO_TYPECHECK(Edje_Signal_Cb, func), EO_TYPECHECK(void *, data)
-
-/**
- * @def elm_wdg_signal_callback_del
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] emission
- * @param[in] source
- * @param[in] func
- * @param[out] ret
- *
- */
-#define elm_wdg_signal_callback_del(emission, source, func, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SIGNAL_CALLBACK_DEL), EO_TYPECHECK(const char *, emission), EO_TYPECHECK(const char *, source), EO_TYPECHECK(Edje_Signal_Cb, func), EO_TYPECHECK(void **, ret)
-
-
-/**
- * @def elm_wdg_name_find
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] name
- * @param[in] recurse
- * @param[out] ret
- *
- */
-#define elm_wdg_name_find(name, recurse, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_NAME_FIND), EO_TYPECHECK(const char *, name), EO_TYPECHECK(int, recurse), EO_TYPECHECK(Evas_Object **, ret)
-
-/**
- * @def elm_wdg_focus_hide_handle
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_hide_handle() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_HIDE_HANDLE)
-
-/**
- * @def elm_wdg_focus_mouse_up_handle
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_mouse_up_handle() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_MOUSE_UP_HANDLE)
-
-/**
- * @def elm_wdg_focus_tree_unfocusable_handle
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_tree_unfocusable_handle() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_TREE_UNFOCUSABLE_HANDLE)
-
-/**
- * @def elm_wdg_focus_disabled_handle
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_disabled_handle() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DISABLED_HANDLE)
-
-/**
- * @def elm_wdg_focus_order_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_order_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_ORDER_GET), EO_TYPECHECK(unsigned int *, ret)
-
-/**
- * @def elm_wdg_focus_region_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] x
- * @param[out] y
- * @param[out] w
- * @param[out] h
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_region_get(x, y, w, h, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_REGION_GET), EO_TYPECHECK(Evas_Coord *, x), EO_TYPECHECK(Evas_Coord *, y), EO_TYPECHECK(Evas_Coord *, w), EO_TYPECHECK(Evas_Coord *, h), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_region_show
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_region_show() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_REGION_SHOW)
-
-/**
- * @def elm_wdg_focus_highlight_style_set
- * @since 1.9
- *
- * This function set the widget focus highlight style. 
- *
- * @param[in] style
- * @param[out] ret
- */
-#define elm_wdg_focus_highlight_style_set(style, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_STYLE_SET), EO_TYPECHECK(const char *, style), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_highlight_style_get
- * @since 1.9
- *
- * This function returns the widget focus highlight style.
- *
- * @param[out] ret
- */
-#define elm_wdg_focus_highlight_style_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_STYLE_GET), EO_TYPECHECK(const char **, ret)
-
-/**
- * @def elm_wdg_theme_object_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] edj
- * @param[in] wname
- * @param[in] welement
- * @param[in] wstyle
- * @param[out] ret
- *
- */
-#define elm_wdg_theme_object_set(edj, wname, welement, wstyle, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_OBJECT_SET), EO_TYPECHECK(Evas_Object *, edj), EO_TYPECHECK(const char *, wname), EO_TYPECHECK(const char *, welement), EO_TYPECHECK(const char *, wstyle), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_focus_custom_chain_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] objs
- *
- */
-#define elm_wdg_focus_custom_chain_set(objs) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_SET), EO_TYPECHECK(Eina_List *, objs)
-
-/**
- * @def elm_wdg_focus_custom_chain_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_custom_chain_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_GET), EO_TYPECHECK(const Eina_List **, ret)
-
-/**
- * @def elm_wdg_focus_custom_chain_unset
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- */
-#define elm_wdg_focus_custom_chain_unset() ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_UNSET)
-
-/**
- * @def elm_wdg_focus_custom_chain_append
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] child
- * @param[in] relative_child
- *
- */
-#define elm_wdg_focus_custom_chain_append(child, relative_child) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_APPEND), EO_TYPECHECK(Evas_Object *, child), EO_TYPECHECK(Evas_Object *, relative_child)
-
-/**
- * @def elm_wdg_focus_custom_chain_prepend
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] child
- * @param[in] relative_child
- *
- */
-#define elm_wdg_focus_custom_chain_prepend(child, relative_child) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CUSTOM_CHAIN_PREPEND), EO_TYPECHECK(Evas_Object *, child), EO_TYPECHECK(Evas_Object *, relative_child)
-
-/**
- * @def elm_wdg_focus_cycle
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] dir
- *
- */
-#define elm_wdg_focus_cycle(dir) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_CYCLE), EO_TYPECHECK(Elm_Focus_Direction, dir)
-
-/**
- * @def elm_wdg_focus_direction_go
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] degree
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_direction_go(degree, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_GO), EO_TYPECHECK(double, degree), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_direction_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] base
- * @param[in] degree
- * @param[out] direction
- * @param[out] weight
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_direction_get(base, degree, direction, weight, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_GET), EO_TYPECHECK(const Evas_Object *, base), EO_TYPECHECK(double, degree), EO_TYPECHECK(Evas_Object **, direction), EO_TYPECHECK(double *, weight), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_focus_list_direction_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] base
- * @param[in] items
- * @param[in] list_data_get
- * @param[in] degree
- * @param[out] direction
- * @param[out] weight
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_list_direction_get(base, items, list_data_get, degree, direction, weight, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_LIST_DIRECTION_GET), EO_TYPECHECK(const Evas_Object *, base), EO_TYPECHECK(const Eina_List *, items), EO_TYPECHECK(list_data_get_func_type, list_data_get), EO_TYPECHECK(double, degree), EO_TYPECHECK(Evas_Object **, direction), EO_TYPECHECK(double *, weight), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_focus_next_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] dir
- * @param[out] next
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_next_get(dir, next, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_GET), EO_TYPECHECK(Elm_Focus_Direction, dir), EO_TYPECHECK(Evas_Object **, next), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_focus_list_next_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] items
- * @param[in] list_data_get
- * @param[in] dir
- * @param[out] next
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_list_next_get(items, list_data_get, dir, next, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_LIST_NEXT_GET), EO_TYPECHECK(const Eina_List *, items), EO_TYPECHECK(list_data_get_func_type, list_data_get), EO_TYPECHECK(Elm_Focus_Direction, dir), EO_TYPECHECK(Evas_Object **, next), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_next_object_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] dir
- * @param[out] ret
- *
- */
-#define elm_wdg_focus_next_object_get(dir, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_OBJECT_GET), EO_TYPECHECK(Elm_Focus_Direction, dir), EO_TYPECHECK(Evas_Object **, ret)
-
-/**
- * @def elm_wdg_focus_next_object_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] next
- * @param[in] dir
- *
- */
-#define elm_wdg_focus_next_object_set(next, dir) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_OBJECT_SET), EO_TYPECHECK(Evas_Object *, next), EO_TYPECHECK(Elm_Focus_Direction, dir)
-
-/**
- * @def elm_wdg_parent_highlight_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] highlighted
- *
- */
-#define elm_wdg_parent_highlight_set(highlighted) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_HIGHLIGHT_SET), EO_TYPECHECK(Eina_Bool, highlighted)
-
-/**
- * @def elm_wdg_display_mode_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] dispmode
- *
- */
-#define elm_wdg_display_mode_set(dispmode) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_DISPLAY_MODE_SET), EO_TYPECHECK(Evas_Display_Mode, dispmode)
-
-/**
- * @def elm_wdg_tree_unfocusable_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] tree_unfocusable
- *
- */
-#define elm_wdg_tree_unfocusable_set(tree_unfocusable) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TREE_UNFOCUSABLE_SET), EO_TYPECHECK(Eina_Bool, tree_unfocusable)
-
-/**
- * @def elm_wdg_tree_unfocusable_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_tree_unfocusable_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TREE_UNFOCUSABLE_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-
-/**
- * @def elm_wdg_can_focus_child_list_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_can_focus_child_list_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_CAN_FOCUS_CHILD_LIST_GET), EO_TYPECHECK(Eina_List **, ret)
-
-/**
- * @def elm_wdg_newest_focus_order_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] newest_focus_order
- * @param[in] can_focus_only
- * @param[out] ret
- *
- */
-#define elm_wdg_newest_focus_order_get(newest_focus_order, can_focus_only, ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_NEWEST_FOCUS_ORDER_GET), EO_TYPECHECK(unsigned int *, newest_focus_order), EO_TYPECHECK(Eina_Bool, can_focus_only), EO_TYPECHECK(Evas_Object **, ret)
-
-/**
- * @def elm_wdg_orientation_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] rotation
- *
- */
-#define elm_wdg_orientation_set(rotation) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ORIENTATION_SET), EO_TYPECHECK(int, rotation)
-
-/**
- * @def elm_wdg_orientation_mode_disabled_set
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[in] disabled
- *
- */
-#define elm_wdg_orientation_mode_disabled_set(disabled) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ORIENTATION_MODE_DISABLED_SET), EO_TYPECHECK(Eina_Bool, disabled)
-
-/**
- * @def elm_wdg_orientation_mode_disabled_get
- * @since 1.8
- *
- * No description supplied by the EAPI.
- *
- * @param[out] ret
- *
- */
-#define elm_wdg_orientation_mode_disabled_get(ret) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ORIENTATION_MODE_DISABLED_GET), EO_TYPECHECK(Eina_Bool *, ret)
-
-/**
- * @def elm_wdg_focus_highlight_geometry_get
- * @since 1.9
- *
- * Get the focus highlight geometry of widget.
- *
- * @param[in] x
- * @param[in] y
- * @param[in] w
- * @param[in] z
- *
- */
-#define elm_wdg_focus_highlight_geometry_get(x, y, w, h) ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_HIGHLIGHT_GEOMETRY_GET), EO_TYPECHECK(Evas_Coord *, x), EO_TYPECHECK(Evas_Coord *, y), EO_TYPECHECK(Evas_Coord *, w), EO_TYPECHECK(Evas_Coord *, h)
+#include "elm_widget.eo.h"
 
 #endif

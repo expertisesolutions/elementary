@@ -19,6 +19,7 @@ group { name: "e/widgets/frame";
             rel1.offset: 2 0;
             rel1.to_y: "top";
             rel2.offset: -3 -3;
+            color_class: "frame_base";
             color: 64 64 64 255;
          }
       }
@@ -30,6 +31,7 @@ group { name: "e/widgets/frame";
             rel2.offset: -3 -1;
             fill.smooth: 0;
             TILED_HORIZ(120)
+            color_class: "frame_base";
          }
       }
       part { name: "edge1";
@@ -69,8 +71,7 @@ group { name: "e/widgets/frame";
             rel2.offset: -2 2;
             rel2.to_x: "edge2";
             align: 0.0 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             text { font: FNBD; size: 10;
                text_class: "frame";
                align: 0.0 0.0;

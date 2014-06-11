@@ -303,7 +303,7 @@ _end_hide_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNU
 void
 test_entry_scrolled(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
-   Evas_Object *win, *bx, *bx2, *bx3, *bt, *en, *en_p, *sp, *entry;
+   Evas_Object *win, *bx, *bx2, *bx3, *bx4, *bt, *en, *en_p, *sp, *entry, *label;
    static Elm_Entry_Filter_Accept_Set digits_filter_data, digits_filter_data2;
    static Elm_Entry_Filter_Limit_Size limit_filter_data, limit_filter_data2;
 
@@ -462,7 +462,33 @@ test_entry_scrolled(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *
    evas_object_show(en_p);
    elm_box_pack_end(bx, en_p);
 
-   /* entry with icon/end widgets*/
+   /* Last password show entry */
+   bx4 = elm_box_add(win);
+   evas_object_size_hint_weight_set(bx4, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_show(bx4);
+
+   label = elm_label_add(bx4);
+   elm_object_text_set(label, "<b>Last password show entry</b>");
+   evas_object_size_hint_align_set(label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx4, label);
+   evas_object_show(label);
+
+   en = elm_entry_add(bx4);
+   elm_entry_scrollable_set(en, EINA_TRUE);
+   evas_object_size_hint_weight_set(en, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(en, EVAS_HINT_FILL, 0.5);
+   elm_scroller_policy_set(en, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF);
+   elm_entry_password_set(en, EINA_TRUE);
+   elm_object_text_set(en, "Last password show");
+   elm_entry_single_line_set(en, EINA_TRUE);
+   edje_password_show_last_set(EINA_TRUE);
+   edje_password_show_last_timeout_set(-1);
+   evas_object_show(en);
+
+   elm_box_pack_end(bx4, en);
+   elm_box_pack_end(bx, bx4);
+
+   /* entry with icon/end widgets */
    entry = elm_entry_add(win);
    elm_entry_scrollable_set(entry, EINA_TRUE);
    elm_scroller_policy_set(entry, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF);
@@ -878,7 +904,7 @@ test_entry_style_user(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void
 }
 
 
-static char *default_style_text = 
+static char *default_style_text =
    "<title>Elementary typography</title><br>"
    "<ps>"
    "<subtitle>Basic tags</subtitle><br>"
@@ -989,7 +1015,7 @@ test_entry_style_default(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, v
    evas_object_smart_callback_add(o, "changed", ent_bt_def_style_markup, en);
    elm_box_pack_end(vbx, o);
    evas_object_show(o);
-   
+
    o = elm_check_add(win);
    elm_object_text_set(o, "disabled");
    evas_object_smart_callback_add(o, "changed", ent_bt_def_style_disabled, en);
@@ -2164,7 +2190,7 @@ test_entry7(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
                        "<item size=50x50 vsize=full href=itemprovider></item>"
                       );
    elm_entry_item_provider_append(en2, item_provider, NULL);
-   elm_entry_context_menu_disabled_set(en, EINA_TRUE);
+   elm_entry_context_menu_disabled_set(en2, EINA_TRUE);
    elm_grid_pack(gd, en2, 10, 50, 45, 30);
    evas_object_show(en2);
 

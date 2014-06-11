@@ -27,14 +27,13 @@ group { name: "e/theme/about";
          scale: 1;
          description { state: "default" 0.0;
             fixed: 1 1;
-            color: 51 153 255 255;
-            color2: 51 153 255 24;
-            color3: 51 153 255 18;
+            color: FN_COL_HIGHLIGHT;
             rel1.relative: 0.5 0.5;
             rel2.relative: 0.5 0.5;
             text { font: FNBD; size: 64;
                text: "Dark";
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
             }
          }
@@ -44,9 +43,7 @@ group { name: "e/theme/about";
          scale: 1;
          description { state: "default" 0.0;
             fixed: 1 1;
-            color: 51 153 255 255;
-            color2: 51 153 255 24;
-            color3: 51 153 255 18;
+            color: FN_COL_HIGHLIGHT;
             rel1.relative: 0.5 0.9;
             rel1.to: "name";
             rel2.relative: 0.5 0.9;
@@ -55,6 +52,7 @@ group { name: "e/theme/about";
             text { font: FN; size: 10;
                text: "The default theme for Enlightenment";
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 1.0;
             }
          }
@@ -100,13 +98,13 @@ group { name: "e/theme/about";
             rel1.relative: 1.0 1.0;
             rel2.offset: -14 -14;
             rel2.relative: 1.0 1.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "button_text";
             align: 1.0 1.0;
             min: 85 0;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                text_class: "button";
             }
@@ -138,13 +136,13 @@ group { name: "e/theme/about";
             rel1.relative: 0.0 1.0;
             rel2.offset: 13 -14;
             rel2.relative: 0.0 1.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "button_text";
             align: 0.0 1.0;
             min: 85 0;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                text_class: "button";
             }

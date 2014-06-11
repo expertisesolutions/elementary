@@ -3,14 +3,14 @@ MAINTAINERCLEANFILES = Makefile.in
 
 include ../../Makefile_Elm_Helpers.am
 
-EDJE_CC_FLAGS += -id $(top_srcdir)/data/themes/img -fd $(top_srcdir)/data/themes/fnt -sd $(top_srcdir)/data/themes/snd
+EDJE_CC_FLAGS += -id $(top_srcdir)/data/themes/img -fd $(top_srcdir)/data/themes/fnt -sd $(top_srcdir)/data/themes/snd  -l $(top_srcdir)/COPYING -a $(top_srcdir)/AUTHORS
 
 filesdir = $(datadir)/elementary/themes
 files_DATA = default.edj
 
 default.edj: Makefile $(EXTRA_DIST)
 	$(AM_V_EDJ)$(EDJE_CC) \
-        $(EDJE_CC_FLAGS) \
+        $(EDJE_CC_FLAGS) -fastdecomp \
 	$(top_srcdir)/data/themes/default.edc \
 	$(top_builddir)/data/themes/default.edj
 
@@ -103,6 +103,7 @@ edc/elm/clock.edc \
 edc/elm/colorsel.edc \
 edc/elm/conform.edc \
 edc/elm/ctxpopup.edc \
+edc/elm/cursor.edc \
 edc/elm/datetime.edc \
 edc/elm/dayselector.edc \
 edc/elm/diskselector.edc \
@@ -183,6 +184,9 @@ img/box_outline.png \
 img/bt_base.png \
 img/bt_sig_1.png \
 img/bt_sig_2.png \
+img/btn_round_0.png \
+img/btn_round_1.png \
+img/btn_round_2.png \
 img/bub_base_b0.png \
 img/bub_base_b1.png \
 img/bub_base_b2.png \
@@ -251,13 +255,25 @@ img/efm_generic_icon_base_empty.png \
 img/efm_generic_icon_base.png \
 img/efm_generic_icon_content_audio.png \
 img/efm_generic_icon_content_code.png \
+img/efm_generic_icon_content_db.png \
+img/efm_generic_icon_content_doc.png \
+img/efm_generic_icon_content_draw.png \
 img/efm_generic_icon_content_executable.png \
+img/efm_generic_icon_content_font.png \
+img/efm_generic_icon_content_formula.png \
+img/efm_generic_icon_content_image.png \
 img/efm_generic_icon_content_logo.png \
 img/efm_generic_icon_content_lo.png \
+img/efm_generic_icon_content_pdf.png \
+img/efm_generic_icon_content_pres.png \
+img/efm_generic_icon_content_ps.png \
 img/efm_generic_icon_content_python.png \
 img/efm_generic_icon_content_script.png \
+img/efm_generic_icon_content_spread.png \
+img/efm_generic_icon_content_template.png \
 img/efm_generic_icon_content_text.png \
 img/efm_generic_icon_content_unknown.png \
+img/efm_generic_icon_content_video.png \
 img/efm_generic_icon_content_web.png \
 img/efm_generic_icon_over_empty.png \
 img/efm_generic_icon_over.png \
@@ -508,6 +524,7 @@ img/pointer_entry_bar.png \
 img/pointer_glow.png \
 img/pointer_mono.png \
 img/pointer.png \
+img/pointer_hand1.png \
 img/ring_shadow.png \
 img/ring_white_blue_glow.png \
 img/ring_white_middle.png \

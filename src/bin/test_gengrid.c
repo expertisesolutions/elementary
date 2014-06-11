@@ -5,6 +5,8 @@
 #endif
 #include <Elementary.h>
 
+Evas_Object * _focus_autoscroll_mode_frame_create(Evas_Object *parent);
+
 static Elm_Gengrid_Item_Class *gic, *ggic;
 
 Evas_Object *grid_content_get(void *data, Evas_Object *obj, const char *part);
@@ -158,6 +160,21 @@ _horizontal_grid(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 }
 
 static void
+_item_loop_enable_changed_cb(void *data, Evas_Object *obj,
+                             void *event_info  EINA_UNUSED)
+{
+   Evas_Object *grid = data;
+   elm_object_scroll_item_loop_enabled_set(grid, elm_check_state_get(obj));
+}
+
+static void
+_focus_highlight_changed_cb(void *data, Evas_Object *obj,
+                            void *event_info EINA_UNUSED)
+{
+   elm_win_focus_highlight_enabled_set(data, elm_check_state_get(obj));
+}
+
+static void
 grid_drag_up(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
    printf("Drag up: %p\n", event_info);
@@ -191,6 +208,12 @@ static void
 grid_selected(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
    printf("Selected: %p\n", event_info);
+}
+
+static void
+grid_unselected(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   printf("Unselected: %p\n", event_info);
 }
 
 static void
@@ -267,7 +290,7 @@ grid_del(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED)
 static void
 grid_sel(void *data, Evas_Object *obj, void *event_info)
 {
-   printf("sel item data [%p] on grid obj [%p], pointer [%p]\n", data, obj, event_info);
+   printf("sel item data [%p] on grid obj [%p], pointer [%p], position [%d]\n", data, obj, event_info, elm_gengrid_item_index_get(event_info));
 }
 
 static void
@@ -277,20 +300,30 @@ _cleanup_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void 
 }
 
 static void
+reorder_mode_cb(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   elm_gengrid_reorder_mode_set(data, elm_check_state_get(obj));
+}
+
+static void
 always_select_mode_cb(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
-   api_data *api = data;
    if (elm_check_state_get(obj))
-     elm_gengrid_select_mode_set(api->grid, ELM_OBJECT_SELECT_MODE_ALWAYS);
+     elm_gengrid_select_mode_set(data, ELM_OBJECT_SELECT_MODE_ALWAYS);
    else
-     elm_gengrid_select_mode_set(api->grid, ELM_OBJECT_SELECT_MODE_DEFAULT);
+     elm_gengrid_select_mode_set(data, ELM_OBJECT_SELECT_MODE_DEFAULT);
 }
 
 static void
 multi_select_cb(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
-   api_data *api = data;
-   elm_gengrid_multi_select_set(api->grid, elm_check_state_get(obj));
+   elm_gengrid_multi_select_set(data, elm_check_state_get(obj));
+}
+
+static void
+wheel_disable_cb(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   elm_gengrid_wheel_disabled_set(data, elm_check_state_get(obj));
 }
 
 static void
@@ -312,8 +345,8 @@ create_gengrid(Evas_Object *obj, int items)
    elm_gengrid_item_size_set(grid,
                              elm_config_scale_get() * 200,
                              elm_config_scale_get() * 150);
-   elm_gengrid_reorder_mode_set(grid, EINA_TRUE);
    evas_object_smart_callback_add(grid, "selected", grid_selected, NULL);
+   evas_object_smart_callback_add(grid, "unselected", grid_unselected, NULL);
    evas_object_smart_callback_add(grid, "clicked,double", grid_double_clicked, NULL);
    evas_object_smart_callback_add(grid, "longpressed", grid_longpress, NULL);
    evas_object_smart_callback_add(grid, "moved", grid_moved, NULL);
@@ -486,7 +519,7 @@ _btn_show_clicked_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info 
 void
 test_gengrid(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
-   Evas_Object *win, *bt, *bxx, *bx, *tg;
+   Evas_Object *win, *bt, *bxx, *bx, *ck;
    api_data *api = calloc(1, sizeof(api_data));
 
    win = elm_win_util_standard_add("gengrid", "GenGrid");
@@ -510,33 +543,56 @@ test_gengrid(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_i
    elm_box_pack_end(bxx, api->grid);
    evas_object_show(api->grid);
 
+   /* Gengrid Options 1 */
    bx = elm_box_add(win);
    elm_box_horizontal_set(bx, EINA_TRUE);
    elm_box_pack_end(bxx, bx);
    evas_object_show(bx);
 
-   /* Gengrid Always Select Mode Test */
-   tg = elm_check_add(win);
-   evas_object_size_hint_weight_set(tg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(tg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   elm_object_text_set(tg, "Always Select Mode");
-   evas_object_smart_callback_add(tg, "changed", always_select_mode_cb,
-                                  (void *)api);
-   elm_box_pack_end(bx, tg);
-   evas_object_show(tg);
+   ck = elm_check_add(win);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_object_text_set(ck, "Reorder mode enable");
+   evas_object_smart_callback_add(ck, "changed", reorder_mode_cb,
+                                  api->grid);
+   elm_box_pack_end(bx, ck);
+   evas_object_show(ck);
 
-   tg = elm_check_add(win);
-   evas_object_size_hint_weight_set(tg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(tg, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   elm_object_text_set(tg, "Multi Select Mode");
-   elm_check_state_set(tg, EINA_TRUE);
+   ck = elm_check_add(win);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_object_text_set(ck, "Always Select Mode");
+   evas_object_smart_callback_add(ck, "changed", always_select_mode_cb,
+                                  api->grid);
+   elm_box_pack_end(bx, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(win);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_object_text_set(ck, "Multi Select Mode");
+   elm_check_state_set(ck, EINA_TRUE);
    elm_gengrid_multi_select_set(api->grid, EINA_TRUE);
-   evas_object_smart_callback_add(tg, "changed", multi_select_cb,
-                                  (void *)api);
-   elm_box_pack_end(bx, tg);
-   evas_object_show(tg);
+   evas_object_smart_callback_add(ck, "changed", multi_select_cb,
+                                  api->grid);
+   elm_box_pack_end(bx, ck);
+   evas_object_show(ck);
 
-   /* Gengrid Clear Test */
+   ck = elm_check_add(win);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_object_text_set(ck, "Wheel Disable");
+   evas_object_smart_callback_add(ck, "changed", wheel_disable_cb,
+                                  api->grid);
+   elm_box_pack_end(bx, ck);
+   evas_object_show(ck);
+
+   /* Gengrid Options 2 */
+   bx = elm_box_add(win);
+   elm_box_horizontal_set(bx, EINA_TRUE);
+   elm_box_pack_end(bxx, bx);
+   evas_object_show(bx);
+
    bt = elm_button_add(win);
    elm_object_text_set(bt, "Clear");
    evas_object_smart_callback_add(bt, "clicked", clear_bt_clicked,
@@ -551,14 +607,12 @@ test_gengrid(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_i
    elm_box_pack_end(bx, bt);
    evas_object_show(bt);
 
-   /* Gengrid Filled Test */
    bt = elm_button_add(win);
    elm_object_text_set(bt, "Check Filled");
    evas_object_smart_callback_add(bt, "clicked", filled_bt_clicked, NULL);
    elm_box_pack_end(bx, bt);
    evas_object_show(bt);
 
-   /* Item Cursor Test */
    bt = elm_button_add(win);
    elm_object_text_set(bt, "Check Cursor");
    evas_object_smart_callback_add(bt, "clicked", cursor_bt_clicked,
@@ -780,6 +834,18 @@ test_gengrid2(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_
    elm_box_pack_end(hbx, ck);
    evas_object_show(ck);
 
+   ck = elm_check_add(win);
+   elm_object_text_set(ck, "Item loop enable");
+   evas_object_smart_callback_add(ck, "changed", _item_loop_enable_changed_cb, grid);
+   elm_box_pack_end(hbx, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(win);
+   elm_object_text_set(ck, "Focus Highlight Set");
+   evas_object_smart_callback_add(ck, "changed", _focus_highlight_changed_cb, win);
+   elm_box_pack_end(hbx, ck);
+   evas_object_show(ck);
+
    gic = elm_gengrid_item_class_new();
    gic->item_style = "default";
    gic->func.text_get = grid_text_get;
@@ -816,7 +882,6 @@ test_gengrid3(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_
                                    elm_config_scale_get() * 31,
                                    elm_config_scale_get() * 31);
    elm_gengrid_multi_select_set(grid, EINA_TRUE);
-   elm_gengrid_reorder_mode_set(grid, EINA_TRUE);
    evas_object_smart_callback_add(grid, "selected", grid_selected, NULL);
    evas_object_smart_callback_add(grid, "clicked,double", grid_double_clicked, NULL);
    evas_object_smart_callback_add(grid, "longpressed", grid_longpress, NULL);
@@ -1270,5 +1335,292 @@ test_gengrid4(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_
    elm_box_pack_end(bx2, bt);
    evas_object_show(bt);
 
+   evas_object_show(win);
+}
+
+void
+test_gengrid_speed(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Evas_Object *win, *fr, *bx;
+   api_data *api = calloc(1, sizeof(api_data));
+
+   win = elm_win_util_standard_add("gengrid", "Gengrid");
+   elm_win_autodel_set(win, EINA_TRUE);
+   evas_object_event_callback_add(win, EVAS_CALLBACK_FREE, _cleanup_cb, api);
+
+   api->box = bx = elm_box_add(win);
+   evas_object_size_hint_weight_set(bx, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(bx, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_win_resize_object_add(win, bx);
+   evas_object_show(bx);
+
+   fr = elm_frame_add(win);
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, 0.5);
+   elm_frame_autocollapse_set(fr, EINA_TRUE);
+   elm_object_text_set(fr, "Collapse me!");
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   api->grid = create_gengrid(win, 5000);
+   evas_object_size_hint_min_set(api->grid, 600, 600);
+   elm_gengrid_item_size_set(api->grid,
+                          elm_config_scale_get() * 30,
+                          elm_config_scale_get() * 36);
+   elm_object_content_set(fr, api->grid);
+   evas_object_show(api->grid);
+   evas_object_resize(win, 600, 600);
+   evas_object_show(win);
+}
+
+static void
+_gengrid_focus_item_cb(void *data, Evas_Object *obj EINA_UNUSED,
+                       void *event_info)
+{
+   printf("%s: %p\n", (char *)data, event_info);
+}
+
+static void
+_gengrid_focus_key_down_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED,
+                           Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   Evas_Event_Key_Down *ev = event_info;
+   printf("\n=== Key Down : %s ===\n", ev->keyname);
+}
+
+static void
+_gg_focus_focus_move_policy_changed_cb(void *data EINA_UNUSED,
+                                       Evas_Object *obj,
+                                       void *event_info EINA_UNUSED)
+{
+   int val = elm_radio_value_get(obj);
+
+   if (val == 0)
+     elm_config_focus_move_policy_set(ELM_FOCUS_MOVE_POLICY_CLICK);
+   else if (val == 1)
+     elm_config_focus_move_policy_set(ELM_FOCUS_MOVE_POLICY_IN);
+}
+
+static void
+_gg_focus_focus_highlight_changed_cb(void *data,
+                                     Evas_Object *obj,
+                                     void *event_info EINA_UNUSED)
+{
+   elm_win_focus_highlight_enabled_set((Evas_Object *)data,
+                                       elm_check_state_get(obj));
+}
+
+static void
+_gg_focus_focus_animate_changed_cb(void *data,
+                                   Evas_Object *obj,
+                                   void *event_info EINA_UNUSED)
+{
+   elm_win_focus_highlight_animate_set((Evas_Object *)data,
+                                       elm_check_state_get(obj));
+}
+
+static void
+_grid_reorder_mode(void *data, Evas_Object *obj,
+                   void *event_info EINA_UNUSED)
+{
+   if (elm_check_state_get(obj))
+     elm_gengrid_reorder_mode_start((Evas_Object *)data,
+                                    ECORE_POS_MAP_LINEAR);
+   else
+     elm_gengrid_reorder_mode_stop((Evas_Object *)data);
+}
+
+static void
+_gg_focus_item_select_on_focus_disable_changed_cb(void *data EINA_UNUSED,
+                                                  Evas_Object *obj,
+                                                  void *event_info
+                                                  EINA_UNUSED)
+{
+   elm_config_item_select_on_focus_disabled_set(elm_check_state_get(obj));
+}
+
+void
+test_gengrid_focus(void *data EINA_UNUSED,
+                   Evas_Object *obj EINA_UNUSED,
+                   void *event_info EINA_UNUSED)
+{
+   Evas_Object *win, *bx, *bx_horiz, *gengrid, *btn, *fr, *bx_mv, *bx_opt, *ck, *rdg, *rd;
+   Elm_Gengrid_Item_Class *ic;
+   Item_Data *id;
+   char buf[PATH_MAX];
+   int i, n;
+
+   win = elm_win_util_standard_add("gengrid-focus", "Gengrid Focus");
+   elm_win_focus_highlight_enabled_set(win, EINA_TRUE);
+   elm_win_focus_highlight_animate_set(win, EINA_TRUE);
+   elm_win_autodel_set(win, EINA_TRUE);
+
+   bx_horiz = elm_box_add(win);
+   elm_box_horizontal_set(bx_horiz, EINA_TRUE);
+   evas_object_size_hint_weight_set(bx_horiz, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_win_resize_object_add(win, bx_horiz);
+   evas_object_show(bx_horiz);
+
+   btn = elm_button_add(bx_horiz);
+   elm_object_text_set(btn, "Left");
+   elm_box_pack_end(bx_horiz, btn);
+   evas_object_show(btn);
+
+   bx = elm_box_add(bx_horiz);
+   evas_object_size_hint_weight_set(bx, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(bx, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx_horiz, bx);
+   evas_object_show(bx);
+
+   btn = elm_button_add(bx);
+   elm_object_text_set(btn, "Up");
+   elm_box_pack_end(bx, btn);
+   evas_object_show(btn);
+   elm_object_focus_set(btn, EINA_TRUE);
+
+   gengrid = elm_gengrid_add(bx);
+   elm_gengrid_item_size_set(gengrid,
+                             elm_config_scale_get() * 150,
+                             elm_config_scale_get() * 150);
+   evas_object_size_hint_weight_set(gengrid, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(gengrid, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, gengrid);
+   evas_object_show(gengrid);
+   evas_object_smart_callback_add(gengrid, "item,focused", _gengrid_focus_item_cb, "item,focused");
+   evas_object_smart_callback_add(gengrid, "item,unfocused", _gengrid_focus_item_cb, "item,unfocused");
+   evas_object_smart_callback_add(gengrid, "selected", _gengrid_focus_item_cb, "selected");
+   evas_object_smart_callback_add(gengrid, "unselected", _gengrid_focus_item_cb, "unselected");
+   evas_object_smart_callback_add(gengrid, "activated", _gengrid_focus_item_cb, "activated");
+   evas_object_smart_callback_add(gengrid, "highlighted", _gengrid_focus_item_cb, "highlighted");
+   evas_object_smart_callback_add(gengrid, "unhighlighted", _gengrid_focus_item_cb, "unhighlighted");
+   evas_object_event_callback_add(gengrid, EVAS_CALLBACK_KEY_DOWN, _gengrid_focus_key_down_cb, NULL);
+
+   btn = elm_button_add(bx);
+   elm_object_text_set(btn, "Down");
+   elm_box_pack_end(bx, btn);
+   evas_object_show(btn);
+
+   btn = elm_button_add(bx_horiz);
+   elm_object_text_set(btn, "Right");
+   elm_box_pack_end(bx_horiz, btn);
+   evas_object_show(btn);
+
+   //Options
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Options");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   bx_opt = elm_box_add(fr);
+   elm_box_horizontal_set(bx_opt, EINA_TRUE);
+   elm_object_content_set(fr, bx_opt);
+   evas_object_show(bx_opt);
+
+   ck = elm_check_add(bx_opt);
+   elm_object_text_set(ck, "Focus Highlight");
+   elm_check_state_set(ck, EINA_TRUE);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(ck, "changed",
+                                  _gg_focus_focus_highlight_changed_cb,
+                                  win);
+   elm_box_pack_end(bx_opt, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(bx_opt);
+   elm_object_text_set(ck, "Focus Animation");
+   elm_check_state_set(ck, EINA_TRUE);
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(ck, "changed",
+                                  _gg_focus_focus_animate_changed_cb,
+                                  win);
+   elm_box_pack_end(bx_opt, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(bx_opt);
+   elm_object_text_set(ck, "Horizontal Mode");
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(ck, "changed", _horizontal_grid, gengrid);
+   elm_box_pack_end(bx_opt, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(bx_opt);
+   elm_object_text_set(ck, "Rorder mode enable");
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(ck, "changed", _grid_reorder_mode, gengrid);
+   elm_box_pack_end(bx_opt, ck);
+   evas_object_show(ck);
+
+   ck = elm_check_add(bx_opt);
+   elm_object_text_set(ck, "Item Select on Focus disable");
+   elm_check_state_set(ck, elm_config_item_select_on_focus_disabled_get());
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(ck, "changed",
+                                  _gg_focus_item_select_on_focus_disable_changed_cb,
+                                  NULL);
+   elm_box_pack_end(bx_opt, ck);
+   evas_object_show(ck);
+
+   // Focus Autoscroll Mode
+   fr = _focus_autoscroll_mode_frame_create(bx);
+   elm_box_pack_end(bx, fr);
+
+   //Focus movement policy
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Focus Movement Policy");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   bx_mv = elm_box_add(fr);
+   elm_box_horizontal_set(bx_mv, EINA_TRUE);
+   elm_object_content_set(fr, bx_mv);
+   evas_object_show(bx_mv);
+
+   rdg = rd = elm_radio_add(bx_mv);
+   elm_object_text_set(rd, "Focus Move by Click");
+   elm_radio_state_value_set(rd, 0);
+   evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(rd, "changed",
+                                  _gg_focus_focus_move_policy_changed_cb,
+                                  NULL);
+   elm_box_pack_end(bx_mv, rd);
+   evas_object_show(rd);
+
+   rd = elm_radio_add(bx_mv);
+   elm_object_text_set(rd, "Focus Move by Mouse-In");
+   elm_radio_group_add(rd, rdg);
+   elm_radio_state_value_set(rd, 1);
+   evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(rd, "changed",
+                                  _gg_focus_focus_move_policy_changed_cb,
+                                  NULL);
+   elm_box_pack_end(bx_mv, rd);
+   evas_object_show(rd);
+
+   ic = elm_gengrid_item_class_new();
+   ic->item_style = "default";
+   ic->func.text_get = grid_text_get;
+   ic->func.content_get = grid_content_get;
+   ic->func.state_get = NULL;
+   ic->func.del = grid_del;
+
+   n = 0;
+   for (i = 0; i < 24; i++)
+     {
+        id = calloc(1, sizeof(Item_Data));
+        snprintf(buf, sizeof(buf), "%s/images/%s", elm_app_data_dir_get(), img[n]);
+        n = (n + 1) % 9;
+        id->mode = i;
+        id->path = eina_stringshare_add(buf);
+        id->item = elm_gengrid_item_append(gengrid, ic, id, NULL, NULL);
+        if (i == 4)
+          elm_object_item_disabled_set(id->item, EINA_TRUE);
+     }
+   elm_gengrid_item_class_free(ic);
+
+   evas_object_resize(win, 600, 600);
    evas_object_show(win);
 }

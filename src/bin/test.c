@@ -72,6 +72,7 @@ void test_toolbar6(void *data, Evas_Object *obj, void *event_info);
 void test_toolbar7(void *data, Evas_Object *obj, void *event_info);
 void test_toolbar8(void *data, Evas_Object *obj, void *event_info);
 void test_toolbar_vertical(void *data, Evas_Object *obj, void *event_info);
+void test_toolbar_focus(void *data, Evas_Object *obj, void *event_info);
 void test_hoversel(void *data, Evas_Object *obj, void *event_info);
 void test_hoversel_focus(void *data, Evas_Object *obj, void *event_info);
 void test_list(void *data, Evas_Object *obj, void *event_info);
@@ -82,8 +83,8 @@ void test_list4(void *data, Evas_Object *obj, void *event_info);
 void test_list5(void *data, Evas_Object *obj, void *event_info);
 void test_list6(void *data, Evas_Object *obj, void *event_info);
 void test_list7(void *data, Evas_Object *obj, void *event_info);
-void test_list8(void *data, Evas_Object *obj, void *event_info);
-void test_list9(void *data, Evas_Object *obj, void *event_info);
+void test_list_focus(void *data, Evas_Object *obj, void *event_info);
+void test_list_horiz_focus(void *data, Evas_Object *obj, void *event_info);
 void test_list_separator(void *data, Evas_Object *obj, void *event_info);
 void test_list_multi_select(void *data, Evas_Object *obj, void *event_info);
 void test_inwin(void *data, Evas_Object *obj, void *event_info);
@@ -111,8 +112,8 @@ void test_genlist16(void *data, Evas_Object *obj, void *event_info);
 void test_genlist17(void *data, Evas_Object *obj, void *event_info);
 void test_genlist18(void *data, Evas_Object *obj, void *event_info);
 void test_genlist19(void *data, Evas_Object *obj, void *event_info);
+void test_genlist20(void *data, Evas_Object *obj, void *event_info);
 void test_genlist_focus(void *data, Evas_Object *obj, void *event_info);
-void test_genlist_item_focus(void *data, Evas_Object *obj, void *event_info);
 void test_genlist_item_styles(void *data, Evas_Object *obj, void *event_info);
 void test_genlist_multi_select(void *data, Evas_Object *obj, void *event_info);
 void test_genlist_del(void *data, Evas_Object *obj, void *event_info);
@@ -131,6 +132,8 @@ void test_gengrid2(void *data, Evas_Object *obj, void *event_info);
 void test_gengrid3(void *data, Evas_Object *obj, void *event_info);
 void test_gengrid_item_styles(void *data, Evas_Object *obj, void *event_info);
 void test_gengrid4(void *data, Evas_Object *obj, void *event_info);
+void test_gengrid_speed(void *data, Evas_Object *obj, void *event_info);
+void test_gengrid_focus(void *data, Evas_Object *obj, void *event_info);
 void test_win_state(void *data, Evas_Object *obj, void *event_info);
 void test_win_state2(void *data, Evas_Object *obj, void *event_info);
 void test_progressbar(void *data, Evas_Object *obj, void *event_info);
@@ -209,6 +212,7 @@ void test_win_wm_rotation(void *data, Evas_Object *obj, void *event_info);
 void test_grid(void *data, Evas_Object *obj, void *event_info);
 void test_glview_simple(void *data, Evas_Object *obj, void *event_info);
 void test_glview(void *data, Evas_Object *obj, void *event_info);
+void test_glview_manygears(void *data, Evas_Object *obj, void *event_info);
 void test_3d(void *data, Evas_Object *obj, void *event_info);
 void test_naviframe(void *data, Evas_Object *obj, void *event_info);
 void test_naviframe2(void *data, Evas_Object *obj, void *event_info);
@@ -236,6 +240,7 @@ void test_dnd_genlist_default_anim(void *data, Evas_Object *obj, void *event_inf
 void test_dnd_genlist_user_anim(void *data, Evas_Object *obj, void *event_info);
 void test_dnd_genlist_gengrid(void *data, Evas_Object *obj, void *event_info);
 void test_dnd_multi_features(void *data, Evas_Object *obj, void *event_info);
+void test_dnd_types(void *data, Evas_Object *obj, void *event_info);
 void test_task_switcher(void *data, Evas_Object *obj, void *event_info);
 void test_application_server_message(void *data, Evas_Object *obj, void *event_info);
 void test_application_server_phone(void *data, Evas_Object *obj, void *event_info);
@@ -608,6 +613,7 @@ add_tests:
    ADD_TEST(NULL, "Toolbars", "Toolbar 7", test_toolbar7);
    ADD_TEST(NULL, "Toolbars", "Toolbar 8", test_toolbar8);
    ADD_TEST(NULL, "Toolbars", "Toolbar Vertical", test_toolbar_vertical);
+   ADD_TEST(NULL, "Toolbars", "Toolbar Focus", test_toolbar_focus);
 
    //------------------------------//
    ADD_TEST(NULL, "Lists - List", "List", test_list);
@@ -618,8 +624,8 @@ add_tests:
    ADD_TEST(NULL, "Lists - List", "List 5", test_list5);
    ADD_TEST(NULL, "Lists - List", "List 6", test_list6);
    ADD_TEST(NULL, "Lists - List", "List 7", test_list7);
-   ADD_TEST(NULL, "Lists - List", "List Focus", test_list8);
-   ADD_TEST(NULL, "Lists - List", "List Focus Horizontal", test_list9);
+   ADD_TEST(NULL, "Lists - List", "List Focus", test_list_focus);
+   ADD_TEST(NULL, "Lists - List", "List Focus Horizontal", test_list_horiz_focus);
    ADD_TEST(NULL, "Lists - List", "List Separator", test_list_separator);
    ADD_TEST(NULL, "Lists - List", "List Multi Select", test_list_multi_select);
 
@@ -647,8 +653,8 @@ add_tests:
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Decorate Modes", test_genlist17);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Tree and Decorate All Mode", test_genlist18);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Full Widget", test_genlist19);
+   ADD_TEST(NULL, "Lists - Genlist", "Genlist Item Search By Text", test_genlist20);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Focus", test_genlist_focus);
-   ADD_TEST(NULL, "Lists - Genlist", "Genlist Item Focus", test_genlist_item_focus);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Item Styles", test_genlist_item_styles);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Multi Select", test_genlist_multi_select);
    ADD_TEST(NULL, "Lists - Genlist", "Genlist Del", test_genlist_del);
@@ -660,15 +666,18 @@ add_tests:
    ADD_TEST(NULL, "Lists - Gengrid", "GenGrid Group", test_gengrid3);
    ADD_TEST(NULL, "Lists - Gengrid", "GenGrid Show/Bring_in", test_gengrid4);
    ADD_TEST(NULL, "Lists - Gengrid", "GenGrid Item Styles", test_gengrid_item_styles);
+   ADD_TEST(NULL, "Lists - Gengrid", "Gengrid Update Speed", test_gengrid_speed);
+   ADD_TEST(NULL, "Lists - Gengrid", "GenGrid Focus", test_gengrid_focus);
 
    //------------------------------//
    ADD_TEST(NULL, "General", "Scaling", test_scaling);
    ADD_TEST(NULL, "General", "Scaling 2", test_scaling2);
 
    //------------------------------//
-   ADD_TEST(NULL, "3D", "GLViewSimple", test_glview_simple);
-   ADD_TEST(NULL, "3D", "GLView", test_glview);
    ADD_TEST(NULL, "3D", "Evas Map 3D", test_3d);
+   ADD_TEST(NULL, "3D", "GLViewSimple", test_glview_simple);
+   ADD_TEST(NULL, "3D", "GLView Gears", test_glview);
+   ADD_TEST(NULL, "3D", "GLView Many Gears", test_glview_manygears);
 
    //------------------------------//
 #ifdef HAVE_ELEMENTARY_WEB
@@ -796,6 +805,7 @@ add_tests:
    ADD_TEST(NULL, "Drag & Drop", "Genlist DnD User Anim", test_dnd_genlist_user_anim);
    ADD_TEST(NULL, "Drag & Drop", "Genlist-Gengrid DnD", test_dnd_genlist_gengrid);
    ADD_TEST(NULL, "Drag & Drop", "Features DnD", test_dnd_multi_features);
+   ADD_TEST(NULL, "Drag & Drop", "Types DnD", test_dnd_types);
 
    //------------------------------//
    ADD_TEST(NULL, "Miscellaneous", "Copy And Paste", test_cnp);
@@ -882,6 +892,7 @@ elm_main(int argc, char **argv)
 
    /* tell elm about our app so it can figure out where to get files */
    elm_app_compile_bin_dir_set(PACKAGE_BIN_DIR);
+   elm_app_compile_lib_dir_set(PACKAGE_LIB_DIR);
    elm_app_compile_data_dir_set(PACKAGE_DATA_DIR);
    elm_app_info_set(elm_main, "elementary", "images/logo.png");
 

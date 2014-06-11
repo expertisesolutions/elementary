@@ -20,9 +20,9 @@
 /**
  * Base button smart data extended with fileselector_button instance data.
  */
-typedef struct _Elm_Fileselector_Button_Smart_Data \
-  Elm_Fileselector_Button_Smart_Data;
-struct _Elm_Fileselector_Button_Smart_Data
+typedef struct _Elm_Fileselector_Button_Data \
+  Elm_Fileselector_Button_Data;
+struct _Elm_Fileselector_Button_Data
 {
    Evas_Object          *obj; // the object itself
    Evas_Object          *fs, *fsw;
@@ -31,10 +31,16 @@ struct _Elm_Fileselector_Button_Smart_Data
 
    struct
    {
-      const char *path;
-      Eina_Bool   expandable : 1;
-      Eina_Bool   folder_only : 1;
-      Eina_Bool   is_save : 1;
+      const char             *path;
+      const char             *selection;
+      Evas_Coord_Size         thumbnail_size;
+      Elm_Fileselector_Mode   mode;
+      Elm_Fileselector_Sort   sort_type;
+      Eina_Bool               expandable : 1;
+      Eina_Bool               folder_only : 1;
+      Eina_Bool               is_save : 1;
+      Eina_Bool               multi : 1;
+      Eina_Bool               hidden_visible : 1;
    } fsd;
 
    Eina_Bool             inwin_mode : 1;
@@ -45,7 +51,7 @@ struct _Elm_Fileselector_Button_Smart_Data
  */
 
 #define ELM_FILESELECTOR_BUTTON_DATA_GET(o, sd) \
-  Elm_Fileselector_Button_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_FILESELECTOR_BUTTON_CLASS)
+  Elm_Fileselector_Button_Data * sd = eo_data_scope_get(o, ELM_FILESELECTOR_BUTTON_CLASS)
 
 #define ELM_FILESELECTOR_BUTTON_DATA_GET_OR_RETURN(o, ptr) \
   ELM_FILESELECTOR_BUTTON_DATA_GET(o, ptr);                \
@@ -66,7 +72,7 @@ struct _Elm_Fileselector_Button_Smart_Data
     }
 
 #define ELM_FILESELECTOR_BUTTON_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_FILESELECTOR_BUTTON_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_FILESELECTOR_BUTTON_CLASS))) \
     return
 
 #endif

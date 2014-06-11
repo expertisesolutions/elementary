@@ -10,9 +10,7 @@
 #if defined(HAVE_ELEMENTARY_WEB) && defined(USE_WEBKIT2)
 #include <EWebKit2.h>
 
-EAPI Eo_Op ELM_OBJ_WEB_BASE_ID = EO_NOOP;
-
-#define MY_CLASS ELM_OBJ_WEB_CLASS
+#define MY_CLASS ELM_WEB_CLASS
 
 #define MY_CLASS_NAME "Elm_Web"
 #define MY_CLASS_NAME_LEGACY "elm_web"
@@ -48,6 +46,465 @@ _view_smart_del(Evas_Object *obj)
    _ewk_view_parent_sc.sc.del(obj);
 }
 
+static Evas_Object *
+_view_smart_window_create(Ewk_View_Smart_Data *vsd,
+                          const Ewk_Window_Features *window_features)
+{
+   Evas_Object *new;
+   Evas_Object *obj = evas_object_smart_parent_get(vsd->self);
+
+   ELM_WEB_DATA_GET_OR_RETURN_VAL(obj, sd, NULL);
+
+   if (!sd->hook.window_create) return NULL;
+
+   new = sd->hook.window_create
+       (sd->hook.window_create_data, obj, EINA_TRUE,
+       (const Elm_Web_Window_Features *)window_features);
+   if (new) return elm_web_webkit_view_get(new);
+
+   return NULL;
+}
+
+static void
+_view_smart_window_close(Ewk_View_Smart_Data *sd)
+{
+   Evas_Object *obj = evas_object_smart_parent_get(sd->self);
+
+   ELM_WEB_CHECK(obj);
+
+   evas_object_smart_callback_call(obj, "windows,close,request", NULL);
+}
+
+static void
+_popup_item_selected(void *data,
+                     Evas_Object *obj,
+                     void *event_info EINA_UNUSED)
+{
+   Elm_Object_Item *list_it = elm_list_selected_item_get(obj);
+   const Eina_List *itr, *list = elm_list_items_get(obj);
+   Ewk_Popup_Menu *menu = data;
+   int i = 0;
+   void *d;
+
+   EINA_LIST_FOREACH(list, itr, d)
+     {
+        if (d == list_it)
+          break;
+
+        i++;
+     }
+
+   ewk_popup_menu_selected_index_set(menu, i);
+   ewk_popup_menu_close(menu);
+
+   evas_object_del(evas_object_data_get(obj, "_notify"));
+}
+
+static void
+_popup_dismiss_cb(void *data,
+                  Evas_Object *obj,
+                  void *event_info EINA_UNUSED)
+{
+   ewk_popup_menu_close(data);
+   evas_object_del(obj);
+}
+
+static Eina_Bool
+_view_smart_popup_menu_show(Ewk_View_Smart_Data *sd,
+                            Eina_Rectangle r,
+                            Ewk_Text_Direction dir EINA_UNUSED,
+                            double scale EINA_UNUSED,
+                            Ewk_Popup_Menu *menu)
+{
+   Evas_Object *notify, *list, *grid, *win;
+   const Eina_List* items = ewk_popup_menu_items_get(menu);
+   Evas_Object *obj = evas_object_smart_parent_get(sd->self);
+   int h, ww, wh;
+
+   Elm_Object_Item *lit;
+   Eina_Bool disabled;
+   const char *txt;
+   Ewk_Popup_Menu_Item *it;
+   const Eina_List *itr;
+
+   Evas_Object *popup = evas_object_data_get(sd->self, "_select_popup");
+   if (popup) evas_object_del(popup);
+
+   win = elm_widget_top_get(obj);
+
+   notify = elm_notify_add(win);
+   elm_notify_allow_events_set(notify, EINA_FALSE);
+   elm_notify_align_set(notify, 0.5, 1.0);
+
+   list = elm_list_add(notify);
+   evas_object_data_set(list, "_notify", notify);
+   elm_list_select_mode_set(list, ELM_OBJECT_SELECT_MODE_ALWAYS);
+   elm_scroller_bounce_set(list, EINA_FALSE, EINA_FALSE);
+   elm_list_mode_set(list, ELM_LIST_EXPAND);
+   evas_object_size_hint_weight_set(list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(list, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(list);
+
+   EINA_LIST_FOREACH(items, itr, it)
+     {
+        switch (ewk_popup_menu_item_type_get(it))
+          {
+           case EWK_POPUP_MENU_SEPARATOR:
+             // TODO:
+             break;
+           case EWK_POPUP_MENU_ITEM:
+             txt = ewk_popup_menu_item_text_get(it);
+             if (ewk_popup_menu_item_is_label_get(it))
+               {
+                  lit = elm_list_item_append(list, txt, NULL, NULL, NULL, NULL);
+                  disabled = EINA_TRUE;
+               }
+             else
+               {
+                  lit = elm_list_item_append(list, txt, NULL, NULL, _popup_item_selected, menu);
+                  disabled = !ewk_popup_menu_item_enabled_get(it);
+               }
+
+             elm_object_item_disabled_set(lit, disabled);
+             break;
+           default:
+             break;
+          }
+     }
+   elm_list_go(list);
+
+   grid = elm_grid_add(win);
+   elm_grid_size_set(grid, 1, 1);
+   elm_grid_pack(grid, list, 0, 0, 1, 1);
+   evas_object_geometry_get(win, NULL, NULL, &ww, &wh);
+
+   //FIXME: it should be the real height of items in the list.
+   h = r.h * eina_list_count(items);
+   evas_object_size_hint_min_set(grid, ww, h < wh / 2 ? h : wh / 2);
+   elm_object_content_set(notify, grid);
+   evas_object_show(grid);
+
+   evas_object_show(notify);
+
+   evas_object_data_set(sd->self, "_select_popup", notify);
+
+   evas_object_smart_callback_add
+     (notify, "block,clicked", _popup_dismiss_cb, menu);
+
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_view_smart_popup_menu_hide(Ewk_View_Smart_Data *sd)
+{
+   Evas_Object *popup = evas_object_data_get(sd->self, "_select_popup");
+   if (!popup) return EINA_FALSE;
+
+   evas_object_del(popup);
+   evas_object_data_del(sd->self, "_select_popup");
+
+   return EINA_TRUE;
+}
+
+static void
+_fullscreen_accept(void *data, Evas_Object *obj EINA_UNUSED, void *ev EINA_UNUSED)
+{
+   Evas_Object *ewk = data;
+   evas_object_del(evas_object_data_get(ewk, "_fullscreen_permission_popup"));
+}
+
+static void
+_fullscreen_deny(void *data, Evas_Object *obj EINA_UNUSED, void *ev EINA_UNUSED)
+{
+   Evas_Object *ewk = data;
+   ewk_view_fullscreen_exit(ewk);
+   evas_object_del(evas_object_data_get(ewk, "_fullscreen_permission_popup"));
+}
+
+static Eina_Bool
+_view_smart_fullscreen_enter(Ewk_View_Smart_Data *sd, Ewk_Security_Origin *origin)
+{
+   Evas_Object *btn, *popup, *top;
+   const char *host;
+   char buffer[2048];
+
+   Evas_Object *obj = evas_object_smart_parent_get(sd->self);
+
+   ELM_WEB_CHECK(obj) EINA_FALSE;
+
+   top = elm_widget_top_get(obj);
+   elm_win_fullscreen_set(top, EINA_TRUE);
+
+   popup = elm_popup_add(top);
+   elm_popup_orient_set(popup, ELM_POPUP_ORIENT_TOP);
+   evas_object_size_hint_weight_set(popup, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+
+   host = ewk_security_origin_host_get(origin);
+   snprintf(buffer, sizeof(buffer), "%s is now fullscreen.<br>Press ESC at any time to exit fullscreen,<br>Allow fullscreen?<br>", host);
+   elm_object_text_set(popup, buffer);
+
+   btn = elm_button_add(popup);
+   elm_object_text_set(btn, "Accept");
+   elm_object_part_content_set(popup, "button1", btn);
+   evas_object_smart_callback_add(btn, "clicked", _fullscreen_accept, sd->self);
+
+   btn = elm_button_add(popup);
+   elm_object_text_set(btn, "Deny");
+   elm_object_part_content_set(popup, "button2", btn);
+   evas_object_smart_callback_add(btn, "clicked", _fullscreen_deny, sd->self);
+
+   evas_object_data_set(sd->self, "_fullscreen_permission_popup", popup);
+   evas_object_show(popup);
+
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_view_smart_fullscreen_exit(Ewk_View_Smart_Data *sd)
+{
+   Evas_Object *obj = evas_object_smart_parent_get(sd->self);
+
+   ELM_WEB_CHECK(obj) EINA_FALSE;
+
+   Evas_Object *top = elm_widget_top_get(obj);
+   elm_win_fullscreen_set(top, EINA_FALSE);
+
+   return EINA_TRUE;
+}
+
+static void
+_bt_close(void *data,
+          Evas_Object *obj,
+          void *event_info EINA_UNUSED)
+{
+   Dialog_Data *d = data;
+
+   if (d->type == DIALOG_ALERT) goto end;
+
+   *d->response = (obj == d->bt_ok);
+   if (d->type == DIALOG_CONFIRM) goto end;
+
+   if (d->type == DIALOG_PROMPT)
+     *d->entry_value = strdup(elm_entry_entry_get(d->entry));
+
+end:
+   evas_object_del(d->dialog);
+   free(d);
+}
+
+static Dialog_Data *
+_dialog_new(Evas_Object *web, Eina_Bool inwin_mode)
+{
+   Dialog_Data *d;
+
+   d = calloc(1, sizeof(Dialog_Data));
+   if (!d) return NULL;
+
+   if (!web || inwin_mode)
+     {
+        Evas_Object *bg;
+
+        d->dialog = elm_win_add(NULL, "elm-web-popup", ELM_WIN_DIALOG_BASIC);
+        evas_object_smart_callback_add
+          (d->dialog, "delete,request", _bt_close, d);
+
+        bg = elm_bg_add(d->dialog);
+        evas_object_size_hint_weight_set
+          (bg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+        elm_win_resize_object_add(d->dialog, bg);
+        evas_object_show(bg);
+
+        d->box = elm_box_add(d->dialog);
+        evas_object_size_hint_weight_set
+          (d->box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+        elm_win_resize_object_add(d->dialog, d->box);
+        evas_object_show(d->box);
+     }
+   else
+     {
+        Evas_Object *win = elm_widget_top_get(web);
+
+        d->dialog = elm_win_inwin_add(win);
+        elm_object_style_set(d->dialog, "minimal");
+        evas_object_size_hint_weight_set
+          (d->dialog, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+
+        d->box = elm_box_add(win);
+        evas_object_size_hint_weight_set
+          (d->box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+        elm_win_inwin_content_set(d->dialog, d->box);
+        evas_object_show(d->box);
+     }
+
+   return d;
+}
+
+static void
+_dialog_ok_cancel_buttons_add(Dialog_Data *dialog_data)
+{
+   Evas_Object *bx, *bt;
+   bx = elm_box_add(dialog_data->box);
+   elm_box_horizontal_set(bx, EINA_TRUE);
+   elm_box_pack_end(dialog_data->box, bx);
+   evas_object_size_hint_weight_set(bx, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(bx, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(bx);
+
+   dialog_data->bt_cancel = bt = elm_button_add(bx);
+   elm_object_text_set(bt, "Cancel");
+   elm_box_pack_end(bx, bt);
+   evas_object_size_hint_weight_set(bt, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(bt, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_smart_callback_add(bt, "clicked", _bt_close, dialog_data);
+   evas_object_show(bt);
+
+   dialog_data->bt_ok = bt = elm_button_add(bx);
+   elm_object_text_set(bt, "Ok");
+   elm_box_pack_end(bx, bt);
+   evas_object_size_hint_weight_set(bt, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(bt, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_smart_callback_add(bt, "clicked", _bt_close, dialog_data);
+   evas_object_show(bt);
+}
+
+static void
+_dialog_del_cb(void *data EINA_UNUSED,
+               Evas *e EINA_UNUSED,
+               Evas_Object *obj EINA_UNUSED,
+               void *event_info EINA_UNUSED)
+{
+   ecore_main_loop_quit();
+}
+
+static void
+_exec_dialog(Evas_Object *dialog)
+{
+   evas_object_event_callback_add
+     (dialog, EVAS_CALLBACK_DEL, _dialog_del_cb, NULL);
+   ecore_main_loop_begin();
+}
+
+static void
+_view_smart_run_javascript_alert(Ewk_View_Smart_Data *vsd, const char *message)
+{
+   Evas_Object *obj = evas_object_smart_parent_get(vsd->self);
+   Evas_Object *dialog = NULL;
+
+   ELM_WEB_DATA_GET_OR_RETURN(obj, sd);
+
+   if (sd->hook.alert)
+     dialog = sd->hook.alert(sd->hook.alert_data, obj, message);
+   else
+     {
+        Evas_Object *lb;
+        Dialog_Data *dialog_data = _dialog_new(obj, sd->inwin_mode);
+        dialog_data->type = DIALOG_ALERT;
+        dialog = dialog_data->dialog;
+
+        lb = elm_label_add(dialog_data->box);
+        elm_object_text_set(lb, message);
+        elm_box_pack_end(dialog_data->box, lb);
+        evas_object_show(lb);
+
+        dialog_data->bt_ok = elm_button_add(dialog_data->box);
+        elm_object_text_set(dialog_data->bt_ok, "Close");
+        elm_box_pack_end(dialog_data->box, dialog_data->bt_ok);
+        evas_object_size_hint_align_set
+          (dialog_data->bt_ok, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        evas_object_smart_callback_add
+          (dialog_data->bt_ok, "clicked", _bt_close, dialog_data);
+        evas_object_show(dialog_data->bt_ok);
+
+        evas_object_show(dialog);
+     }
+
+   if (dialog) _exec_dialog(dialog);
+}
+
+static Eina_Bool
+_view_smart_run_javascript_confirm(Ewk_View_Smart_Data *vsd, const char *message)
+{
+   Evas_Object *obj = evas_object_smart_parent_get(vsd->self);
+   Eina_Bool response = EINA_FALSE;
+   Evas_Object *dialog = NULL;
+
+   ELM_WEB_DATA_GET_OR_RETURN_VAL(obj, sd, EINA_FALSE);
+
+   if (sd->hook.confirm)
+     dialog = sd->hook.confirm(sd->hook.confirm_data, obj, message, &response);
+   else
+     {
+        Evas_Object *lb;
+        Dialog_Data *dialog_data = _dialog_new(obj, sd->inwin_mode);
+        dialog_data->type = DIALOG_CONFIRM;
+        dialog_data->response = &response;
+        dialog = dialog_data->dialog;
+
+        lb = elm_label_add(dialog_data->box);
+        elm_object_text_set(lb, message);
+        elm_box_pack_end(dialog_data->box, lb);
+        evas_object_show(lb);
+
+        _dialog_ok_cancel_buttons_add(dialog_data);
+
+        evas_object_show(dialog);
+     }
+
+   if (dialog) _exec_dialog(dialog);
+
+   return response;
+}
+
+static const char *
+_view_smart_run_javascript_prompt(Ewk_View_Smart_Data *vsd, const char *message, const char *default_value)
+{
+   Evas_Object *obj = evas_object_smart_parent_get(vsd->self);
+   Eina_Bool response = EINA_FALSE;
+   Evas_Object *dialog = NULL;
+   char *value = NULL;
+   const char *ret;
+
+   ELM_WEB_DATA_GET_OR_RETURN_VAL(obj, sd, EINA_FALSE);
+
+   if (sd->hook.prompt)
+     dialog = sd->hook.prompt(sd->hook.prompt_data, obj, message, default_value, (const char**)&value, &response);
+   else
+     {
+        Evas_Object *lb, *entry;
+        Dialog_Data *dialog_data = _dialog_new(obj, sd->inwin_mode);
+        dialog_data->type = DIALOG_PROMPT;
+        dialog_data->response = &response;
+        dialog_data->entry_value = (const char**)&value;
+        dialog = dialog_data->dialog;
+
+        lb = elm_label_add(dialog_data->box);
+        elm_object_text_set(lb, message);
+        elm_box_pack_end(dialog_data->box, lb);
+        evas_object_show(lb);
+
+        dialog_data->entry = entry = elm_entry_add(dialog_data->box);
+        elm_entry_single_line_set(entry, EINA_TRUE);
+        elm_entry_scrollable_set(entry, EINA_TRUE);
+        elm_entry_entry_set(entry, default_value);
+        evas_object_size_hint_align_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
+        evas_object_size_hint_weight_set(entry, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+        elm_box_pack_end(dialog_data->box, entry);
+        evas_object_show(entry);
+
+        _dialog_ok_cancel_buttons_add(dialog_data);
+
+        evas_object_show(dialog);
+     }
+
+   if (dialog) _exec_dialog(dialog);
+
+   if (!value) return NULL;
+
+   ret = eina_stringshare_add(value);
+   free(value);
+   return ret;
+}
+
 /**
  * Creates a new view object given the parent.
  *
@@ -78,6 +535,15 @@ _view_add(Evas_Object *parent)
         // TODO: by default, but user could override it to show as inwin.
         api.sc.add = _view_smart_add;
         api.sc.del = _view_smart_del;
+        api.window_create = _view_smart_window_create;
+        api.window_close = _view_smart_window_close;
+        api.popup_menu_show = _view_smart_popup_menu_show;
+        api.popup_menu_hide = _view_smart_popup_menu_hide;
+        api.fullscreen_enter = _view_smart_fullscreen_enter;
+        api.fullscreen_exit = _view_smart_fullscreen_exit;
+        api.run_javascript_alert = _view_smart_run_javascript_alert;
+        api.run_javascript_confirm = _view_smart_run_javascript_confirm;
+        api.run_javascript_prompt = _view_smart_run_javascript_prompt;
 
         smart = evas_smart_class_new(&api.sc);
         if (!smart)
@@ -131,8 +597,46 @@ elm_need_web(void)
    return EINA_TRUE;
 }
 
-static void
-_elm_web_smart_add(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static Eina_Bool
+_elm_web_elm_widget_theme_apply(Eo *obj, Elm_Web_Data *sd EINA_UNUSED)
+{
+   (void)obj;
+   return EINA_TRUE;
+}
+
+EOLIAN static Eina_Bool
+_elm_web_elm_widget_on_focus(Eo *obj, Elm_Web_Data *sd)
+{
+   (void)obj;
+   (void)sd;
+   return EINA_TRUE;
+}
+
+EOLIAN static Eina_Bool
+_elm_web_elm_widget_event(Eo *obj, Elm_Web_Data *sd, Evas_Object *src, Evas_Callback_Type type, void *event_info)
+{
+   (void)obj;
+   (void)sd;
+   (void)src;
+   (void)type;
+   (void)event_info;
+   return EINA_FALSE;
+}
+
+EOLIAN static Eina_Bool
+_elm_web_tab_propagate_get(Eo *obj EINA_UNUSED, Elm_Web_Data *sd)
+{
+   return sd->tab_propagate;
+}
+
+EOLIAN static void
+_elm_web_tab_propagate_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Eina_Bool propagate)
+{
+   sd->tab_propagate = propagate;
+}
+
+EOLIAN static void
+_elm_web_evas_object_smart_add(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
 #ifdef HAVE_ELEMENTARY_WEB
    Evas_Object *resize_obj;
@@ -151,8 +655,8 @@ _elm_web_smart_add(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
 #endif
 }
 
-static void
-_elm_web_smart_del(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_web_evas_object_smart_del(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
    eo_do_super(obj, MY_CLASS, evas_obj_smart_del());
 }
@@ -166,75 +670,54 @@ elm_web_add(Evas_Object *parent)
    return obj;
 }
 
-static void
-_constructor(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_web_eo_base_constructor(Eo *obj, Elm_Web_Data *sd)
 {
-
-   Elm_Web_Smart_Data *sd = _pd;
    sd->obj = obj;
    eo_do_super(obj, MY_CLASS, eo_constructor());
    eo_do(obj,
          evas_obj_type_set(MY_CLASS_NAME_LEGACY),
-         evas_obj_smart_callbacks_descriptions_set(_elm_web_smart_callbacks, NULL));
+         evas_obj_smart_callbacks_descriptions_set(_elm_web_smart_callbacks));
 }
 
-EAPI Evas_Object *
-elm_web_webkit_view_get(const Evas_Object *obj)
+EOLIAN static Evas_Object*
+_elm_web_webkit_view_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) NULL;
-   Evas_Object *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_webkit_view_get(&ret));
-   return ret;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, NULL);
+   return wd->resize_obj;
 }
 
-static void
-_webkit_view_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_web_window_create_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Elm_Web_Window_Open func, void *data)
 {
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-   *ret = wd->resize_obj;
+   sd->hook.window_create = func;
+   sd->hook.window_create_data = data;
 }
 
-EAPI void
-elm_web_window_create_hook_set(Evas_Object *obj,
-                               Elm_Web_Window_Open func,
-                               void *data)
+EOLIAN static void
+_elm_web_dialog_alert_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Elm_Web_Dialog_Alert func, void *data)
 {
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_window_create_hook_set(func, data));
+   sd->hook.alert = func;
+   sd->hook.alert_data = data;
 }
 
-static void
-_window_create_hook_set(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_web_dialog_confirm_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Elm_Web_Dialog_Confirm func, void *data)
 {
-   Elm_Web_Window_Open func = va_arg(*list, Elm_Web_Window_Open);
-   void *data = va_arg(*list, void *);
-#ifdef HAVE_ELEMENTARY_WEB
-  (void)func;
-  (void)data;
-#else
-  (void)func;
-  (void)data;
-#endif
+   sd->hook.confirm = func;
+   sd->hook.confirm_data = data;
 }
 
-EAPI void
-elm_web_dialog_alert_hook_set(Evas_Object *obj,
-                              Elm_Web_Dialog_Alert func,
-                              void *data)
+EOLIAN static void
+_elm_web_dialog_prompt_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Elm_Web_Dialog_Prompt func, void *data)
 {
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_dialog_alert_hook_set(func, data));
+   sd->hook.prompt = func;
+   sd->hook.prompt_data = data;
 }
 
-static void
-_dialog_alert_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_web_dialog_file_selector_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *_pd EINA_UNUSED, Elm_Web_Dialog_File_Selector func, void *data)
 {
-   Elm_Web_Dialog_Alert func = va_arg(*list, Elm_Web_Dialog_Alert);
-   void *data = va_arg(*list, void *);
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)func;
    (void)data;
@@ -246,22 +729,9 @@ _dialog_alert_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
 #endif
 }
 
-EAPI void
-elm_web_dialog_confirm_hook_set(Evas_Object *obj,
-                                Elm_Web_Dialog_Confirm func,
-                                void *data)
+EOLIAN static void
+_elm_web_console_message_hook_set(Eo *obj EINA_UNUSED, Elm_Web_Data *_pd EINA_UNUSED, Elm_Web_Console_Message func, void *data)
 {
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_dialog_confirm_hook_set(func, data));
-}
-
-static void
-_dialog_confirm_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Web_Dialog_Confirm func = va_arg(*list, Elm_Web_Dialog_Confirm);
-   void *data = va_arg(*list, void *);
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)func;
    (void)data;
@@ -273,99 +743,9 @@ _dialog_confirm_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
 #endif
 }
 
-EAPI void
-elm_web_dialog_prompt_hook_set(Evas_Object *obj,
-                               Elm_Web_Dialog_Prompt func,
-                               void *data)
+EOLIAN static void
+_elm_web_useragent_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, const char *user_agent)
 {
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_dialog_prompt_hook_set(func, data));
-}
-
-static void
-_dialog_prompt_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Web_Dialog_Prompt func = va_arg(*list, Elm_Web_Dialog_Prompt);
-   void *data = va_arg(*list, void *);
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)func;
-   (void)data;
-   (void)_pd;
-#else
-   (void)func;
-   (void)data;
-   (void)_pd;
-#endif
-}
-
-EAPI void
-elm_web_dialog_file_selector_hook_set(Evas_Object *obj,
-                                      Elm_Web_Dialog_File_Selector func,
-                                      void *data)
-{
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_dialog_file_selector_hook_set(func, data));
-}
-
-static void
-_dialog_file_selector_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Web_Dialog_File_Selector func = va_arg(*list, Elm_Web_Dialog_File_Selector);
-   void *data = va_arg(*list, void *);
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)func;
-   (void)data;
-   (void)_pd;
-#else
-   (void)func;
-   (void)data;
-   (void)_pd;
-#endif
-}
-
-EAPI void
-elm_web_console_message_hook_set(Evas_Object *obj,
-                                 Elm_Web_Console_Message func,
-                                 void *data)
-{
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_console_message_hook_set(func, data));
-}
-
-static void
-_console_message_hook_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Web_Console_Message func = va_arg(*list, Elm_Web_Console_Message);
-   void *data = va_arg(*list, void *);
-
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)func;
-   (void)data;
-   (void)_pd;
-#else
-   (void)func;
-   (void)data;
-   (void)_pd;
-#endif
-}
-
-EAPI void
-elm_web_useragent_set(Evas_Object *obj,
-                      const char *user_agent)
-{
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_useragent_set(user_agent));
-}
-
-static void
-_useragent_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char *user_agent = va_arg(*list, const char *);
-
 #ifdef HAVE_ELEMENTARY_WEB
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
@@ -376,27 +756,16 @@ _useragent_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
 #endif
 }
 
-EAPI const char *
-elm_web_useragent_get(const Evas_Object *obj)
+EOLIAN static const char*
+_elm_web_useragent_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_useragent_get(&ret));
-   return ret;
-}
-
-static void
-_useragent_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char **ret = va_arg(*list, const char **);
-
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, NULL);
 
-   *ret = ewk_view_user_agent_get(wd->resize_obj);
+   return ewk_view_user_agent_get(wd->resize_obj);
 #else
-   *ret = NULL;
    (void)obj;
+   return NULL;
 #endif
 }
 
@@ -406,201 +775,76 @@ elm_web_uri_set(Evas_Object *obj,
 {
    ELM_WEB_CHECK(obj) EINA_FALSE;
    Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_url_set(url, &ret));
+   eo_do(obj, ret = elm_obj_web_url_set(url));
    return ret;
 }
 
-EAPI Eina_Bool
-elm_web_url_set(Evas_Object *obj,
-                const char *url)
+EOLIAN static Eina_Bool
+_elm_web_url_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, const char *url)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_url_set(url, &ret));
-   return ret;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
+   return ewk_view_url_set(wd->resize_obj, url);
 }
 
-static void
-_url_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static const char*
+_elm_web_url_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-
-   const char *url = va_arg(*list, const char *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
-   Eina_Bool int_ret = EINA_FALSE;
-   int_ret = ewk_view_url_set(wd->resize_obj, url);
-   if (ret) *ret = int_ret;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, NULL);
+   return ewk_view_url_get(wd->resize_obj);
 }
 
-EAPI const char *
-elm_web_uri_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_web_html_string_load(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, const char *html, const char *base_url, const char *unreachable_url)
 {
-   ELM_WEB_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_url_get(&ret));
-   return ret;
-}
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
 
-EAPI const char *
-elm_web_url_get(const Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_url_get(&ret));
-   return ret;
-}
-
-static void
-_url_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char **ret = va_arg(*list, const char **);
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-   *ret = ewk_view_url_get(wd->resize_obj);
-}
-
-EAPI Eina_Bool
-elm_web_html_string_load(Evas_Object *obj, const char *html, const char *base_url, const char *unreachable_url)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_html_string_load(html, base_url, unreachable_url, &ret));
-   return ret;
-}
-
-static void
-_html_string_load(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char *html = va_arg(*list, const char *);
-   const char *base_url = va_arg(*list, const char *);
-   const char *unreachable_url = va_arg(*list, const char *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-
-   if (ret) *ret = EINA_FALSE;
-
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-
-   if (ret) *ret = ewk_view_html_string_load(wd->resize_obj,
+   return ewk_view_html_string_load(wd->resize_obj,
                                              html, base_url, unreachable_url);
 }
 
-EAPI const char *
-elm_web_title_get(const Evas_Object *obj)
+EOLIAN static const char*
+_elm_web_title_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_title_get(&ret));
-   return ret;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, NULL);
+   return ewk_view_title_get(wd->resize_obj);
 }
 
-static void
-_title_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_web_bg_color_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int r, int g, int b, int a)
 {
-   const char **ret = va_arg(*list, const char **);
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-   *ret = ewk_view_title_get(wd->resize_obj);
+
+   ewk_view_bg_color_set(wd->resize_obj, r, g, b, a);
 }
 
-EAPI void
-elm_web_bg_color_set(Evas_Object *obj,
-                     int r,
-                     int g,
-                     int b,
-                     int a)
+EOLIAN static void
+_elm_web_bg_color_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int *r, int *g, int *b, int *a)
 {
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_bg_color_set(r, g, b, a));
-}
-
-static void
-_bg_color_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   int r = va_arg(*list, int);
-   int g = va_arg(*list, int);
-   int b = va_arg(*list, int);
-   int a = va_arg(*list, int);
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)obj;
-   (void)r;
-   (void)g;
-   (void)b;
-   (void)a;
-#else
-   (void)obj;
-   (void)r;
-   (void)g;
-   (void)b;
-   (void)a;
-#endif
-}
-
-EAPI void
-elm_web_bg_color_get(const Evas_Object *obj,
-                     int *r,
-                     int *g,
-                     int *b,
-                     int *a)
-{
-   ELM_WEB_CHECK(obj);
-
-   eo_do((Eo *) obj, elm_obj_web_bg_color_get(r, g, b, a));
-}
-
-static void
-_bg_color_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   int *r = va_arg(*list, int *);
-   int *g = va_arg(*list, int *);
-   int *b = va_arg(*list, int *);
-   int *a = va_arg(*list, int *);
-
    if (r) *r = 0;
    if (g) *g = 0;
    if (b) *b = 0;
    if (a) *a = 0;
+
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+
+   return ewk_view_bg_color_get(wd->resize_obj, r, g, b, a);
+}
+
+EOLIAN static const char*
+_elm_web_selection_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
+{
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
+   return NULL;
 #else
    (void)obj;
+   return NULL;
 #endif
 }
 
-EAPI const char *
-elm_web_selection_get(const Evas_Object *obj)
+EOLIAN static void
+_elm_web_popup_selected_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int idx)
 {
-   ELM_WEB_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_web_selection_get(&ret));
-   return ret;
-}
-
-static void
-_selection_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char **ret = va_arg(*list, const char **);
-#ifdef HAVE_ELEMENTARY_WEB
-   *ret = NULL;
-   (void)obj;
-#else
-   *ret = NULL;
-   (void)obj;
-#endif
-}
-
-EAPI void
-elm_web_popup_selected_set(Evas_Object *obj,
-                           int idx)
-{
-   ELM_WEB_CHECK(obj);
-
-   eo_do(obj, elm_obj_web_popup_selected_set(idx));
-}
-
-static void
-_popup_selected_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   int idx = va_arg(*list, int);
 #ifdef HAVE_ELEMENTARY_WEB
    (void)idx;
    (void)obj;
@@ -610,50 +854,21 @@ _popup_selected_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
 #endif
 }
 
-EAPI Eina_Bool
-elm_web_popup_destroy(Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_web_popup_destroy(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_popup_destroy(&ret));
-   return ret;
-}
-
-static void
-_popup_destroy(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
 #else
    (void)obj;
 #endif
+
+   return EINA_FALSE;
 }
 
-EAPI Eina_Bool
-elm_web_text_search(const Evas_Object *obj,
-                    const char *string,
-                    Eina_Bool case_sensitive,
-                    Eina_Bool forward,
-                    Eina_Bool wrap)
+EOLIAN static Eina_Bool
+_elm_web_text_search(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, const char *string, Eina_Bool case_sensitive, Eina_Bool forward, Eina_Bool wrap)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_web_text_search(string, case_sensitive, forward, wrap, &ret));
-   return ret;
-}
-
-static void
-_text_search(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char *string = va_arg(*list, const char *);
-   Eina_Bool case_sensitive = va_arg(*list, int);
-   Eina_Bool forward = va_arg(*list, int);
-   Eina_Bool wrap = va_arg(*list, int);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)string;
    (void)case_sensitive;
@@ -667,31 +882,13 @@ _text_search(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
    (void)wrap;
    (void)obj;
 #endif
+
+   return EINA_FALSE;
 }
 
-EAPI unsigned int
-elm_web_text_matches_mark(Evas_Object *obj,
-                          const char *string,
-                          Eina_Bool case_sensitive,
-                          Eina_Bool highlight,
-                          unsigned int limit)
+EOLIAN static unsigned int
+_elm_web_text_matches_mark(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, const char *string, Eina_Bool case_sensitive, Eina_Bool highlight, unsigned int limit)
 {
-   ELM_WEB_CHECK(obj) 0;
-   unsigned int ret = 0;
-   eo_do(obj, elm_obj_web_text_matches_mark(string, case_sensitive, highlight, limit, &ret));
-   return ret;
-}
-
-static void
-_text_matches_mark(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   const char *string = va_arg(*list, const char *);
-   Eina_Bool case_sensitive = va_arg(*list, int);
-   Eina_Bool highlight = va_arg(*list, int);
-   unsigned int limit = va_arg(*list, unsigned int);
-   unsigned int *ret = va_arg(*list, unsigned int *);
-   if (ret) *ret = 0;
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)string;
    (void)case_sensitive;
@@ -705,48 +902,25 @@ _text_matches_mark(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
    (void)limit;
    (void)obj;
 #endif
+
+   return 0;
 }
 
-EAPI Eina_Bool
-elm_web_text_matches_unmark_all(Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_web_text_matches_unmark_all(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_text_matches_unmark_all(&ret));
-   return ret;
-}
-
-static void
-_text_matches_unmark_all(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
 #else
    (void)obj;
 #endif
+
+   return EINA_FALSE;
 }
 
-EAPI Eina_Bool
-elm_web_text_matches_highlight_set(Evas_Object *obj,
-                                   Eina_Bool highlight)
+EOLIAN static Eina_Bool
+_elm_web_text_matches_highlight_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, Eina_Bool highlight)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_text_matches_highlight_set(highlight, &ret));
-   return ret;
-}
-
-static void
-_text_matches_highlight_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool highlight = va_arg(*list, int);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
    (void)highlight;
@@ -754,332 +928,216 @@ _text_matches_highlight_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
    (void)obj;
    (void)highlight;
 #endif
+
+   return EINA_FALSE;
 }
 
-EAPI Eina_Bool
-elm_web_text_matches_highlight_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_web_text_matches_highlight_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *)obj, elm_obj_web_text_matches_highlight_get(&ret));
-   return ret;
-}
-
-static void
-_text_matches_highlight_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
 #else
    (void)obj;
 #endif
+
+   return EINA_FALSE;
 }
 
-EAPI double
-elm_web_load_progress_get(const Evas_Object *obj)
+EOLIAN static double
+_elm_web_load_progress_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) - 1.0;
-   double ret = - 1.0;
-   eo_do((Eo *) obj, elm_obj_web_load_progress_get(&ret));
-   return ret;
-}
-
-static void
-_load_progress_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   double *ret = va_arg(*list, double *);
-   *ret = -1.0;
+   double ret;
+   ret = -1.0;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   *ret = ewk_view_load_progress_get(wd->resize_obj);
-#else
-   (void)obj;
-#endif
-}
-
-EAPI Eina_Bool
-elm_web_stop(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_stop(&ret));
-   return ret;
-}
-
-static void
-_stop(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-
-#ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-
-   int_ret = ewk_view_stop(wd->resize_obj);
+   ret = ewk_view_load_progress_get(wd->resize_obj);
 #else
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_reload(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_reload(&ret));
    return ret;
 }
 
-static void
-_reload(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_stop(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   Eina_Bool ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   int_ret = ewk_view_reload(wd->resize_obj);
+   ret = ewk_view_stop(wd->resize_obj);
 #else
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_reload_full(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_reload_full(&ret));
    return ret;
 }
 
-static void
-_reload_full(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_reload(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   Eina_Bool ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   int_ret = ewk_view_reload_bypass_cache(wd->resize_obj);
+   ret = ewk_view_reload(wd->resize_obj);
 #else
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_back(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_back(&ret));
    return ret;
 }
 
-static void
-_back(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_reload_full(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   Eina_Bool ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   int_ret = ewk_view_back(wd->resize_obj);
+   ret = ewk_view_reload_bypass_cache(wd->resize_obj);
 #else
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_forward(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_forward(&ret));
    return ret;
 }
 
-static void
-_forward(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_back(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   Eina_Bool ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   int_ret = ewk_view_forward(wd->resize_obj);
+   ret = ewk_view_back(wd->resize_obj);
 #else
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_navigate(Evas_Object *obj,
-                 int steps)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_navigate(steps, &ret));
    return ret;
 }
 
-static void
-_navigate(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_forward(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool int_ret = EINA_FALSE;
+   Eina_Bool ret = EINA_FALSE;
 
-   int steps = va_arg(*list, int);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+#ifdef HAVE_ELEMENTARY_WEB
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
+
+   ret = ewk_view_forward(wd->resize_obj);
+#else
+   (void)obj;
+#endif
+
+   return ret;
+}
+
+EOLIAN static Eina_Bool
+_elm_web_navigate(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int steps)
+{
+   Eina_Bool ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
    Ewk_Back_Forward_List *history;
    Ewk_Back_Forward_List_Item *item = NULL;
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
    history = ewk_view_back_forward_list_get(wd->resize_obj);
    if (history)
      {
         item = ewk_back_forward_list_item_at_index_get(history, steps);
-        if (item) int_ret = ewk_view_navigate_to(wd->resize_obj, item);
+        if (item) ret = ewk_view_navigate_to(wd->resize_obj, item);
      }
 #else
    (void)steps;
    (void)obj;
 #endif
 
-   if (ret) *ret = int_ret;
-}
-
-EAPI Eina_Bool
-elm_web_back_possible_get(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_back_possible_get(&ret));
    return ret;
 }
 
-static void
-_back_possible_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_back_possible_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_FALSE;
+   Eina_Bool ret;
+   ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   *ret = ewk_view_back_possible(wd->resize_obj);
+   ret = ewk_view_back_possible(wd->resize_obj);
 #else
    (void)obj;
 #endif
-}
 
-EAPI Eina_Bool
-elm_web_forward_possible_get(Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_forward_possible_get(&ret));
    return ret;
 }
 
-static void
-_forward_possible_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_forward_possible_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_FALSE;
+   Eina_Bool ret;
+   ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
-   *ret = ewk_view_forward_possible(wd->resize_obj);
+   ret = ewk_view_forward_possible(wd->resize_obj);
 #else
    (void)obj;
 #endif
-}
 
-EAPI Eina_Bool
-elm_web_navigate_possible_get(Evas_Object *obj,
-                              int steps)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do(obj, elm_obj_web_navigate_possible_get(steps, &ret));
    return ret;
 }
 
-static void
-_navigate_possible_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_navigate_possible_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int steps)
 {
-   int steps = va_arg(*list, int);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_FALSE;
+   Eina_Bool ret;
+   ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
    Ewk_Back_Forward_List *history;
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, ret);
 
    history = ewk_view_back_forward_list_get(wd->resize_obj);
    if (history && ewk_back_forward_list_item_at_index_get(history, steps))
-     *ret = EINA_TRUE;
+     ret = EINA_TRUE;
 #else
    (void)steps;
    (void)obj;
 #endif
-}
 
-EAPI Eina_Bool
-elm_web_history_enabled_get(const Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_web_history_enabled_get(&ret));
    return ret;
 }
 
-static void
-_history_enabled_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_history_enabled_get(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_FALSE;
+   Eina_Bool ret;
+   ret = EINA_FALSE;
 
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
 #else
    (void)obj;
 #endif
+
+   return ret;
 }
 
-EAPI void
-elm_web_history_enabled_set(Evas_Object *obj,
-                            Eina_Bool enable)
+EOLIAN static void
+_elm_web_history_enabled_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, Eina_Bool enable)
 {
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_history_enabled_set(enable));
-}
-
-static void
-_history_enabled_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
-{
-   Eina_Bool enable = va_arg(*list, int);
 #ifdef HAVE_ELEMENTARY_WEB
    (void)enable;
    (void)obj;
@@ -1089,64 +1147,25 @@ _history_enabled_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
 #endif
 }
 
-EAPI void
-elm_web_zoom_set(Evas_Object *obj,
-                 double zoom)
+EOLIAN static void
+_elm_web_zoom_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, double zoom)
 {
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_zoom_set(zoom));
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+
+   ewk_view_page_zoom_set(wd->resize_obj, zoom);
 }
 
-static void
-_zoom_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static double
+_elm_web_zoom_get(Eo *obj EINA_UNUSED, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   double zoom = va_arg(*list, double);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, -1);
 
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)obj;
-   (void)_pd;
-   (void)zoom;
-#else
-   (void)obj;
-   (void)_pd;
-   (void)zoom;
-#endif
+   return ewk_view_page_zoom_get(wd->resize_obj);
 }
 
-EAPI double
-elm_web_zoom_get(const Evas_Object *obj)
+EOLIAN static void
+_elm_web_zoom_mode_set(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, Elm_Web_Zoom_Mode mode)
 {
-   ELM_WEB_CHECK(obj) - 1.0;
-   double ret = - 1.0;
-   eo_do((Eo *) obj, elm_obj_web_zoom_get(&ret));
-   return ret;
-}
-
-static void
-_zoom_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   double *ret = va_arg(*list, double *);
-   *ret = -1.0;
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)_pd;
-#else
-   (void)_pd;
-#endif
-}
-
-EAPI void
-elm_web_zoom_mode_set(Evas_Object *obj,
-                      Elm_Web_Zoom_Mode mode)
-{
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_zoom_mode_set(mode));
-}
-
-static void
-_zoom_mode_set(Eo *obj, void *_pd, va_list *list)
-{
-   Elm_Web_Zoom_Mode mode = va_arg(*list, Elm_Web_Zoom_Mode);
-
 #ifdef HAVE_ELEMENTARY_WEB
    (void)obj;
    (void)_pd;
@@ -1158,45 +1177,23 @@ _zoom_mode_set(Eo *obj, void *_pd, va_list *list)
 #endif
 }
 
-EAPI Elm_Web_Zoom_Mode
-elm_web_zoom_mode_get(const Evas_Object *obj)
+EOLIAN static Elm_Web_Zoom_Mode
+_elm_web_zoom_mode_get(Eo *obj EINA_UNUSED, Elm_Web_Data *_pd EINA_UNUSED)
 {
-   ELM_WEB_CHECK(obj) ELM_WEB_ZOOM_MODE_LAST;
-   Elm_Web_Zoom_Mode ret = ELM_WEB_ZOOM_MODE_LAST;
-   eo_do((Eo *) obj, elm_obj_web_zoom_mode_get(&ret));
-   return ret;
-}
-
-static void
-_zoom_mode_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Web_Zoom_Mode *ret = va_arg(*list, Elm_Web_Zoom_Mode *);
-   *ret = ELM_WEB_ZOOM_MODE_LAST;
+   Elm_Web_Zoom_Mode ret;
+   ret = ELM_WEB_ZOOM_MODE_LAST;
 #ifdef HAVE_ELEMENTARY_WEB
    (void)_pd;
 #else
    (void)_pd;
 #endif
+
+   return ret;
 }
 
-EAPI void
-elm_web_region_show(Evas_Object *obj,
-                    int x,
-                    int y,
-                    int w EINA_UNUSED,
-                    int h EINA_UNUSED)
+EOLIAN static void
+_elm_web_region_show(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int x, int y, int w, int h)
 {
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_region_show(x, y, w, h));
-}
-
-static void
-_region_show(Eo *obj, void *_pd, va_list *list)
-{
-   int x = va_arg(*list, int);
-   int y = va_arg(*list, int);
-   int w = va_arg(*list, int);
-   int h = va_arg(*list, int);
    (void)w;
    (void)h;
 
@@ -1213,24 +1210,9 @@ _region_show(Eo *obj, void *_pd, va_list *list)
 #endif
 }
 
-EAPI void
-elm_web_region_bring_in(Evas_Object *obj,
-                        int x,
-                        int y,
-                        int w EINA_UNUSED,
-                        int h EINA_UNUSED)
+EOLIAN static void
+_elm_web_region_bring_in(Eo *obj, Elm_Web_Data *_pd EINA_UNUSED, int x, int y, int w, int h)
 {
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_region_bring_in(x, y, w, h));
-}
-
-static void
-_region_bring_in(Eo *obj, void *_pd, va_list *list)
-{
-   int x = va_arg(*list, int);
-   int y = va_arg(*list, int);
-   int w = va_arg(*list, int);
-   int h = va_arg(*list, int);
    (void)w;
    (void)h;
 
@@ -1247,69 +1229,56 @@ _region_bring_in(Eo *obj, void *_pd, va_list *list)
 #endif
 }
 
-EAPI void
-elm_web_inwin_mode_set(Evas_Object *obj,
-                       Eina_Bool value)
+EOLIAN static void
+_elm_web_inwin_mode_set(Eo *obj EINA_UNUSED, Elm_Web_Data *sd, Eina_Bool value)
 {
-   ELM_WEB_CHECK(obj);
-   eo_do(obj, elm_obj_web_inwin_mode_set(value));
+   sd->inwin_mode = value;
 }
 
-static void
-_inwin_mode_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_web_inwin_mode_get(Eo *obj EINA_UNUSED, Elm_Web_Data *sd)
 {
-   Eina_Bool value = va_arg(*list, int);
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)_pd;
-   (void)value;
-#else
-   (void)_pd;
-   (void)value;
-#endif
-}
-
-EAPI Eina_Bool
-elm_web_inwin_mode_get(const Evas_Object *obj)
-{
-   ELM_WEB_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_web_inwin_mode_get(&ret));
-   return ret;
-}
-
-static void
-_inwin_mode_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_FALSE;
-#ifdef HAVE_ELEMENTARY_WEB
-   (void)_pd;
-#else
-   (void)_pd;
-#endif
+   return sd->inwin_mode;
 }
 
 EAPI void
 elm_web_window_features_ref(Elm_Web_Window_Features *wf)
 {
-   // FIXME : need to implement
-   (void)wf;
+   ewk_object_ref((Ewk_Object *)wf);
 }
 
 EAPI void
 elm_web_window_features_unref(Elm_Web_Window_Features *wf)
 {
-   // FIXME : need to implement
-   (void)wf;
+   ewk_object_unref((Ewk_Object *)wf);
 }
 
 EAPI Eina_Bool
 elm_web_window_features_property_get(const Elm_Web_Window_Features *wf,
                                      Elm_Web_Window_Feature_Flag flag)
 {
-   // FIXME : need to implement
-   (void)wf;
-   (void)flag;
+   const Ewk_Window_Features *ewf = (const Ewk_Window_Features *)wf;
+   switch (flag)
+     {
+      case ELM_WEB_WINDOW_FEATURE_TOOLBAR:
+        return ewk_window_features_toolbar_visible_get(ewf);
+
+      case ELM_WEB_WINDOW_FEATURE_STATUSBAR:
+        return ewk_window_features_statusbar_visible_get(ewf);
+
+      case ELM_WEB_WINDOW_FEATURE_SCROLLBARS:
+        return ewk_window_features_scrollbars_visible_get(ewf);
+
+      case ELM_WEB_WINDOW_FEATURE_MENUBAR:
+        return ewk_window_features_menubar_visible_get(ewf);
+
+      case ELM_WEB_WINDOW_FEATURE_LOCATIONBAR:
+        return ewk_window_features_locationbar_visible_get(ewf);
+
+      case ELM_WEB_WINDOW_FEATURE_FULLSCREEN:
+        return ewk_window_features_fullscreen_get(ewf);
+     }
+
    return EINA_FALSE;
 }
 
@@ -1320,136 +1289,16 @@ elm_web_window_features_region_get(const Elm_Web_Window_Features *wf,
                                    Evas_Coord *w,
                                    Evas_Coord *h)
 {
-   // FIXME : need to implement
-   (void)wf;
-   (void)x;
-   (void)y;
-   (void)w;
-   (void)h;
-   return;
+   ewk_window_features_geometry_get
+     ((const Ewk_Window_Features *)wf, x, y, w, h);
 }
-#endif
 
-#if defined(HAVE_ELEMENTARY_WEB) && defined(USE_WEBKIT2)
 static void
-_class_constructor(Eo_Class *klass)
+_elm_web_class_constructor(Eo_Class *klass)
 {
-   const Eo_Op_Func_Description func_desc[] = {
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _constructor),
-
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_ADD), _elm_web_smart_add),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_DEL), _elm_web_smart_del),
-
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_WEBKIT_VIEW_GET), _webkit_view_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_WINDOW_CREATE_HOOK_SET), _window_create_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_DIALOG_ALERT_HOOK_SET), _dialog_alert_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_DIALOG_CONFIRM_HOOK_SET), _dialog_confirm_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_DIALOG_PROMPT_HOOK_SET), _dialog_prompt_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_DIALOG_FILE_SELECTOR_HOOK_SET), _dialog_file_selector_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_CONSOLE_MESSAGE_HOOK_SET), _console_message_hook_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_USERAGENT_SET), _useragent_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_USERAGENT_GET), _useragent_get),
-
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_URL_SET), _url_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_URL_GET), _url_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_HTML_STRING_LOAD), _html_string_load),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TITLE_GET), _title_get),
-
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_BG_COLOR_SET), _bg_color_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_BG_COLOR_GET), _bg_color_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_SELECTION_GET), _selection_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_POPUP_SELECTED_SET), _popup_selected_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_POPUP_DESTROY), _popup_destroy),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TEXT_SEARCH), _text_search),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_MARK), _text_matches_mark),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_UNMARK_ALL), _text_matches_unmark_all),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_HIGHLIGHT_SET), _text_matches_highlight_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_HIGHLIGHT_GET), _text_matches_highlight_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_LOAD_PROGRESS_GET), _load_progress_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_STOP), _stop),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_RELOAD), _reload),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_RELOAD_FULL), _reload_full),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_BACK), _back),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_FORWARD), _forward),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_NAVIGATE), _navigate),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_BACK_POSSIBLE_GET), _back_possible_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_FORWARD_POSSIBLE_GET), _forward_possible_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_NAVIGATE_POSSIBLE_GET), _navigate_possible_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_HISTORY_ENABLED_GET), _history_enabled_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_HISTORY_ENABLED_SET), _history_enabled_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_ZOOM_SET), _zoom_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_ZOOM_GET), _zoom_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_ZOOM_MODE_SET), _zoom_mode_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_ZOOM_MODE_GET), _zoom_mode_get),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_REGION_SHOW), _region_show),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_REGION_BRING_IN), _region_bring_in),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_INWIN_MODE_SET), _inwin_mode_set),
-        EO_OP_FUNC(ELM_OBJ_WEB_ID(ELM_OBJ_WEB_SUB_ID_INWIN_MODE_GET), _inwin_mode_get),
-        EO_OP_FUNC_SENTINEL
-   };
-   eo_class_funcs_set(klass, func_desc);
-
    evas_smart_legacy_type_register(MY_CLASS_NAME_LEGACY, klass);
 }
-static const Eo_Op_Description op_desc[] = {
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_WEBKIT_VIEW_GET, "Get internal ewk_view object from web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_WINDOW_CREATE_HOOK_SET, "Sets the function to call when a new window is requested."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_DIALOG_ALERT_HOOK_SET, "Sets the function to call when an alert dialog."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_DIALOG_CONFIRM_HOOK_SET, "Sets the function to call when an confirm dialog."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_DIALOG_PROMPT_HOOK_SET, "Sets the function to call when an prompt dialog."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_DIALOG_FILE_SELECTOR_HOOK_SET, "Sets the function to call when an file selector dialog."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_CONSOLE_MESSAGE_HOOK_SET, "Sets the function to call when a console message is emitted from JS."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_USERAGENT_SET, "Change useragent of a elm_web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_USERAGENT_GET, "Return current useragent of elm_web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TAB_PROPAGATE_GET, "Get the status of the tab propagation."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TAB_PROPAGATE_SET, "Sets whether to use tab propagation."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_URL_SET, "Sets the URL for the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_URL_GET, "Get the current URL for the object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_HTML_STRING_LOAD, "Loads the specified html string as the content of the object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TITLE_GET, "Get the current title."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_BG_COLOR_SET, "Sets the background color to be used by the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_BG_COLOR_GET, "Get the background color to be used by the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_SELECTION_GET, "Get a copy of the currently selected text."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_POPUP_SELECTED_SET, "Tells the web object which index in the currently open popup was selected."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_POPUP_DESTROY, "Dismisses an open dropdown popup."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TEXT_SEARCH, "Searches the given string in a document."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_MARK, "Marks matches of the given string in a document."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_UNMARK_ALL, "Clears all marked matches in the document."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_HIGHLIGHT_SET, "Sets whether to highlight the matched marks."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_TEXT_MATCHES_HIGHLIGHT_GET, "Get whether highlighting marks is enabled."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_LOAD_PROGRESS_GET, "Get the overall loading progress of the page."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_STOP, "Stops loading the current page."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_RELOAD, "Requests a reload of the current document in the object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_RELOAD_FULL, "Requests a reload of the current document, avoiding any existing caches."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_BACK, "Goes back one step in the browsing history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_FORWARD, "Goes forward one step in the browsing history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_NAVIGATE, "Jumps the given number of steps in the browsing history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_BACK_POSSIBLE_GET, "Queries whether it's possible to go back in history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_FORWARD_POSSIBLE_GET, "Queries whether it's possible to go forward in history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_NAVIGATE_POSSIBLE_GET, "Queries whether it's possible to jump the given number of steps."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_HISTORY_ENABLED_GET, "Get whether browsing history is enabled for the given object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_HISTORY_ENABLED_SET, "Enables or disables the browsing history."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_ZOOM_SET, "Sets the zoom level of the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_ZOOM_GET, "Get the current zoom level set on the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_ZOOM_MODE_SET, "Sets the zoom mode to use."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_ZOOM_MODE_GET, "Get the currently set zoom mode."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_REGION_SHOW, "Shows the given region in the web object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_REGION_BRING_IN, "Brings in the region to the visible area."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_INWIN_MODE_SET, "Sets the default dialogs to use an Inwin instead of a normal window."),
-     EO_OP_DESCRIPTION(ELM_OBJ_WEB_SUB_ID_INWIN_MODE_GET, "Get whether Inwin mode is set for the current object."),
-     EO_OP_DESCRIPTION_SENTINEL
-};
 
-static const Eo_Class_Description class_desc = {
-     EO_VERSION,
-     MY_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_WEB_BASE_ID, op_desc, ELM_OBJ_WEB_SUB_ID_LAST),
-     NULL,
-     sizeof(Elm_Web_Smart_Data),
-     _class_constructor,
-     NULL
-};
+#include "elm_web.eo.c"
 
-EO_DEFINE_CLASS(elm_obj_web_class_get, &class_desc, ELM_OBJ_WIDGET_CLASS, NULL);
 #endif

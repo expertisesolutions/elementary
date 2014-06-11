@@ -103,7 +103,7 @@ group { name: "elm/ews/decoration/default";
          }
       }
       part { name: "elm.text.title"; type: TEXT;
-         scale: 1;
+         scale: 1; nomouse;
          effect: SHADOW BOTTOM;
          description { state: "default" 0.0;
             color_class: "border_title";
@@ -114,8 +114,7 @@ group { name: "elm/ews/decoration/default";
             rel2.offset: -2 -3;
             rel2.to_x: "e.event.minimize";
             align: 0.5 1.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             text { font: FNBD; size: 10;
                text_class: "title_bar";
                align: 0.5 0.0;
@@ -129,7 +128,7 @@ group { name: "elm/ews/decoration/default";
          }
       }
       part { name: "title2"; type: TEXT;
-         scale: 1;
+         scale: 1; nomouse;
          effect: SOFT_SHADOW BOTTOM;
          description { state: "default" 0.0;
             color_class: "border_title_active";
@@ -140,8 +139,7 @@ group { name: "elm/ews/decoration/default";
             rel2.offset: -1 2;
             rel2.to_x: "e.event.minimize";
             align: 0.5 1.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 18;
+            color: FN_COL_DEFAULT_SOFT_SHADOW;
             text { font: FNBD; size: 10;
                text_source: "elm.text.title";
                text_class: "title_bar";
@@ -172,7 +170,7 @@ group { name: "elm/ews/decoration/default";
             rel2.relative: 1.0 0.85;
          }
       }
-      part { name: "e.swallow.icon"; type: SWALLOW;
+      part { name: "e.swallow.icon"; type: SWALLOW; nomouse;
          description { state: "default" 0.0;
             rel1.to: "icon";
             rel1.relative: 0.15 0.15;
@@ -214,7 +212,7 @@ group { name: "elm/ews/decoration/default";
             visible: 1;
          }
       }
-      part { name: "close1";
+      part { name: "close1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_close_dark_normal.png";
@@ -229,7 +227,7 @@ group { name: "elm/ews/decoration/default";
             image.normal: "sym_close_dark_selected.png";
          }
       }
-      part { name: "max1";
+      part { name: "max1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_up_dark_normal.png";
@@ -244,7 +242,7 @@ group { name: "elm/ews/decoration/default";
             image.normal: "sym_up_dark_selected.png";
          }
       }
-      part { name: "min1";
+      part { name: "min1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_down_dark_normal.png";
@@ -259,7 +257,7 @@ group { name: "elm/ews/decoration/default";
             image.normal: "sym_down_dark_selected.png";
          }
       }
-      part { name: "close2";
+      part { name: "close2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_close_light_normal.png";
@@ -274,7 +272,7 @@ group { name: "elm/ews/decoration/default";
             image.normal: "sym_close_light_selected.png";
          }
       }
-      part { name: "max2";
+      part { name: "max2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_up_light_normal.png";
@@ -289,7 +287,7 @@ group { name: "elm/ews/decoration/default";
             image.normal: "sym_up_light_selected.png";
          }
       }
-      part { name: "min2";
+      part { name: "min2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_down_light_normal.png";
@@ -453,7 +451,7 @@ group { name: "elm/ews/decoration/default";
             visible: 0;
          }
       }
-      part { name: "bevel2";
+      part { name: "bevel2"; nomouse;
          description { state: "default" 0.0;
             image.normal: "bevel_dark_out.png";
             image.border: 1 1 1 1;
@@ -916,7 +914,7 @@ group { name: "elm/border/base/default";
          }
       }
       part { name: "elm.text.title"; type: TEXT;
-         scale: 1;
+         scale: 1; nomouse;
          effect: SHADOW BOTTOM;
          description { state: "default" 0.0;
             color_class: "border_title";
@@ -929,8 +927,7 @@ group { name: "elm/border/base/default";
             rel2.to_x: "e.event.minimize";
             rel2.to_y: "frame";
             align: 0.5 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             text { font: FNBD; size: 10;
                text_class: "title_bar";
                align: 0.5 0.0;
@@ -944,7 +941,7 @@ group { name: "elm/border/base/default";
          }
       }
       part { name: "title2"; type: TEXT;
-         scale: 1;
+         scale: 1; nomouse;
          effect: SOFT_SHADOW BOTTOM;
          description { state: "default" 0.0;
             color_class: "border_title_active";
@@ -957,8 +954,7 @@ group { name: "elm/border/base/default";
             rel2.to_x: "e.event.minimize";
             rel2.to_y: "frame";
             align: 0.5 0.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 18;
+            color: FN_COL_DEFAULT_SOFT_SHADOW;
             text { font: FNBD; size: 10;
                text_source: "elm.text.title";
                text_class: "title_bar";
@@ -989,7 +985,7 @@ group { name: "elm/border/base/default";
             rel2.relative: 1.0 0.85;
          }
       }
-      part { name: "elm.swallow.icon"; type: SWALLOW;
+      part { name: "elm.swallow.icon"; type: SWALLOW; nomouse;
          description { state: "default" 0.0;
             rel1.to: "icon";
             rel1.relative: 0.15 0.15;
@@ -1063,7 +1059,7 @@ group { name: "elm/border/base/default";
             visible: 1;
          }
       }
-      part { name: "close1";
+      part { name: "close1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_close_dark_normal.png";
@@ -1078,7 +1074,7 @@ group { name: "elm/border/base/default";
             image.normal: "sym_close_dark_selected.png";
          }
       }
-      part { name: "max1";
+      part { name: "max1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_up_dark_normal.png";
@@ -1093,7 +1089,7 @@ group { name: "elm/border/base/default";
             image.normal: "sym_up_dark_selected.png";
          }
       }
-      part { name: "min1";
+      part { name: "min1"; nomouse;
          clip_to: "clip1";
          description { state: "default" 0.0;
             image.normal: "sym_down_dark_normal.png";
@@ -1108,7 +1104,7 @@ group { name: "elm/border/base/default";
             image.normal: "sym_down_dark_selected.png";
          }
       }
-      part { name: "close2";
+      part { name: "close2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_close_light_normal.png";
@@ -1123,7 +1119,7 @@ group { name: "elm/border/base/default";
             image.normal: "sym_close_light_selected.png";
          }
       }
-      part { name: "max2";
+      part { name: "max2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_up_light_normal.png";
@@ -1138,7 +1134,7 @@ group { name: "elm/border/base/default";
             image.normal: "sym_up_light_selected.png";
          }
       }
-      part { name: "min2";
+      part { name: "min2"; nomouse;
          clip_to: "clip2";
          description { state: "default" 0.0;
             image.normal: "sym_down_light_normal.png";
@@ -1275,7 +1271,7 @@ group { name: "elm/border/base/default";
             visible: 0;
          }
       }
-      part { name: "bevel2";
+      part { name: "bevel2"; nomouse;
          description { state: "default" 0.0;
             image.normal: "bevel_dark_out.png";
             image.border: 1 1 1 1;

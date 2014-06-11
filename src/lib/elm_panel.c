@@ -7,9 +7,13 @@
 #include "elm_priv.h"
 #include "elm_widget_panel.h"
 
-EAPI Eo_Op ELM_OBJ_PANEL_BASE_ID = EO_NOOP;
+#include "els_box.h"
 
-#define MY_CLASS ELM_OBJ_PANEL_CLASS
+#define ELM_INTERFACE_ATSPI_ACCESSIBLE_PROTECTED
+#include "elm_interface_atspi_accessible.h"
+#include "elm_interface_atspi_accessible.eo.h"
+
+#define MY_CLASS ELM_PANEL_CLASS
 
 #define MY_CLASS_NAME "Elm_Panel"
 #define MY_CLASS_NAME_LEGACY "elm_panel"
@@ -20,22 +24,29 @@ static const Evas_Smart_Cb_Description _smart_callbacks[] = {
    {NULL, NULL}
 };
 
+static Eina_Bool _key_action_toggle(Evas_Object *obj, const char *params);
+
+static const Elm_Action key_actions[] = {
+   {"toggle", _key_action_toggle},
+   {NULL, NULL}
+};
+
 static void
 _mirrored_set(Evas_Object *obj,
               Eina_Bool rtl)
 {
    ELM_PANEL_DATA_GET(obj, sd);
 
-   elm_widget_mirrored_set(sd->bx, rtl);
+   if ((sd->content) && (eo_isa(sd->content, ELM_WIDGET_CLASS)))
+     elm_widget_mirrored_set(sd->content, rtl);
    elm_panel_orient_set(obj, elm_panel_orient_get(obj));
 }
 
-static void
-_elm_panel_smart_sizing_eval(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_panel_elm_layout_sizing_eval(Eo *obj, Elm_Panel_Data *sd)
 {
    Evas_Coord mw = -1, mh = -1;
 
-   Elm_Panel_Smart_Data *sd = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
    if (sd->delete_me) return;
@@ -121,21 +132,18 @@ _orient_set_do(Evas_Object *obj)
      }
 }
 
-static void
-_elm_panel_smart_theme(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_panel_elm_widget_theme_apply(Eo *obj, Elm_Panel_Data *sd)
 {
    const char *str;
    Evas_Coord minw = 0, minh = 0;
-   Elm_Panel_Smart_Data *sd = _pd;
 
    Eina_Bool int_ret = EINA_FALSE;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
 
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
 
-   eo_do_super(obj, MY_CLASS, elm_wdg_theme_apply(&int_ret));
-   if (!int_ret) return;
+   eo_do_super(obj, MY_CLASS, int_ret = elm_obj_widget_theme_apply());
+   if (!int_ret) return EINA_FALSE;
 
    _mirrored_set(obj, elm_widget_mirrored_get(obj));
 
@@ -158,38 +166,28 @@ _elm_panel_smart_theme(Eo *obj, void *_pd, va_list *list)
 
    elm_layout_sizing_eval(obj);
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_panel_smart_focus_next_manager_is(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_panel_elm_widget_focus_next_manager_is(Eo *obj EINA_UNUSED, Elm_Panel_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_panel_smart_focus_next(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_panel_elm_widget_focus_next(Eo *obj, Elm_Panel_Data *sd, Elm_Focus_Direction dir, Evas_Object **next)
 {
    Evas_Object *cur;
-   Elm_Focus_Direction dir = va_arg(*list, Elm_Focus_Direction);
-   Evas_Object **next =  va_arg(*list, Evas_Object **);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Eina_Bool int_ret = EINA_FALSE;
 
-   Elm_Panel_Smart_Data *sd = _pd;
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
 
-   if (!sd->content) goto end;
+   if (!sd->content) return EINA_FALSE;
 
    cur = sd->content;
 
    /* Try to Focus cycle in subitem */
-   if (!sd->hidden)
-     {
-        int_ret = elm_widget_focus_next_get(cur, dir, next);
-        goto end;
-     }
+   if (!sd->hidden) return elm_widget_focus_next_get(cur, dir, next);
 
    /* access */
    if (_elm_config->access_mode != ELM_ACCESS_MODE_OFF)
@@ -203,10 +201,7 @@ _elm_panel_smart_focus_next(Eo *obj, void *_pd, va_list *list)
 
    /* Return */
    *next = (Evas_Object *)obj;
-   int_ret = !elm_widget_focus_get(obj);
-
-end:
-   if (ret) *ret = int_ret;
+   return !elm_widget_focus_get(obj);
 }
 
 static void
@@ -247,50 +242,38 @@ _panel_toggle(void *data EINA_UNUSED,
    edje_object_message_signal_process(wd->resize_obj);
 }
 
-static void
-_elm_panel_smart_event(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+static Eina_Bool
+_key_action_toggle(Evas_Object *obj, const char *params EINA_UNUSED)
 {
-
-   Evas_Object *src = va_arg(*list, Evas_Object *);
-   Evas_Callback_Type type = va_arg(*list, Evas_Callback_Type);
-   Evas_Event_Key_Down *ev = va_arg(*list, void *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-
-   if (ret) *ret = EINA_FALSE;
-
-   if (elm_widget_disabled_get(obj)) return;
-   if (type != EVAS_CALLBACK_KEY_DOWN) return;
-   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return;
-   if (src != obj) return;
-
-   if ((strcmp(ev->key, "Return")) &&
-       (strcmp(ev->key, "KP_Enter")) &&
-       (strcmp(ev->key, "space")))
-     return;
-
    _panel_toggle(NULL, obj, NULL, NULL);
-
-   ev->event_flags |= EVAS_EVENT_FLAG_ON_HOLD;
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_panel_smart_content_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_panel_elm_widget_event(Eo *obj, Elm_Panel_Data *_pd EINA_UNUSED, Evas_Object *src, Evas_Callback_Type type, void *event_info)
 {
-   const char *part = va_arg(*list, const char *);
-   Evas_Object *content = va_arg(*list, Evas_Object *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Eina_Bool int_ret = EINA_TRUE;
+   Evas_Event_Key_Down *ev = event_info;
+   if (type != EVAS_CALLBACK_KEY_DOWN) return EINA_FALSE;
+   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return EINA_FALSE;
+   if (src != obj) return EINA_FALSE;
 
-   Elm_Panel_Smart_Data *sd = _pd;
+   if (!_elm_config_key_binding_call(obj, ev, key_actions)) return EINA_FALSE;
 
+   ev->event_flags |= EVAS_EVENT_FLAG_ON_HOLD;
+   return EINA_TRUE;
+}
+
+EOLIAN static Eina_Bool
+_elm_panel_elm_container_content_set(Eo *obj, Elm_Panel_Data *sd, const char *part, Evas_Object *content)
+{
    if (part && strcmp(part, "default"))
      {
-        eo_do_super(obj, MY_CLASS, elm_obj_container_content_set(part, content, &int_ret));
-        goto end;
+        Eina_Bool int_ret = EINA_TRUE;
+        eo_do_super(obj, MY_CLASS, int_ret = elm_obj_container_content_set(part, content));
+        return int_ret;
      }
 
-   if (sd->content == content) goto end;
+   if (sd->content == content) return EINA_TRUE;
    if (sd->content)
      evas_object_box_remove_all(sd->bx, EINA_TRUE);
    sd->content = content;
@@ -302,66 +285,52 @@ _elm_panel_smart_content_set(Eo *obj, void *_pd, va_list *list)
 
    elm_layout_sizing_eval(obj);
 
-end:
-   if (ret) *ret = int_ret;
-
+   return EINA_TRUE;
 }
 
-static void
-_elm_panel_smart_content_get(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Evas_Object*
+_elm_panel_elm_container_content_get(Eo *obj, Elm_Panel_Data *sd, const char *part)
 {
-   Elm_Panel_Smart_Data *sd = _pd;
-   const char *part = va_arg(*list, const char *);
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
-   if (!ret) return;
+   if (part && strcmp(part, "default"))
+     {
+        Evas_Object *ret = NULL;
+        eo_do_super(obj, MY_CLASS, ret = elm_obj_container_content_get(part));
+        return ret;
+     }
 
-   *ret = NULL;
+   return sd->content;
+}
+
+EOLIAN static Evas_Object*
+_elm_panel_elm_container_content_unset(Eo *obj, Elm_Panel_Data *sd, const char *part)
+{
+   Evas_Object *ret = NULL;
 
    if (part && strcmp(part, "default"))
      {
-        eo_do_super(obj, MY_CLASS, elm_obj_container_content_get(part, ret));
-        return;
+        eo_do_super(obj, MY_CLASS, ret = elm_obj_container_content_unset(part));
+        return ret;
      }
 
-   *ret = sd->content;
-}
-
-static void
-_elm_panel_smart_content_unset(Eo *obj, void *_pd, va_list *list)
-{
-   Evas_Object *content = NULL;
-
-   Elm_Panel_Smart_Data *sd = _pd;
-   const char *part = va_arg(*list, const char *);
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
-
-   if (part && strcmp(part, "default"))
-     {
-        eo_do_super(obj, MY_CLASS, elm_obj_container_content_unset(part, &content));
-        goto end;
-     }
-
-   if (!sd->content) goto end;
-   content = sd->content;
+   if (!sd->content) return NULL;
+   ret = sd->content;
 
    evas_object_box_remove_all(sd->bx, EINA_FALSE);
    sd->content = NULL;
 
-end:
-   if (ret) *ret = content;
+   return ret;
 }
 
-static void
-_elm_panel_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_panel_evas_object_smart_add(Eo *obj, Elm_Panel_Data *priv)
 {
-   Elm_Panel_Smart_Data *priv = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
    eo_do_super(obj, MY_CLASS, evas_obj_smart_add());
    elm_widget_sub_object_parent_add(obj);
    elm_widget_can_focus_set(obj, EINA_TRUE);
 
-   eo_do(obj, elm_wdg_theme_apply(NULL));
+   eo_do(obj, elm_obj_widget_theme_apply());
 
    priv->bx = evas_object_box_add(evas_object_evas_get(obj));
    evas_object_size_hint_align_set(priv->bx, 0.5, 0.5);
@@ -399,13 +368,12 @@ _elm_panel_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    elm_layout_sizing_eval(obj);
 }
 
-static void
-_elm_panel_smart_del(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_panel_evas_object_smart_del(Eo *obj, Elm_Panel_Data *sd)
 {
    Evas_Object *child;
    Eina_List *l;
 
-   Elm_Panel_Smart_Data *sd = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
    sd->delete_me = EINA_TRUE;
@@ -425,12 +393,11 @@ _elm_panel_smart_del(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    eo_do_super(obj, MY_CLASS, evas_obj_smart_del());
 }
 
-static void
-_elm_panel_smart_access(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_panel_elm_widget_access(Eo *obj, Elm_Panel_Data *_pd EINA_UNUSED, Eina_Bool is_access)
 {
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
-   Eina_Bool is_access = va_arg(*list, int);
    if (is_access)
      _elm_access_edje_object_part_object_register
        (obj, wd->resize_obj, "btn_icon");
@@ -448,29 +415,19 @@ elm_panel_add(Evas_Object *parent)
    return obj;
 }
 
-static void
-_constructor(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_panel_eo_base_constructor(Eo *obj, Elm_Panel_Data *_pd EINA_UNUSED)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
    eo_do(obj,
          evas_obj_type_set(MY_CLASS_NAME_LEGACY),
-         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks, NULL));
+         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks),
+         elm_interface_atspi_accessible_role_set(ELM_ATSPI_ROLE_PANEL));
 }
 
-EAPI void
-elm_panel_orient_set(Evas_Object *obj,
-                     Elm_Panel_Orient orient)
+EOLIAN static void
+_elm_panel_orient_set(Eo *obj, Elm_Panel_Data *sd, Elm_Panel_Orient orient)
 {
-   ELM_PANEL_CHECK(obj);
-   eo_do(obj, elm_obj_panel_orient_set(orient));
-}
-
-static void
-_orient_set(Eo *obj, void *_pd, va_list *list)
-{
-   Elm_Panel_Orient orient = va_arg(*list, Elm_Panel_Orient);
-   Elm_Panel_Smart_Data *sd = _pd;
-
    if (sd->orient == orient) return;
    sd->orient = orient;
 
@@ -479,121 +436,36 @@ _orient_set(Eo *obj, void *_pd, va_list *list)
    elm_layout_sizing_eval(obj);
 }
 
-EAPI Elm_Panel_Orient
-elm_panel_orient_get(const Evas_Object *obj)
+EOLIAN static Elm_Panel_Orient
+_elm_panel_orient_get(Eo *obj EINA_UNUSED, Elm_Panel_Data *sd)
 {
-   ELM_PANEL_CHECK(obj) ELM_PANEL_ORIENT_LEFT;
-   Elm_Panel_Orient ret = ELM_PANEL_ORIENT_LEFT;
-   eo_do((Eo *) obj, elm_obj_panel_orient_get(&ret));
-   return ret;
+   return sd->orient;
 }
 
-static void
-_orient_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_panel_hidden_set(Eo *obj, Elm_Panel_Data *sd, Eina_Bool hidden)
 {
-   Elm_Panel_Orient *ret = va_arg(*list, Elm_Panel_Orient *);
-   Elm_Panel_Smart_Data *sd = _pd;
-
-   if (ret) *ret = sd->orient;
-}
-
-EAPI void
-elm_panel_hidden_set(Evas_Object *obj,
-                     Eina_Bool hidden)
-{
-   ELM_PANEL_CHECK(obj);
-   eo_do(obj, elm_obj_panel_hidden_set(hidden));
-}
-
-static void
-_hidden_set(Eo *obj, void *_pd, va_list *list)
-{
-   Eina_Bool hidden = va_arg(*list, int);
-   Elm_Panel_Smart_Data *sd = _pd;
-
    if (sd->hidden == !!hidden) return;
 
    _panel_toggle(NULL, obj, NULL, NULL);
 }
 
-EAPI Eina_Bool
-elm_panel_hidden_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_panel_hidden_get(Eo *obj EINA_UNUSED, Elm_Panel_Data *sd)
 {
-   ELM_PANEL_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_panel_hidden_get(&ret));
-   return ret;
+   return sd->hidden;
 }
 
-static void
-_hidden_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Elm_Panel_Smart_Data *sd = _pd;
-
-   if (ret) *ret = sd->hidden;
-}
-
-EAPI void
-elm_panel_toggle(Evas_Object *obj)
-{
-   ELM_PANEL_CHECK(obj);
-   eo_do(obj, elm_obj_panel_toggle());
-}
-
-static void
-_toggle(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_panel_toggle(Eo *obj, Elm_Panel_Data *_pd EINA_UNUSED)
 {
    _panel_toggle(NULL, obj, NULL, NULL);
 }
 
 static void
-_class_constructor(Eo_Class *klass)
+_elm_panel_class_constructor(Eo_Class *klass)
 {
-   const Eo_Op_Func_Description func_desc[] = {
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _constructor),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_ADD), _elm_panel_smart_add),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_DEL), _elm_panel_smart_del),
-
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_MANAGER_IS), _elm_panel_smart_focus_next_manager_is),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT), _elm_panel_smart_focus_next),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_APPLY), _elm_panel_smart_theme),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT), _elm_panel_smart_event),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS), _elm_panel_smart_access),
-
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_SET), _elm_panel_smart_content_set),
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_GET), _elm_panel_smart_content_get),
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_UNSET), _elm_panel_smart_content_unset),
-
-        EO_OP_FUNC(ELM_OBJ_LAYOUT_ID(ELM_OBJ_LAYOUT_SUB_ID_SIZING_EVAL), _elm_panel_smart_sizing_eval),
-
-        EO_OP_FUNC(ELM_OBJ_PANEL_ID(ELM_OBJ_PANEL_SUB_ID_ORIENT_SET), _orient_set),
-        EO_OP_FUNC(ELM_OBJ_PANEL_ID(ELM_OBJ_PANEL_SUB_ID_ORIENT_GET), _orient_get),
-        EO_OP_FUNC(ELM_OBJ_PANEL_ID(ELM_OBJ_PANEL_SUB_ID_HIDDEN_SET), _hidden_set),
-        EO_OP_FUNC(ELM_OBJ_PANEL_ID(ELM_OBJ_PANEL_SUB_ID_HIDDEN_GET), _hidden_get),
-        EO_OP_FUNC(ELM_OBJ_PANEL_ID(ELM_OBJ_PANEL_SUB_ID_TOGGLE), _toggle),
-        EO_OP_FUNC_SENTINEL
-   };
-   eo_class_funcs_set(klass, func_desc);
-
    evas_smart_legacy_type_register(MY_CLASS_NAME_LEGACY, klass);
 }
-static const Eo_Op_Description op_desc[] = {
-     EO_OP_DESCRIPTION(ELM_OBJ_PANEL_SUB_ID_ORIENT_SET, "Sets the orientation of the panel."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PANEL_SUB_ID_ORIENT_GET, "Get the orientation of the panel."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PANEL_SUB_ID_HIDDEN_SET, "Set the state of the panel."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PANEL_SUB_ID_HIDDEN_GET, "Get the state of the panel."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PANEL_SUB_ID_TOGGLE, "Toggle the hidden state of the panel from code."),
-     EO_OP_DESCRIPTION_SENTINEL
-};
-static const Eo_Class_Description class_desc = {
-     EO_VERSION,
-     MY_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_PANEL_BASE_ID, op_desc, ELM_OBJ_PANEL_SUB_ID_LAST),
-     NULL,
-     sizeof(Elm_Panel_Smart_Data),
-     _class_constructor,
-     NULL
-};
-EO_DEFINE_CLASS(elm_obj_panel_class_get, &class_desc, ELM_OBJ_LAYOUT_CLASS, NULL);
+
+#include "elm_panel.eo.c"

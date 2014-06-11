@@ -216,6 +216,7 @@ group { name: "elm/flipselector/base/default";
             rel2.offset: -3 -1;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
             }
             color: FN_COL_DEFAULT;
@@ -283,6 +284,7 @@ group { name: "elm/flipselector/base/default";
             rel2.offset: -3 -1;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
             }
             color: FN_COL_DEFAULT;
@@ -320,16 +322,15 @@ group { name: "elm/flipselector/base/default";
             rel2.offset: -3 -1;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                source: "elm.top";
             }
-            color: 192 192 192 255;
-            color3: 0 0 0 128;
+            color: FN_COL_GREY_192;
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 16 16 16 255;
-            color3: 255 255 255 25;
+            color: FN_COL_GREY_16;
          }
       }
       part { name: "top_shine_prev"; mouse_events: 0;
@@ -365,10 +366,10 @@ group { name: "elm/flipselector/base/default";
             rel2.offset: -3 -3;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
             }
-            color: 192 192 192 255;
-            color3: 0 0 0 128;
+            color: FN_COL_GREY_192;
          }
          description { state: "shrink" 0.0;
             inherit: "default" 0.0;
@@ -377,8 +378,7 @@ group { name: "elm/flipselector/base/default";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 16 16 16 255;
-            color3: 255 255 255 25;
+            color: FN_COL_GREY_16;
          }
       }
       part { name: "top_shine_cur"; mouse_events: 0;

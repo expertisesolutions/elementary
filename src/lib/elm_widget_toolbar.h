@@ -2,7 +2,6 @@
 #define ELM_WIDGET_TOOLBAR_H
 
 #include "elm_interface_scrollable.h"
-#include "els_box.h"
 
 /**
  * @addtogroup Widget
@@ -20,8 +19,8 @@ typedef struct _Elm_Toolbar_Item Elm_Toolbar_Item;
 /**
  * Base widget smart data extended with toolbar instance data.
  */
-typedef struct _Elm_Toolbar_Smart_Data Elm_Toolbar_Smart_Data;
-struct _Elm_Toolbar_Smart_Data
+typedef struct _Elm_Toolbar_Data Elm_Toolbar_Data;
+struct _Elm_Toolbar_Data
 {
    Evas_Object                          *hit_rect;
 
@@ -30,7 +29,9 @@ struct _Elm_Toolbar_Smart_Data
    Eina_Inlist                          *items;
    Elm_Toolbar_Item                     *more_item;
    Elm_Toolbar_Item                     *selected_item; /**< a selected item by mouse click, return key, api, and etc. */
-   Elm_Toolbar_Item                     *highlighted_item; /**< a highlighted item by keypard arrow */
+   Elm_Object_Item                      *focused_item; /**< a focused item by keypad arrow or mouse. This is set to NULL if widget looses focus. */
+   Elm_Object_Item                      *last_focused_item; /**< This records the last focused item when widget looses focus. This is required to set the focus on last focused item when widgets gets focus. */
+   Elm_Object_Item                      *prev_focused_item; /**< a previous focused item by keypad arrow or mouse. */
    Elm_Toolbar_Item                     *reorder_empty, *reorder_item;
    Elm_Toolbar_Shrink_Mode               shrink_mode;
    Elm_Icon_Lookup_Order                 lookup_order;
@@ -50,6 +51,7 @@ struct _Elm_Toolbar_Smart_Data
    Eina_Bool                             delete_me : 1;
    Eina_Bool                             reorder_mode : 1;
    Eina_Bool                             transverse_expanded : 1;
+   Eina_Bool                             mouse_down : 1; /**< a flag that mouse is down on the toolbar at the moment. This flag is set to true on mouse and reset to false on mouse up. */
 };
 
 struct _Elm_Toolbar_Item
@@ -96,7 +98,7 @@ struct _Elm_Toolbar_Item_State
  */
 
 #define ELM_TOOLBAR_DATA_GET(o, sd) \
-  Elm_Toolbar_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_TOOLBAR_CLASS)
+  Elm_Toolbar_Data * sd = eo_data_scope_get(o, ELM_TOOLBAR_CLASS)
 
 #define ELM_TOOLBAR_DATA_GET_OR_RETURN(o, ptr)       \
   ELM_TOOLBAR_DATA_GET(o, ptr);                      \
@@ -117,7 +119,7 @@ struct _Elm_Toolbar_Item_State
     }
 
 #define ELM_TOOLBAR_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_TOOLBAR_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_TOOLBAR_CLASS))) \
     return
 
 #define ELM_TOOLBAR_ITEM_CHECK(it)                          \
@@ -130,6 +132,6 @@ struct _Elm_Toolbar_Item_State
 
 #define ELM_TOOLBAR_ITEM_CHECK_OR_GOTO(it, label)              \
   ELM_WIDGET_ITEM_CHECK_OR_GOTO((Elm_Widget_Item *)it, label); \
-  if (!it->base.widget || !eo_isa ((it->base.widget), ELM_OBJ_TOOLBAR_CLASS)) goto label;
+  if (!it->base.widget || !eo_isa ((it->base.widget), ELM_TOOLBAR_CLASS)) goto label;
 
 #endif

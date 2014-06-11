@@ -19,8 +19,8 @@ typedef struct _Slice               Slice;
 /**
  * Base widget smart data extended with flip instance data.
  */
-typedef struct _Elm_Flip_Smart_Data Elm_Flip_Smart_Data;
-struct _Elm_Flip_Smart_Data
+typedef struct _Elm_Flip_Data Elm_Flip_Data;
+struct _Elm_Flip_Data
 {
    Evas_Object          *obj;
    Evas_Object          *clip;
@@ -44,7 +44,7 @@ struct _Elm_Flip_Smart_Data
 
    Eina_Bool             state : 1;
    Eina_Bool             next_state : 1;
-   Eina_Bool             down : 1;
+   Eina_Bool             mouse_down : 1;
    Eina_Bool             finish : 1;
    Eina_Bool             started : 1;
    Eina_Bool             backflip : 1;
@@ -76,7 +76,7 @@ struct _Vertex3
  */
 
 #define ELM_FLIP_DATA_GET(o, sd) \
-  Elm_Flip_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_FLIP_CLASS)
+  Elm_Flip_Data * sd = eo_data_scope_get(o, ELM_FLIP_CLASS)
 
 #define ELM_FLIP_DATA_GET_OR_RETURN(o, ptr)          \
   ELM_FLIP_DATA_GET(o, ptr);                         \
@@ -97,7 +97,7 @@ struct _Vertex3
     }
 
 #define ELM_FLIP_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_FLIP_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_FLIP_CLASS))) \
     return
 
 #endif

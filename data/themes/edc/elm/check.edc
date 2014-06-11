@@ -174,6 +174,7 @@ group { name: "elm/check/base/default";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -183,6 +184,7 @@ group { name: "elm/check/base/default";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -195,8 +197,7 @@ group { name: "elm/check/base/default";
             rel1.to_x: "elm.swallow.content";
             rel1.relative: 1.0 0.0;
             rel2.offset: -3 -3;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "check_text";
             text { font: FN; size: 10;
               min: 0 0;
@@ -206,20 +207,20 @@ group { name: "elm/check/base/default";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
          }
          description { state: "visible" 0.0;
             inherit: "default" 0.0;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
          description { state: "disabled_visible" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
       }
       part { name: "event"; type: RECT;
@@ -457,8 +458,7 @@ group { name: "elm/check/base/toggle";
             rel1.to: "button";
             rel1.relative: 1.0 0.0;
             rel2.to: "offrect";
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "check_off_text";
             text { font: FN; size: 10;
                min: 0 1;
@@ -469,8 +469,7 @@ group { name: "elm/check/base/toggle";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
          }
       }
       part { name: "elm.ontext"; type: TEXT; mouse_events:  0;
@@ -484,9 +483,7 @@ group { name: "elm/check/base/toggle";
             rel2.to: "button";
             rel2.relative: 0.0 1.0;
             rel2.offset: -1 -2;
-            color: 51 153 255 255;
-            color2: 51 153 255 24;
-            color3: 51 153 255 18;
+            color: FN_COL_HIGHLIGHT;
             color_class: "check_on_text";
             text { font: FN; size: 10;
                min: 0 1;
@@ -497,9 +494,7 @@ group { name: "elm/check/base/toggle";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 51 153 255 64;
-            color2: 51 153 255 16;
-            color3: 51 153 255 8;
+            color: FN_COL_HIGHLIGHT_DISABLE;
          }
       }
       part { name: "shadow"; mouse_events: 0;
@@ -653,6 +648,7 @@ group { name: "elm/check/base/toggle";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -662,6 +658,7 @@ group { name: "elm/check/base/toggle";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -676,8 +673,7 @@ group { name: "elm/check/base/toggle";
             rel2.to_x: "tog";
             rel2.relative: 0.0 1.0;
             rel2.offset: -5 -3;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "check_text";
             text { font: FN; size: 10;
               min: 0 0;
@@ -687,20 +683,20 @@ group { name: "elm/check/base/toggle";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
          }
          description { state: "visible" 0.0;
             inherit: "default" 0.0;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
          description { state: "disabled_visible" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
       }
       part { name: "event"; type: RECT;

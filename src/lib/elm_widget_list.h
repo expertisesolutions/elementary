@@ -20,13 +20,16 @@
 /**
  * Base widget smart data extended with list instance data.
  */
-typedef struct _Elm_List_Smart_Data Elm_List_Smart_Data;
-struct _Elm_List_Smart_Data
+typedef struct _Elm_List_Data Elm_List_Data;
+struct _Elm_List_Data
 {
    Evas_Object                          *box, *hit_rect;
 
    Eina_List                            *items, *selected, *to_delete;
    Elm_Object_Item                      *last_selected_item;
+   Elm_Object_Item                      *focused_item; /**< a focused item by keypad arrow or mouse. This is set to NULL if widget looses focus. */
+   Elm_Object_Item                      *prev_focused_item; /**< a previous focused item by keypad arrow or mouse. */
+   Elm_Object_Item                      *last_focused_item; /**< This records the last focused item when widget looses focus. This is required to set the focus on last focused item when widgets gets focus. */
    Evas_Coord                            minw[2], minh[2];
    Elm_Object_Select_Mode                select_mode;
    Elm_Object_Multi_Select_Mode          multi_select_mode; /**< select mode for multiple selection */
@@ -50,14 +53,14 @@ struct _Elm_List_Smart_Data
    Eina_Bool                             multi : 1;
    Eina_Bool                             swipe : 1;
    Eina_Bool                             delete_me : 1;
+   Eina_Bool                             mouse_down : 1; /**< a flag that mouse is down on the list at the moment. this flag is set to true on mouse and reset to false on mouse up */
+   Eina_Bool                             item_loop_enable : 1; /**< value whether item loop feature is enabled or not. */
 };
 
 typedef struct _Elm_List_Item Elm_List_Item;
 struct _Elm_List_Item
 {
    ELM_WIDGET_ITEM;
-
-   Elm_List_Smart_Data *sd;
 
    Ecore_Timer         *swipe_timer;
    Ecore_Timer         *long_timer;
@@ -83,7 +86,7 @@ struct _Elm_List_Item
  */
 
 #define ELM_LIST_DATA_GET(o, sd) \
-  Elm_List_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_LIST_CLASS)
+  Elm_List_Data * sd = eo_data_scope_get(o, ELM_LIST_CLASS)
 
 #define ELM_LIST_DATA_GET_OR_RETURN(o, ptr)          \
   ELM_LIST_DATA_GET(o, ptr);                         \
@@ -104,7 +107,7 @@ struct _Elm_List_Item
     }
 
 #define ELM_LIST_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_LIST_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_LIST_CLASS))) \
     return
 
 #define ELM_LIST_ITEM_CHECK(it)                             \

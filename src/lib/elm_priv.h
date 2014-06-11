@@ -12,6 +12,9 @@
 #ifdef HAVE_ELEMENTARY_WAYLAND
 #include <Ecore_Wayland.h>
 #endif
+#ifdef HAVE_ELEMENTARY_DRM
+#include <Ecore_Drm.h>
+#endif
 
 #include <Eio.h>
 
@@ -76,6 +79,9 @@
 typedef struct _Elm_Theme_Files          Elm_Theme_Files;
 typedef struct _Edje_Signal_Data         Edje_Signal_Data;
 typedef struct _Elm_Config               Elm_Config;
+typedef struct _Elm_Config_Bindings_Widget   Elm_Config_Bindings_Widget;
+typedef struct _Elm_Config_Binding_Key   Elm_Config_Binding_Key;
+typedef struct _Elm_Config_Binding_Modifier  Elm_Config_Binding_Modifier;
 typedef struct _Elm_Module               Elm_Module;
 typedef struct _Elm_Datetime_Module_Data Elm_Datetime_Module_Data;
 
@@ -110,17 +116,18 @@ struct _Elm_Theme
    Eina_List  *referrers;
    const char *theme;
    int         ref;
+   Eina_Hash  *cache_style_load_failed;
 };
 
 /* increment this whenever we change config enough that you need new
  * defaults for elm to work.
  */
-#define ELM_CONFIG_EPOCH           0x0001
+#define ELM_CONFIG_EPOCH           0x0002
 /* increment this whenever a new set of config values are added but
  * the users config doesn't need to be wiped - simply new values need
  * to be put in
  */
-#define ELM_CONFIG_FILE_GENERATION 0x0004
+#define ELM_CONFIG_FILE_GENERATION 0x0001
 #define ELM_CONFIG_VERSION         ((ELM_CONFIG_EPOCH << 16) | \
                                     ELM_CONFIG_FILE_GENERATION)
 /* NB: profile configuration files (.src) must have their
@@ -148,11 +155,15 @@ extern const char *_elm_engines[];
 #define ELM_SOFTWARE_PSL1GHT  (_elm_engines[15])
 #define ELM_WAYLAND_SHM       (_elm_engines[16])
 #define ELM_WAYLAND_EGL       (_elm_engines[17])
+#define ELM_DRM               (_elm_engines[18])
 
 #define ELM_FONT_TOKEN_STYLE  ":style="
 
 #define ELM_ACCESS_MODE_OFF   EINA_FALSE
 #define ELM_ACCESS_MODE_ON    EINA_TRUE
+
+#define ELM_ATSPI_MODE_OFF   EINA_FALSE
+#define ELM_ATSPI_MODE_ON    EINA_TRUE
 
 /* convenience macro to compress code and avoid typos */
 #undef MIN
@@ -220,6 +231,10 @@ struct _Elm_Config
    unsigned char cursor_engine_only;
    unsigned char focus_highlight_enable;
    unsigned char focus_highlight_animate;
+   unsigned char focus_highlight_clip_disable; /**< This shows disabled status of focus highlight clip feature. This value is false by default so the focus highlight is clipped. */
+   unsigned char focus_move_policy; /**< This show how the elementary focus is moved to another object. Focus can be moved by click or mouse_in. */
+   unsigned char item_select_on_focus_disable; /**< This shows the disabled status of select on focus feature. This value is false by default so that select on focus feature is enabled by default.*/
+   Elm_Focus_Autoscroll_Mode focus_autoscroll_mode; /**< This shows the focus auto scroll mode. By default, @c ELM_FOCUS_AUTOSCROLL_MODE_SHOW is set. */
    int           toolbar_shrink_mode;
    unsigned char fileselector_expand_enable;
    unsigned char fileselector_double_tap_navigation_enable;
@@ -249,6 +264,7 @@ struct _Elm_Config
    int           weekend_len;
    int           year_min;
    int           year_max;
+   Eina_List    *color_overlays;
    Eina_List    *color_palette;
    unsigned char softcursor_mode;
    unsigned char auto_norender_withdrawn;
@@ -274,10 +290,33 @@ struct _Elm_Config
    unsigned char audio_mute_input;
    unsigned char audio_mute_alert;
    unsigned char audio_mute_all;
+   Eina_List    *bindings;
+   Eina_Bool     atspi_mode;
 
    /* Not part of the EET file */
    Eina_Bool     is_mirrored : 1;
    Eina_Bool     translate : 1;
+};
+
+struct _Elm_Config_Bindings_Widget
+{
+   const char   *name;
+   Eina_List    *key_bindings;
+};
+
+struct _Elm_Config_Binding_Key
+{
+   int           context;
+   const char   *key;
+   const char   *action;
+   const char   *params;
+   Eina_List    *modifiers;
+};
+
+struct _Elm_Config_Binding_Modifier
+{
+   const char   *mod;
+   unsigned char flag;
 };
 
 struct _Elm_Module
@@ -307,8 +346,13 @@ struct _Elm_Datetime_Module_Data
                                     Elm_Datetime_Field_Type field_type);
 };
 
+void                 _elm_atspi_init(void);
+void                 _elm_atspi_shutdown(void);
+Eo                   *_elm_atspi_root_get(void);
+
 void                 _elm_atspi_bridge_init(void);
 void                 _elm_atspi_bridge_shutdown(void);
+
 void                 _elm_prefs_init(void);
 void                 _elm_prefs_shutdown(void);
 
@@ -407,8 +451,22 @@ void                 _elm_config_font_overlay_apply(void);
 Eina_List           *_elm_config_text_classes_get(void);
 void                 _elm_config_text_classes_free(Eina_List *l);
 
+Eina_List           *_elm_config_color_classes_get(void);
+void                 _elm_config_color_classes_free(Eina_List *l);
+Eina_List           *_elm_config_color_overlays_list(void);
+void                 _elm_config_color_overlay_set(const char *color_class,
+                                                   int r, int g, int b, int a,
+                                                   int r2, int g2, int b2, int a2,
+                                                   int r3, int g3, int b3, int a3);
+void                 _elm_config_color_overlay_remove(const char *color_class);
+void                 _elm_config_color_overlay_apply(void);
+
 Eina_Bool            _elm_config_access_get(void);
 void                 _elm_config_access_set(Eina_Bool is_access);
+
+Eina_Bool            _elm_config_key_binding_call(Evas_Object *obj,
+                                                  const Evas_Event_Key_Down *ev,
+                                                  const Elm_Action *actions);
 
 Elm_Font_Properties *_elm_font_properties_get(Eina_Hash **font_hash,
                                               const char *font);
@@ -498,6 +556,7 @@ extern int _elm_log_dom;
 extern Eina_List *_elm_win_list;
 extern int _elm_win_deferred_free;
 extern const char *_elm_preferred_engine;
+extern const char *_elm_accel_preference;
 extern const char SIG_WIDGET_FOCUSED[];
 extern const char SIG_WIDGET_UNFOCUSED[];
 extern const char SIG_WIDGET_LANG_CHANGED[];

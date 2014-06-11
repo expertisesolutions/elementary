@@ -3,6 +3,8 @@
 #endif
 #include <Elementary.h>
 
+Evas_Object * _focus_autoscroll_mode_frame_create(Evas_Object *parent);
+
 /**** focus 1 ****/
 
 static Eina_Bool
@@ -55,6 +57,15 @@ static void
 _tb_sel(void *data EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
    printf("tb sel %p\n", obj);
+}
+
+static void
+_focus_anim_changed(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   if (elm_check_state_get(obj))
+     elm_win_focus_highlight_animate_set(data, EINA_TRUE);
+   else
+     elm_win_focus_highlight_animate_set(data, EINA_FALSE);
 }
 
 void
@@ -409,6 +420,24 @@ test_focus(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_inf
                }
           }
      }
+
+   Evas_Object *bx = elm_box_add(win);
+   evas_object_size_hint_weight_set(bx, EVAS_HINT_EXPAND,
+                                    EVAS_HINT_EXPAND);
+   elm_box_pack_end(tbx, bx);
+   my_show(bx);
+
+     {
+        Evas_Object *ck;
+        ck = elm_check_add(bx);
+        elm_object_text_set(ck, "Focus Highlight Animation Enable");
+        elm_check_state_set(ck, elm_config_focus_highlight_animate_get());
+        elm_box_pack_end(bx, ck);
+        my_show(ck);
+        evas_object_smart_callback_add(ck, "changed",
+                                       _focus_anim_changed,
+                                       win);
+     }
 }
 
 /**** focus 2 ****/
@@ -678,10 +707,26 @@ create_button(Evas_Object *parent, const char *text, Eina_Bool expand)
    return btn;
 }
 
+static void
+_focus_highlight_clip_disable_changed_cb(void *data EINA_UNUSED,
+                                         Evas_Object *obj,
+                                         void *event_info EINA_UNUSED)
+{
+   Eina_Bool disable = elm_check_state_get(obj);
+   elm_config_focus_highlight_clip_disabled_set(disable);
+}
+
+static void
+_horizontal_btn(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   Evas_Object *box_btn = data;
+   elm_box_horizontal_set(box_btn, elm_check_state_get(obj));
+}
+
 void
 test_focus3(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
-   Evas_Object *win, *box, *sc, *btn_top, *btn_down, *btn[20], *box_btn, *lb, *fr;
+   Evas_Object *win, *box, *sc, *btn_top, *btn_down, *btn[20], *box_btn, *lb, *fr, *ck;
 
    char win_focus_theme[PATH_MAX] = { 0 };
    char item_name[PATH_MAX];
@@ -696,7 +741,6 @@ test_focus3(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
    elm_win_focus_highlight_enabled_set(win, EINA_TRUE);
    elm_win_focus_highlight_animate_set(win, EINA_TRUE);
    elm_win_focus_highlight_style_set(win, "glow");
-   evas_object_resize(win, 320, 400);
 
    box = elm_box_add(win);
    evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -746,6 +790,26 @@ test_focus3(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
    evas_object_show(btn_down);
    elm_box_pack_end(box, btn_down);
 
+   ck = elm_check_add(box);
+   elm_object_text_set(ck, "Focus Highlight Clip Disable");
+   elm_check_state_set(ck, elm_config_focus_highlight_clip_disabled_get());
+   elm_box_pack_end(box, ck);
+   evas_object_show(ck);
+   evas_object_smart_callback_add(ck, "changed",
+                                  _focus_highlight_clip_disable_changed_cb,
+                                  NULL);
+
+   // Focus Autoscroll Mode
+   fr = _focus_autoscroll_mode_frame_create(box);
+   elm_box_pack_end(box, fr);
+
+   ck = elm_check_add(box);
+   elm_object_text_set(ck, "Horizontal Mode");
+   evas_object_smart_callback_add(ck, "changed", _horizontal_btn, box_btn);
+   elm_box_pack_end(box, ck);
+   evas_object_show(ck);
+
+   evas_object_resize(win, 320, 500);
    evas_object_show(win);
 }
 

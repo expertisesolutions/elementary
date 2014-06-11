@@ -3,6 +3,8 @@
 #endif
 #include <Elementary.h>
 
+Evas_Object * _focus_autoscroll_mode_frame_create(Evas_Object *parent);
+
 static void
 _tb_sel1_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
@@ -1045,5 +1047,243 @@ test_toolbar8(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_
    evas_object_show(tb);
 
    evas_object_resize(win, 420, 250);
+   evas_object_show(win);
+}
+
+static void
+_item_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   printf("%s: %p\n", (char *)data, event_info);
+}
+
+static void
+_test_toolbar_focus_focus_highlight_check_changed(void *data, Evas_Object *obj,
+                                                  void *event_info EINA_UNUSED)
+{
+   elm_win_focus_highlight_enabled_set(data,
+                                       elm_check_state_get(obj));
+}
+
+static void
+_test_toolbar_focus_focus_animate_check_changed(void *data, Evas_Object *obj,
+                                                void *event_info EINA_UNUSED)
+{
+   elm_win_focus_highlight_animate_set(data,
+                                       elm_check_state_get(obj));
+}
+
+static void
+_toolbar_focus_key_down_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED,
+                           Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   Evas_Event_Key_Down *ev = event_info;
+   printf("\n=== Key Down : %s ===\n", ev->keyname);
+}
+
+static Ecore_Timer *timer = NULL;
+static void
+_test_toolbar_focus_win_del_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED,
+                               Evas_Object *obj EINA_UNUSED,
+                               void *event_info EINA_UNUSED)
+{
+   ecore_timer_del(timer);
+   timer = NULL;
+}
+
+static Eina_Bool
+_focus_timer_cb(void *data)
+{
+   Elm_Object_Item *it = data;
+   elm_object_item_focus_set(it, EINA_TRUE);
+   timer = NULL;
+
+   return ECORE_CALLBACK_CANCEL;
+}
+
+static void
+_test_toolbar_focus_item_set_btn_cb(void *data, Evas_Object *obj EINA_UNUSED,
+                                    void *event_info EINA_UNUSED)
+{
+   ecore_timer_del(timer);
+   timer = ecore_timer_add(1.5, _focus_timer_cb, data);
+}
+
+static void
+_test_toolbar_focus_disable_item_btn_cb(void *data, Evas_Object *obj EINA_UNUSED,
+                                        void *event_info EINA_UNUSED)
+{
+   elm_object_item_disabled_set(data, EINA_TRUE);
+}
+
+static void
+test_toolbar_focus_focus_move_policy_changed(void *data EINA_UNUSED,
+                                             Evas_Object *obj,
+                                             void *event_info EINA_UNUSED)
+{
+   int val = elm_radio_value_get(obj);
+
+   if (val == 0)
+     elm_config_focus_move_policy_set(ELM_FOCUS_MOVE_POLICY_CLICK);
+   else if (val == 1)
+     elm_config_focus_move_policy_set(ELM_FOCUS_MOVE_POLICY_IN);
+}
+
+void
+test_toolbar_focus(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Evas_Object *win, *bx, *toolbar, *fr, *btn, *bx_opt, *chk, *bx_mv, *rd, *rdg;
+   Elm_Object_Item *tb_it, *it_0, *it_3;
+
+   win = elm_win_util_standard_add("toolbar-focus", "Toolbar Focus");
+   elm_win_autodel_set(win, EINA_TRUE);
+   evas_object_event_callback_add(win, EVAS_CALLBACK_DEL,
+                                  _test_toolbar_focus_win_del_cb, NULL);
+   elm_win_focus_highlight_enabled_set(win, EINA_TRUE);
+   elm_win_focus_highlight_animate_set(win, EINA_TRUE);
+
+   bx = elm_box_add(win);
+   evas_object_size_hint_weight_set(bx, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_win_resize_object_add(win, bx);
+   evas_object_show(bx);
+
+   btn = elm_button_add(win);
+   elm_object_text_set(btn, "Up");
+   elm_box_pack_end(bx, btn);
+   evas_object_show(btn);
+
+   toolbar = elm_toolbar_add(win);
+   elm_toolbar_shrink_mode_set(toolbar, ELM_TOOLBAR_SHRINK_SCROLL);
+   evas_object_size_hint_align_set(toolbar, EVAS_HINT_FILL, 0.0);
+   it_0 = elm_toolbar_item_append(toolbar, "document-print", "Print", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   it_3 = elm_toolbar_item_append(toolbar, "clock", "Clock", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "refresh", "Update", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "clock", "Clock", NULL, NULL);
+   tb_it = elm_toolbar_item_append(toolbar, "document-print", "Print", NULL, NULL);
+   elm_object_item_disabled_set(tb_it, EINA_TRUE);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "refresh", "Update", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "clock", "Clock", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "document-print", "Print", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "refresh", "Update", NULL, NULL);
+   elm_toolbar_item_append(toolbar, "folder-new", "Folder", NULL, NULL);
+   elm_box_pack_end(bx, toolbar);
+   evas_object_show(toolbar);
+   evas_object_smart_callback_add(toolbar, "clicked", _item_cb, "clicked");
+   evas_object_smart_callback_add(toolbar, "item,focused", _item_cb, "item,focused");
+   evas_object_smart_callback_add(toolbar, "item,unfocused", _item_cb, "item,unfcoused");
+   evas_object_event_callback_add(toolbar, EVAS_CALLBACK_KEY_DOWN, _toolbar_focus_key_down_cb, NULL);
+
+   btn = elm_button_add(win);
+   elm_object_text_set(btn, "Down");
+   elm_box_pack_end(bx, btn);
+   evas_object_show(btn);
+
+   //Options
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Options");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   bx_opt = elm_box_add(fr);
+   elm_box_horizontal_set(bx_opt, EINA_TRUE);
+   elm_object_content_set(fr, bx_opt);
+   evas_object_show(bx_opt);
+
+   chk = elm_check_add(bx_opt);
+   elm_object_text_set(chk, "Focus Highlight");
+   elm_check_state_set(chk, EINA_TRUE);
+   evas_object_size_hint_weight_set(chk, EVAS_HINT_EXPAND, 0.0);
+   elm_box_pack_end(bx_opt, chk);
+   evas_object_show(chk);
+   evas_object_smart_callback_add(chk, "changed",
+                                  _test_toolbar_focus_focus_highlight_check_changed,
+                                  win);
+
+   chk = elm_check_add(bx_opt);
+   elm_object_text_set(chk, "Focus Animation");
+   elm_check_state_set(chk, EINA_TRUE);
+   evas_object_size_hint_weight_set(chk, EVAS_HINT_EXPAND, 0.0);
+   elm_box_pack_end(bx_opt, chk);
+   evas_object_show(chk);
+   evas_object_smart_callback_add(chk, "changed",
+                                  _test_toolbar_focus_focus_animate_check_changed,
+                                  win);
+
+   // Focus Autoscroll Mode
+   fr = _focus_autoscroll_mode_frame_create(bx);
+   elm_box_pack_end(bx, fr);
+
+   // Focus movement policy
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Focus Movement Policy");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   bx_mv = elm_box_add(fr);
+   elm_box_horizontal_set(bx_mv, EINA_TRUE);
+   elm_object_content_set(fr, bx_mv);
+   evas_object_show(bx_mv);
+
+   rdg = rd = elm_radio_add(bx_mv);
+   elm_object_text_set(rd, "Focus Move by Click");
+   elm_radio_state_value_set(rd, 0);
+   evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(rd, "changed",
+                                  test_toolbar_focus_focus_move_policy_changed,
+                                  NULL);
+   elm_box_pack_end(bx_mv, rd);
+   evas_object_show(rd);
+
+   rd = elm_radio_add(bx_mv);
+   elm_object_text_set(rd, "Focus Move by Mouse-In");
+   elm_radio_group_add(rd, rdg);
+   elm_radio_state_value_set(rd, 1);
+   evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+   evas_object_smart_callback_add(rd, "changed",
+                                  test_toolbar_focus_focus_move_policy_changed,
+                                  NULL);
+   elm_box_pack_end(bx_mv, rd);
+   evas_object_show(rd);
+
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Focus");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+
+   bx_opt = elm_box_add(fr);
+   elm_object_content_set(fr, bx_opt);
+   evas_object_show(bx_opt);
+
+   btn = elm_button_add(bx_opt);
+   elm_object_text_set(btn, "Set focus to 3rd toolbar item after 1.5 seconds.");
+   evas_object_size_hint_weight_set(btn, 0.0, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(btn, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx_opt, btn);
+   evas_object_show(btn);
+   evas_object_smart_callback_add(btn, "clicked",
+                                  _test_toolbar_focus_item_set_btn_cb,
+                                  it_3);
+
+   btn = elm_button_add(bx_opt);
+   elm_object_text_set(btn, "Disable 1st item.");
+   evas_object_size_hint_weight_set(btn, 0.0, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(btn, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bx_opt, btn);
+   evas_object_show(btn);
+   evas_object_smart_callback_add(btn, "clicked",
+                                  _test_toolbar_focus_disable_item_btn_cb,
+                                  it_0);
+
+   evas_object_resize(win, 420, 200);
    evas_object_show(win);
 }

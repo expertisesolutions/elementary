@@ -17,8 +17,8 @@
 /**
  * Base layout smart data extended with slider instance data.
  */
-typedef struct _Elm_Slider_Smart_Data Elm_Slider_Smart_Data;
-struct _Elm_Slider_Smart_Data
+typedef struct _Elm_Slider_Data Elm_Slider_Data;
+struct _Elm_Slider_Data
 {
    Evas_Object          *spacer, *popup, *track;
    Ecore_Timer          *delay;
@@ -41,11 +41,11 @@ struct _Elm_Slider_Smart_Data
    Eina_Bool             indicator_show : 1;
    Eina_Bool             spacer_down : 1;
    Eina_Bool             frozen : 1;
-   Eina_Bool             popup_hiding : 1;
    Eina_Bool             units_show : 1;
-   Eina_Bool             always_popup_show : 1; /*this flag is to set the visiblity of slider indicator
-                                                * if this flag is set  then the indicator always show
-                                                */
+   /* this flag is to set the visiblity of slider indicator
+      if this flag is set  then the indicator always show */
+   Eina_Bool             always_popup_show : 1;
+   Eina_Bool             popup_visible : 1;
 };
 
 /**
@@ -53,7 +53,7 @@ struct _Elm_Slider_Smart_Data
  */
 
 #define ELM_SLIDER_DATA_GET(o, sd) \
-  Elm_Slider_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_SLIDER_CLASS)
+  Elm_Slider_Data * sd = eo_data_scope_get(o, ELM_SLIDER_CLASS)
 
 #define ELM_SLIDER_DATA_GET_OR_RETURN(o, ptr)        \
   ELM_SLIDER_DATA_GET(o, ptr);                       \
@@ -74,7 +74,7 @@ struct _Elm_Slider_Smart_Data
     }
 
 #define ELM_SLIDER_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_SLIDER_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_SLIDER_CLASS))) \
     return
 
 #endif

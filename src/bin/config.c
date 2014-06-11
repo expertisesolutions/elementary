@@ -85,6 +85,16 @@ struct _Fonts_Data
     }                                                               \
   while (0)
 
+#define CHECK_ADD(_label, _desc, _cb, _cb_param)  \
+   ck = elm_check_add(win); \
+   elm_object_text_set(ck, _label); \
+   elm_object_tooltip_text_set(ck, _desc); \
+   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0); \
+   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5); \
+   elm_box_pack_end(bx, ck); \
+   evas_object_show(ck); \
+   evas_object_smart_callback_add(ck, "changed", _cb, _cb_param);
+
 static int quiet = 0;
 static int interactive = 1;
 
@@ -801,6 +811,20 @@ dbg_change(void *data       EINA_UNUSED,
 }
 
 static void
+atspi_change(void *data       EINA_UNUSED,
+          Evas_Object     *obj,
+          void *event_info EINA_UNUSED)
+{
+   Eina_Bool val = elm_check_state_get(obj);
+   Eina_Bool sel = elm_config_atspi_mode_get();
+
+   if (val == sel) return;
+   elm_config_atspi_mode_set(val);
+   elm_config_all_flush();
+   elm_config_save();
+}
+
+static void
 _status_basic(Evas_Object *win,
               Evas_Object *bx0)
 {
@@ -956,6 +980,14 @@ _cf_audio(void *data,
         void *event_info EINA_UNUSED)
 {
    _flip_to(data,"audio");
+}
+
+static void
+_cf_focus(void *data,
+          Evas_Object *obj EINA_UNUSED,
+          void *event_info EINA_UNUSED)
+{
+   _flip_to(data, "focus");
 }
 
 static void
@@ -1504,14 +1536,8 @@ _status_config_audio(Evas_Object *win,
    evas_object_size_hint_align_set(bx, EVAS_HINT_FILL, 0.5);
 
 #define MUTE_CHECK(_label, _chan, _cb)  \
-   ck = elm_check_add(win); \
-   elm_object_text_set(ck, _label); \
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0); \
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5); \
-   elm_check_state_set(ck, elm_config_audio_mute_get(_chan)); \
-   elm_box_pack_end(bx, ck); \
-   evas_object_show(ck); \
-   evas_object_smart_callback_add(ck, "changed", _cb, NULL);
+   CHECK_ADD(_label, _label, _cb, NULL) \
+   elm_check_state_set(ck, elm_config_audio_mute_get(_chan));
 
    MUTE_CHECK("Mute Effects", EDJE_CHANNEL_EFFECT, mute_effect_change);
    MUTE_CHECK("Mute Background", EDJE_CHANNEL_BACKGROUND, mute_background_change);
@@ -1521,8 +1547,161 @@ _status_config_audio(Evas_Object *win,
    MUTE_CHECK("Mute Input", EDJE_CHANNEL_INPUT, mute_input_change);
    MUTE_CHECK("Mute Alert", EDJE_CHANNEL_ALERT, mute_alert_change);
    MUTE_CHECK("Mute Everything", EDJE_CHANNEL_ALL, mute_all_change);
-   
+
    evas_object_data_set(win, "audio", bx);
+
+   elm_naviframe_item_simple_push(naviframe, bx);
+}
+
+static void
+_config_focus_highlight_enabled_cb(void *data EINA_UNUSED, Evas_Object *obj,
+                                   void *event_info EINA_UNUSED)
+{
+   Eina_Bool cf = elm_config_focus_highlight_enabled_get();
+   Eina_Bool val = elm_check_state_get(obj);
+
+   printf("%d %d\n", cf, val);
+   if (cf == val) return;
+   elm_config_focus_highlight_enabled_set(val);
+   elm_config_all_flush();
+}
+
+static void
+_config_focus_highlight_anim_cb(void *data EINA_UNUSED, Evas_Object *obj,
+                                void *event_info EINA_UNUSED)
+{
+   Eina_Bool cf = elm_config_focus_highlight_animate_get();
+   Eina_Bool val = elm_check_state_get(obj);
+
+   if (cf == val) return;
+   elm_config_focus_highlight_animate_set(val);
+   elm_config_all_flush();
+}
+
+static void
+_config_focus_highlight_clip_cb(void *data EINA_UNUSED, Evas_Object *obj,
+                                void *event_info EINA_UNUSED)
+{
+   Eina_Bool cf = elm_config_focus_highlight_clip_disabled_get();
+   Eina_Bool val = elm_check_state_get(obj);
+
+   if (cf == val) return;
+   elm_config_focus_highlight_clip_disabled_set(val);
+   elm_config_all_flush();
+}
+
+static void
+_config_focus_item_select_on_focus_cb(void *data EINA_UNUSED, Evas_Object *obj,
+                                      void *event_info EINA_UNUSED)
+{
+   Eina_Bool cf = elm_config_item_select_on_focus_disabled_get();
+   Eina_Bool val = elm_check_state_get(obj);
+
+   if (cf == val) return;
+   elm_config_item_select_on_focus_disabled_set(val);
+   elm_config_all_flush();
+}
+
+static void
+_status_config_focus_autoscroll_changed_cb(void *data EINA_UNUSED,
+                                           Evas_Object *obj,
+                                           void *event_info EINA_UNUSED)
+{
+   elm_config_focus_autoscroll_mode_set(elm_radio_value_get(obj));
+}
+
+static void
+_status_config_focus(Evas_Object *win,
+                     Evas_Object *naviframe)
+{
+   Evas_Object *bx, *ck, *fr;
+
+   bx = elm_box_add(win);
+
+   CHECK_ADD("Enable Focus Highlight (only new window)",
+             "Set whether enable/disable focus highlight.<br/>"
+             "This feature is disabled by default.",
+             _config_focus_highlight_enabled_cb, NULL);
+   elm_check_state_set(ck, elm_config_focus_highlight_enabled_get());
+
+   CHECK_ADD("Enable Focus Highlight Animation (only new window)",
+             "Set whether enable/disable focus highlight animation.<br/>"
+             "This feature is disabled by default",
+             _config_focus_highlight_anim_cb, NULL);
+   elm_check_state_set(ck, elm_config_focus_highlight_animate_get());
+
+   CHECK_ADD("Disable Focus Highlight clip",
+             "Set whether enable/disable focus highlight clip feature.<br/>"
+             "If the focus highlight clip is disabled,<br/>"
+             "focus highlight object would not be clipped"
+             "by the target object's parent",
+             _config_focus_highlight_clip_cb, NULL);
+   elm_check_state_set(ck, elm_config_focus_highlight_clip_disabled_get());
+
+   CHECK_ADD("Disable Item Select on Focus",
+             "Set whether item would be selected on item focus.<br/>"
+             "This is enabled by default.",
+             _config_focus_item_select_on_focus_cb, NULL);
+   elm_check_state_set(ck, elm_config_item_select_on_focus_disabled_get());
+
+   fr = elm_frame_add(bx);
+   elm_object_text_set(fr, "Focus Autoscroll Mode");
+   evas_object_size_hint_weight_set(fr, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(fr, EVAS_HINT_FILL, 0.5);
+   elm_box_pack_end(bx, fr);
+   evas_object_show(fr);
+     {
+        Evas_Object *bx2, *rdg, *rd;
+        bx2 = elm_box_add(fr);
+        elm_object_content_set(fr, bx2);
+        evas_object_show(bx2);
+
+        rdg = rd = elm_radio_add(bx2);
+        elm_radio_state_value_set(rd, ELM_FOCUS_AUTOSCROLL_MODE_SHOW);
+        elm_object_text_set(rd, "ELM_FOCUS_AUTOSCROLL_MODE_SHOW");
+        elm_object_tooltip_text_set(rd, "Directly show the focused region<br/>"
+                                    "or item automatically inside a scroller.");
+        evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+        evas_object_size_hint_align_set(rd, 0.0, EVAS_HINT_FILL);
+        elm_box_pack_end(bx2, rd);
+        evas_object_show(rd);
+        evas_object_smart_callback_add(rd, "changed",
+                                       _status_config_focus_autoscroll_changed_cb,
+                                       NULL);
+
+        rd = elm_radio_add(bx2);
+        elm_radio_state_value_set(rd, ELM_FOCUS_AUTOSCROLL_MODE_NONE);
+        elm_object_text_set(rd, "ELM_FOCUS_AUTOSCROLL_MODE_NONE");
+        elm_object_tooltip_text_set(rd, "Do not show the focused region or<br/>"
+                                    "item automatically inside a scroller.");
+        evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+        evas_object_size_hint_align_set(rd, 0.0, EVAS_HINT_FILL);
+        elm_box_pack_end(bx2, rd);
+        elm_radio_group_add(rd, rdg);
+        evas_object_show(rd);
+        evas_object_smart_callback_add(rd, "changed",
+                                       _status_config_focus_autoscroll_changed_cb,
+                                       NULL);
+
+
+        rd = elm_radio_add(bx2);
+        elm_radio_state_value_set(rd, ELM_FOCUS_AUTOSCROLL_MODE_BRING_IN);
+        elm_object_text_set(rd, "ELM_FOCUS_AUTOSCROLL_MODE_BRING_IN");
+        elm_object_tooltip_text_set(rd, "Bring in the focused region or item<br/>"
+                                    "automatically which might invole the scrolling.");
+        evas_object_size_hint_weight_set(rd, EVAS_HINT_EXPAND, 0.0);
+        evas_object_size_hint_align_set(rd, 0.0, EVAS_HINT_FILL);
+        elm_box_pack_end(bx2, rd);
+        elm_radio_group_add(rd, rdg);
+        evas_object_show(rd);
+        evas_object_smart_callback_add(rd, "changed",
+                                       _status_config_focus_autoscroll_changed_cb,
+                                       NULL);
+
+        elm_radio_value_set(rdg, elm_config_focus_autoscroll_mode_get());
+     }
+
+   evas_object_data_set(win, "focus", bx);
 
    elm_naviframe_item_simple_push(naviframe, bx);
 }
@@ -1538,40 +1717,21 @@ _status_config_etc(Evas_Object *win,
    evas_object_size_hint_align_set(bx, EVAS_HINT_FILL, 0.5);
 
    // access
-   ck = elm_check_add(win);
-   elm_object_tooltip_text_set(ck, "Set access mode");
-   elm_object_text_set(ck, "Enable Access Mode");
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
+   CHECK_ADD("Enable Access Mode", "Set access mode", ac_change, NULL);
    elm_check_state_set(ck, elm_config_access_get());
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
-
-   evas_object_smart_callback_add(ck, "changed", ac_change, NULL);
 
    // selection
-   ck = elm_check_add(win);
-   elm_object_tooltip_text_set(ck, "Set selection mode");
-   elm_object_text_set(ck, "Enable clear selection when unfocus");
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
+   CHECK_ADD("Enable clear selection when unfocus", "Set selection mode",
+             sel_change, NULL);
    elm_check_state_set(ck, elm_config_selection_unfocused_clear_get());
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
-
-   evas_object_smart_callback_add(ck, "changed", sel_change, NULL);
 
    // clouseau
-   ck = elm_check_add(win);
-   elm_object_tooltip_text_set(ck, "Set clouseau mode");
-   elm_object_text_set(ck, "Enable clouseau");
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
+   CHECK_ADD("Enable clouseau", "Set clouseau mode", dbg_change, NULL);
    elm_check_state_set(ck, elm_config_clouseau_enabled_get());
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
 
-   evas_object_smart_callback_add(ck, "changed", dbg_change, NULL);
+   // atspi
+   CHECK_ADD("Enable ATSPI support", "Set atspi mode", atspi_change, NULL);
+   elm_check_state_set(ck, elm_config_atspi_mode_get());
 
    evas_object_data_set(win, "etc", bx);
 
@@ -2522,7 +2682,6 @@ _profiles_list_selected_cb(void            *data,
         else prof_name = cur_profile;
      }
 #endif
-   prof_name = cur_profile;
 
    if (!pdir)
      elm_object_disabled_set(evas_object_data_get(obj, "prof_reset_btn"),
@@ -2582,7 +2741,6 @@ _profiles_list_fill(Evas_Object *l_widget,
 
         pdir = elm_config_profile_dir_get(profile, EINA_TRUE);
         if (!pdir) pdir = elm_config_profile_dir_get(profile, EINA_FALSE);
-        label = profile;
 
 #ifdef ELM_EFREET
         snprintf(buf, sizeof(buf), "%s/profile.desktop", pdir);
@@ -2810,19 +2968,13 @@ _status_config_scrolling_bounce(Evas_Object *win, Evas_Object *box)
    evas_object_show(bx);
 
    /* Enable Scroll Bounce */
-   ck = elm_check_add(bx);
-   elm_object_tooltip_text_set(ck, "Set whether scrollers should bounce<br/>"
-                                   "when they reach their viewport's edge<br/>"
-                                   "during a scroll");
-   elm_object_text_set(ck, "Enable scroll bounce");
+   CHECK_ADD("Enable scroll bounce",
+             "Set whether scrollers should bounce<br/>"
+             "when they reach their viewport's edge<br/>"
+             "during a scroll",
+             sb_change, NULL);
    evas_object_data_set(win, "scroll_bounce_check", ck);
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
    elm_check_state_set(ck, elm_config_scroll_bounce_enabled_get());
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
-
-   evas_object_smart_callback_add(ck, "changed", sb_change, NULL);
 
    /* Scroll bounce friction */
    LABEL_FRAME_ADD("<hilight>Scroll bounce friction</>");
@@ -2947,18 +3099,12 @@ _status_config_scrolling(Evas_Object *win,
    _status_config_scrolling_acceleration(win, bx);
 
    /* Enable thumb scroll */
-   ck = elm_check_add(win);
-   elm_object_tooltip_text_set(ck, "Set whether scrollers should be<br/>"
-                                   "draggable from any point in their views");
-   elm_object_text_set(ck, "Enable thumb scroll");
+   CHECK_ADD("Enable thumb scroll",
+             "Set whether scrollers should be<br/>"
+             "draggable from any point in their views",
+             ts_change, NULL);
    evas_object_data_set(win, "thumbscroll_check", ck);
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
    elm_check_state_set(ck, elm_config_scroll_thumbscroll_enabled_get());
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
-
-   evas_object_smart_callback_add(ck, "changed", ts_change, NULL);
 
    /* Thumb scroll threadhold */
    LABEL_FRAME_ADD("<hilight>Thumb scroll threshold</>");
@@ -3402,14 +3548,8 @@ _status_config_caches(Evas_Object *win,
    elm_slider_value_set(sl, elm_config_cache_flush_interval_get());
    elm_object_disabled_set(sl, !elm_config_cache_flush_enabled_get());
 
-   ck = elm_check_add(win);
-   evas_object_size_hint_weight_set(ck, EVAS_HINT_EXPAND, 0.0);
-   evas_object_size_hint_align_set(ck, EVAS_HINT_FILL, 0.5);
-   elm_object_text_set(ck, "Enable Flushing");
+   CHECK_ADD("Enable Flushing", "Enable Flushing", cf_enable, sl);
    elm_check_state_set(ck, elm_config_cache_flush_enabled_get());
-   evas_object_smart_callback_add(ck, "changed", cf_enable, sl);
-   elm_box_pack_end(bx, ck);
-   evas_object_show(ck);
 
    elm_box_pack_end(bx, sl);
    evas_object_show(sl);
@@ -3552,6 +3692,7 @@ _status_config_full(Evas_Object *win,
                            _cf_rendering, win);
    elm_toolbar_item_append(tb, "appointment-new", "Caches", _cf_caches, win);
    elm_toolbar_item_append(tb, "sound", "Audio", _cf_audio, win);
+   elm_toolbar_item_append(tb, NULL, "Focus", _cf_focus, win);
    elm_toolbar_item_append(tb, NULL, "Etc", _cf_etc, win);
 
    elm_box_pack_end(bx0, tb);
@@ -3569,6 +3710,7 @@ _status_config_full(Evas_Object *win,
    _status_config_scrolling(win, naviframe);
    _status_config_caches(win, naviframe);
    _status_config_audio(win, naviframe);
+   _status_config_focus(win, naviframe);
    _status_config_etc(win, naviframe);
    _status_config_sizing(win, naviframe); // Note: call this at the end.
 

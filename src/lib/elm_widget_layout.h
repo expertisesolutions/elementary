@@ -39,16 +39,6 @@
  */
 
 /**
- * @typedef Elm_Layout_Part_Alias_Description
- *
- * A layout part aliasing (proxying) description, used to get part
- * names aliasing independently of a widgets theme.
- *
- * @ingroup Widget
- */
-typedef struct _Elm_Layout_Part_Alias_Description Elm_Layout_Part_Alias_Description;
-
-/**
  * @struct _Elm_Layout_Part_Alias_Description
  *
  * Elementary Layout-based widgets may declare part proxies, i.e., aliases
@@ -87,6 +77,7 @@ typedef struct _Elm_Layout_Smart_Data
    Eina_Bool             restricted_calc_w : 1;
    Eina_Bool             restricted_calc_h : 1;
    Eina_Bool             can_access : 1; /**< This is true when all text(including textblock) parts can be accessible by accessibility. */
+   Eina_Bool             destructed_is : 1; /**< This flag indicates if Elm_Layout destructor was called */
 } Elm_Layout_Smart_Data;
 
 /**
@@ -94,10 +85,10 @@ typedef struct _Elm_Layout_Smart_Data
  */
 
 #define ELM_LAYOUT_DATA_GET(o, sd) \
-  Elm_Layout_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_LAYOUT_CLASS)
+  Elm_Layout_Smart_Data * sd = eo_data_scope_get(o, ELM_LAYOUT_CLASS)
 
 #define ELM_LAYOUT_CHECK(obj)                            \
-  if (EINA_UNLIKELY(!eo_isa(obj, ELM_OBJ_LAYOUT_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa(obj, ELM_LAYOUT_CLASS))) \
     return
 
 #endif

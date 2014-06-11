@@ -67,20 +67,19 @@
             rel1.to_y: "base";
             rel2.offset: -7 -7;
             rel2.to: "base";
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
             color_class: "button_text";
+            color3: 255 255 255 255;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                text_class: "button";
             }
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
             color_class: "button_text_disabled";
+            color3: 255 255 255 255;
          }
          description { state: "combo" 0.0;
             inherit: "default" 0.0;
@@ -99,9 +98,8 @@
          description { state: "default" 0.0;
             rel1.to: "e.text.label";
             rel2.to: "e.text.label";
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
             color_class: "button_text_disabled";
+            color3: 255 255 255 255;
             text { font: FN; size: 10;
                text_source: "e.text.label";
                align: 0.5 0.5;

@@ -1,6 +1,13 @@
 AUTOMAKE_OPTIONS     = 1.4 foreign
 MAINTAINERCLEANFILES = Makefile.in
 
+CLEANFILES=
+
+EOLIAN_FLAGS = @DEPS_EOLIAN_FLAGS@ \
+	       -I$(top_srcdir)/src/lib
+
+include $(top_srcdir)/Makefile_Eolian_Helper.am
+
 AM_CPPFLAGS = \
 -DELM_INTERNAL_API_ARGESFSDFEFC=1 \
 -DMODULES_PATH=\"$(libdir)/elementary/modules\" \
@@ -25,6 +32,7 @@ AM_CPPFLAGS = \
 @ELEMENTARY_WEB_CFLAGS@ \
 @ELEMENTARY_EMAP_CFLAGS@ \
 @ELEMENTARY_WAYLAND_CFLAGS@ \
+@ELEMENTARY_DRM_CFLAGS@ \
 @EVIL_CFLAGS@
 
 if ELEMENTARY_WINDOWS_BUILD
@@ -39,6 +47,9 @@ Elementary_Cursor.h
 includesdir = $(includedir)/elementary-@VMAJ@
 
 includesunstable_HEADERS = \
+elm_gen_common.h \
+elm_interface_atspi_accessible.h \
+elm_interface_atspi_text.h \
 elm_interface_fileselector.h \
 elm_interface_scrollable.h \
 elm_widget.h \
@@ -153,10 +164,6 @@ elm_app_client.h \
 elm_app_client_view_eo.h \
 elm_app_client_view.h \
 elm_app.h \
-elm_atspi_object.h \
-elm_atspi_object_common.h \
-elm_atspi_object_eo.h \
-elm_atspi_object_legacy.h \
 elm_authors.h \
 elm_bg.h \
 elm_bg_eo.h \
@@ -323,6 +330,7 @@ elm_prefs_eo.h \
 elm_prefs_legacy.h \
 elm_prefs_data.h \
 elm_progressbar.h \
+elm_progressbar_common.h \
 elm_progressbar_eo.h \
 elm_progressbar_legacy.h \
 elm_radio.h \
@@ -345,6 +353,7 @@ elm_separator.h \
 elm_separator_eo.h \
 elm_separator_legacy.h \
 elm_slider.h \
+elm_slider_common.h \
 elm_slider_eo.h \
 elm_slider_legacy.h \
 elm_slideshow.h \
@@ -390,7 +399,6 @@ elm_win_legacy.h
 includesubdir = $(includedir)/elementary-@VMAJ@/
 
 libelementary_la_SOURCES = \
-elm_gen_common.h \
 elm_priv.h \
 els_box.h \
 elc_ctxpopup.c \
@@ -411,7 +419,7 @@ elm_app_server.c \
 elm_app_server_view.c \
 elm_app_client.c \
 elm_app_client_view.c \
-elm_atspi_object.c \
+elm_atspi_app_object.c \
 elm_atspi_bridge.c \
 elm_bg.c \
 elm_box.c \
@@ -444,6 +452,17 @@ elm_hover.c \
 elm_icon.c \
 elm_image.c \
 elm_index.c \
+elm_interface_atspi_accessible.c \
+elm_interface_atspi_action.c \
+elm_interface_atspi_component.c \
+elm_interface_atspi_editable_text.c \
+elm_interface_atspi_image.c \
+elm_interface_atspi_selection.c \
+elm_interface_atspi_text.c \
+elm_interface_atspi_value.c \
+elm_interface_atspi_widget.c \
+elm_interface_atspi_widget_action.c \
+elm_interface_atspi_window.c \
 elm_interface_fileselector.c \
 elm_interface_scrollable.c \
 elm_inwin.c \
@@ -510,6 +529,7 @@ libelementary_la_LIBADD = \
 @ELEMENTARY_WEB_LIBS@ \
 @ELEMENTARY_EMAP_LIBS@ \
 @ELEMENTARY_WAYLAND_LIBS@ \
+@ELEMENTARY_DRM_LIBS@ \
 @EVIL_LIBS@ \
 @LTLIBINTL@
 
@@ -519,3 +539,503 @@ EXTRA_DIST = \
 elm_factory.h \
 elm_factory.c \
 elm_intro.h.in
+
+BUILT_SOURCES = \
+		elm_widget.eo.c \
+		elm_widget.eo.h \
+		elm_container.eo.c \
+		elm_container.eo.h \
+		elm_layout.eo.c \
+		elm_layout.eo.h \
+		elm_layout.eo.legacy.h \
+		elm_interface_scrollable.eo.c \
+		elm_interface_scrollable.eo.h \
+		elm_pan.eo.c \
+		elm_pan.eo.h \
+		elm_frame.eo.c \
+		elm_frame.eo.h \
+		elm_frame.eo.legacy.h \
+		elm_hover.eo.c \
+		elm_hover.eo.h \
+		elm_hover.eo.legacy.h \
+		elm_access.eo.c \
+		elm_access.eo.h \
+		elm_actionslider.eo.c \
+		elm_actionslider.eo.h \
+		elm_actionslider.eo.legacy.h \
+		elm_app_client.eo.c \
+		elm_app_client.eo.h \
+		elm_app_client_view.eo.c \
+		elm_app_client_view.eo.h \
+		elm_app_server.eo.c \
+		elm_app_server.eo.h \
+		elm_app_server_view.eo.c \
+		elm_app_server_view.eo.h \
+		elm_atspi_app_object.eo.c \
+		elm_atspi_app_object.eo.h \
+		elm_atspi_app_object.eo.legacy.h \
+		elm_bg.eo.c \
+		elm_bg.eo.h \
+		elm_bg.eo.legacy.h \
+		elm_box.eo.c \
+		elm_box.eo.h \
+		elm_box.eo.legacy.h \
+		elm_bubble.eo.c \
+		elm_bubble.eo.h \
+		elm_bubble.eo.legacy.h \
+		elm_button.eo.c \
+		elm_button.eo.h \
+		elm_button.eo.legacy.h \
+		elm_calendar.eo.c \
+		elm_calendar.eo.h \
+		elm_calendar.eo.legacy.h \
+		elm_check.eo.c \
+		elm_check.eo.h \
+		elm_check.eo.legacy.h \
+		elm_clock.eo.c \
+		elm_clock.eo.h \
+		elm_clock.eo.legacy.h \
+		elm_colorselector.eo.c \
+		elm_colorselector.eo.h \
+		elm_colorselector.eo.legacy.h \
+		elm_conformant.eo.c \
+		elm_conformant.eo.h \
+		elc_ctxpopup.eo.c \
+		elc_ctxpopup.eo.h \
+		elc_ctxpopup.eo.legacy.h \
+		elm_datetime.eo.c \
+		elm_datetime.eo.h \
+		elm_datetime.eo.legacy.h \
+		elm_dayselector.eo.c \
+		elm_dayselector.eo.h \
+		elm_dayselector.eo.legacy.h \
+		elm_diskselector.eo.c \
+		elm_diskselector.eo.h \
+		elm_diskselector.eo.legacy.h \
+		elm_entry.eo.c \
+		elm_entry.eo.h \
+		elm_entry.eo.legacy.h \
+		elc_fileselector.eo.c \
+		elc_fileselector.eo.h \
+		elc_fileselector.eo.legacy.h \
+		elc_fileselector_button.eo.c \
+		elc_fileselector_button.eo.h \
+		elc_fileselector_button.eo.legacy.h \
+		elc_fileselector_entry.eo.c \
+		elc_fileselector_entry.eo.h \
+		elc_fileselector_entry.eo.legacy.h \
+		elm_flipselector.eo.c \
+		elm_flipselector.eo.h \
+		elm_flipselector.eo.legacy.h \
+		elm_flip.eo.c \
+		elm_flip.eo.h \
+		elm_flip.eo.legacy.h \
+		elm_gengrid.eo.c \
+		elm_gengrid.eo.h \
+		elm_gengrid.eo.legacy.h \
+		elm_gengrid_pan.eo.c \
+		elm_gengrid_pan.eo.h \
+		elm_genlist.eo.c \
+		elm_genlist.eo.h \
+		elm_genlist.eo.legacy.h \
+		elm_genlist_pan.eo.c \
+		elm_genlist_pan.eo.h \
+		elm_gesture_layer.eo.c \
+		elm_gesture_layer.eo.h \
+		elm_gesture_layer.eo.legacy.h \
+		elm_glview.eo.c \
+		elm_glview.eo.h \
+		elm_glview.eo.legacy.h \
+		elm_grid.eo.c \
+		elm_grid.eo.h \
+		elm_grid.eo.legacy.h \
+		elc_hoversel.eo.c \
+		elc_hoversel.eo.h \
+		elc_hoversel.eo.legacy.h \
+		elm_image.eo.c \
+		elm_image.eo.h \
+		elm_image.eo.legacy.h \
+		elm_icon.eo.c \
+		elm_icon.eo.h \
+		elm_icon.eo.legacy.h \
+		elm_index.eo.c \
+		elm_index.eo.h \
+		elm_index.eo.legacy.h \
+		elm_interface_atspi_accessible.eo.c \
+		elm_interface_atspi_accessible.eo.h \
+		elm_interface_atspi_action.eo.c \
+		elm_interface_atspi_action.eo.h \
+		elm_interface_atspi_component.eo.c \
+		elm_interface_atspi_component.eo.h \
+		elm_interface_atspi_editable_text.eo.c \
+		elm_interface_atspi_editable_text.eo.h \
+		elm_interface_atspi_image.eo.c \
+		elm_interface_atspi_image.eo.h \
+		elm_interface_atspi_selection.eo.c \
+		elm_interface_atspi_selection.eo.h \
+		elm_interface_atspi_text.eo.c \
+		elm_interface_atspi_text.eo.h \
+		elm_interface_atspi_value.eo.c \
+		elm_interface_atspi_value.eo.h \
+		elm_interface_atspi_widget.eo.c \
+		elm_interface_atspi_widget.eo.h \
+		elm_interface_atspi_widget_action.eo.c \
+		elm_interface_atspi_widget_action.eo.h \
+		elm_interface_atspi_window.eo.c \
+		elm_interface_atspi_window.eo.h \
+		elm_interface_fileselector.eo.c \
+		elm_interface_fileselector.eo.h \
+		elm_inwin.eo.c \
+		elm_inwin.eo.h \
+		elm_inwin.eo.legacy.h \
+		elm_label.eo.c \
+		elm_label.eo.h \
+		elm_label.eo.legacy.h \
+		elm_list.eo.c \
+		elm_list.eo.h \
+		elm_list.eo.legacy.h \
+		elm_map_pan.eo.c \
+		elm_map_pan.eo.h \
+		elm_map.eo.c \
+		elm_map.eo.h \
+		elm_map.eo.legacy.h \
+		elm_menu.eo.c \
+		elm_menu.eo.h \
+		elm_menu.eo.legacy.h \
+		elc_multibuttonentry.eo.c \
+		elc_multibuttonentry.eo.h \
+		elc_multibuttonentry.eo.legacy.h \
+		elc_naviframe.eo.c \
+		elc_naviframe.eo.h \
+		elc_naviframe.eo.legacy.h \
+		elm_panel.eo.c \
+		elm_panel.eo.h \
+		elm_panel.eo.legacy.h \
+		elm_mapbuf.eo.c \
+		elm_mapbuf.eo.h \
+		elm_mapbuf.eo.legacy.h \
+		elm_notify.eo.c \
+		elm_notify.eo.h \
+		elm_notify.eo.legacy.h \
+		elm_panes.eo.c \
+		elm_panes.eo.h \
+		elm_panes.eo.legacy.h \
+		elm_photocam.eo.c \
+		elm_photocam.eo.h \
+		elm_photocam.eo.legacy.h \
+		elm_photocam_pan.eo.c \
+		elm_photocam_pan.eo.h \
+		elm_photo.eo.c \
+		elm_photo.eo.h \
+		elm_photo.eo.legacy.h \
+		elc_player.eo.c \
+		elc_player.eo.h \
+		elm_plug.eo.c \
+		elm_plug.eo.h \
+		elm_plug.eo.legacy.h \
+		elc_popup.eo.c \
+		elc_popup.eo.h \
+		elc_popup.eo.legacy.h \
+		elm_prefs.eo.c \
+		elm_prefs.eo.h \
+		elm_prefs.eo.legacy.h \
+		elm_progressbar.eo.c \
+		elm_progressbar.eo.h \
+		elm_progressbar.eo.legacy.h \
+		elm_radio.eo.c \
+		elm_radio.eo.h \
+		elm_radio.eo.legacy.h \
+		elm_route.eo.c \
+		elm_route.eo.h \
+		elm_route.eo.legacy.h \
+		elm_scroller.eo.c \
+		elm_scroller.eo.h \
+		elm_scroller.eo.legacy.h \
+		elm_segment_control.eo.c \
+		elm_segment_control.eo.h \
+		elm_segment_control.eo.legacy.h \
+		elm_separator.eo.c \
+		elm_separator.eo.h \
+		elm_separator.eo.legacy.h \
+		elm_slider.eo.c \
+		elm_slider.eo.h \
+		elm_slider.eo.legacy.h \
+		elm_slideshow.eo.c \
+		elm_slideshow.eo.h \
+		elm_slideshow.eo.legacy.h \
+		elm_spinner.eo.c \
+		elm_spinner.eo.h \
+		elm_spinner.eo.legacy.h \
+		elm_systray.eo.c \
+		elm_systray.eo.h \
+		elm_table.eo.c \
+		elm_table.eo.h \
+		elm_table.eo.legacy.h \
+		elm_thumb.eo.c \
+		elm_thumb.eo.h \
+		elm_thumb.eo.legacy.h \
+		elm_toolbar.eo.c \
+		elm_toolbar.eo.h \
+		elm_toolbar.eo.legacy.h \
+		elm_video.eo.c \
+		elm_video.eo.h \
+		elm_video.eo.legacy.h \
+		elm_web.eo.c \
+		elm_web.eo.h \
+		elm_web.eo.legacy.h \
+		elm_win.eo.c \
+		elm_win.eo.h \
+		elm_win.eo.legacy.h
+
+elementaryeolianfilesdir = $(datadir)/eolian/include/elementary-@VMAJ@
+elementaryeolianfiles_DATA = \
+	     elm_widget.eo \
+	     elm_container.eo \
+	     elm_layout.eo \
+	     elm_interface_scrollable.eo \
+	     elm_pan.eo \
+	     elm_frame.eo \
+	     elm_hover.eo \
+	     elm_access.eo \
+	     elm_actionslider.eo \
+	     elm_app_client.eo \
+	     elm_app_client_view.eo \
+	     elm_app_server.eo \
+	     elm_app_server_view.eo \
+	     elm_atspi_app_object.eo \
+	     elm_interface_atspi_accessible.eo \
+	     elm_interface_atspi_action.eo \
+	     elm_interface_atspi_component.eo \
+	     elm_interface_atspi_editable_text.eo \
+	     elm_interface_atspi_image.eo \
+	     elm_interface_atspi_selection.eo \
+	     elm_interface_atspi_text.eo \
+	     elm_interface_atspi_value.eo \
+	     elm_interface_atspi_widget.eo \
+	     elm_interface_atspi_widget_action.eo \
+	     elm_interface_atspi_window.eo \
+	     elm_bg.eo \
+	     elm_box.eo \
+	     elm_bubble.eo \
+	     elm_button.eo \
+	     elm_calendar.eo \
+	     elm_check.eo \
+	     elm_clock.eo \
+	     elm_colorselector.eo \
+	     elm_conformant.eo \
+	     elc_ctxpopup.eo \
+	     elm_datetime.eo \
+	     elm_dayselector.eo \
+	     elm_diskselector.eo \
+	     elm_entry.eo \
+	     elc_fileselector.eo \
+	     elc_fileselector_button.eo \
+	     elc_fileselector_entry.eo \
+	     elm_flipselector.eo \
+	     elm_flip.eo \
+	     elm_gengrid.eo \
+	     elm_gengrid_pan.eo \
+	     elm_genlist.eo \
+	     elm_genlist_pan.eo \
+	     elm_gesture_layer.eo \
+	     elm_glview.eo \
+	     elm_grid.eo \
+	     elc_hoversel.eo \
+	     elm_image.eo \
+	     elm_icon.eo \
+	     elm_index.eo \
+	     elm_interface_fileselector.eo \
+	     elm_inwin.eo \
+	     elm_label.eo \
+	     elm_list.eo \
+	     elm_map_pan.eo \
+	     elm_map.eo \
+	     elm_menu.eo \
+	     elc_multibuttonentry.eo \
+	     elc_naviframe.eo \
+	     elm_panel.eo \
+	     elm_mapbuf.eo \
+	     elm_notify.eo \
+	     elm_panes.eo \
+	     elm_photocam.eo \
+	     elm_photocam_pan.eo \
+	     elm_photo.eo \
+	     elc_player.eo \
+	     elm_plug.eo \
+	     elc_popup.eo \
+	     elm_prefs.eo \
+	     elm_progressbar.eo \
+	     elm_radio.eo \
+	     elm_route.eo \
+	     elm_scroller.eo \
+	     elm_segment_control.eo \
+	     elm_separator.eo \
+	     elm_slider.eo \
+	     elm_slideshow.eo \
+	     elm_spinner.eo \
+	     elm_systray.eo \
+	     elm_table.eo \
+	     elm_thumb.eo \
+	     elm_toolbar.eo \
+	     elm_video.eo \
+	     elm_web.eo \
+	     elm_win.eo
+
+EXTRA_DIST += \
+              ${elementaryeolianfiles_DATA}
+
+nodist_includesunstable_HEADERS = \
+				  elm_widget.eo.h \
+				  elm_container.eo.h \
+				  elm_layout.eo.h \
+				  elm_interface_scrollable.eo.h \
+				  elm_pan.eo.h \
+				  elm_frame.eo.h \
+				  elm_access.eo.h \
+				  elm_hover.eo.h \
+				  elm_actionslider.eo.h \
+				  elm_app_client.eo.h \
+				  elm_app_client_view.eo.h \
+				  elm_app_server.eo.h \
+				  elm_app_server_view.eo.h \
+				  elm_atspi_app_object.eo.h \
+				  elm_interface_atspi_accessible.eo.h \
+				  elm_interface_atspi_action.eo.h \
+				  elm_interface_atspi_component.eo.h \
+				  elm_interface_atspi_editable_text.eo.h \
+				  elm_interface_atspi_image.eo.h \
+				  elm_interface_atspi_selection.eo.h \
+				  elm_interface_atspi_text.eo.h \
+				  elm_interface_atspi_value.eo.h \
+				  elm_interface_atspi_widget.eo.h \
+				  elm_interface_atspi_widget_action.eo.h \
+				  elm_interface_atspi_window.eo.h \
+				  elm_box.eo.h \
+				  elm_bg.eo.h \
+				  elm_bubble.eo.h \
+				  elm_button.eo.h \
+				  elm_calendar.eo.h \
+				  elm_check.eo.h \
+				  elm_clock.eo.h \
+				  elm_conformant.eo.h \
+				  elm_colorselector.eo.h \
+				  elc_ctxpopup.eo.h \
+				  elm_datetime.eo.h \
+				  elm_dayselector.eo.h \
+				  elm_diskselector.eo.h \
+				  elm_entry.eo.h \
+				  elc_fileselector.eo.h \
+				  elc_fileselector_button.eo.h \
+				  elc_fileselector_entry.eo.h \
+				  elm_flipselector.eo.h \
+				  elm_flip.eo.h \
+				  elm_gengrid.eo.h \
+				  elm_gengrid_pan.eo.h \
+				  elm_genlist.eo.h \
+				  elm_genlist_pan.eo.h \
+				  elm_gesture_layer.eo.h \
+				  elm_glview.eo.h \
+				  elm_grid.eo.h \
+				  elc_hoversel.eo.h \
+				  elm_image.eo.h \
+				  elm_icon.eo.h \
+				  elm_index.eo.h \
+				  elm_interface_fileselector.eo.h \
+				  elm_inwin.eo.h \
+				  elm_label.eo.h \
+				  elm_list.eo.h \
+				  elm_map_pan.eo.h \
+				  elm_map.eo.h \
+				  elm_menu.eo.h \
+				  elc_multibuttonentry.eo.h \
+				  elc_naviframe.eo.h \
+				  elm_panel.eo.h \
+				  elm_mapbuf.eo.h \
+				  elm_notify.eo.h \
+				  elm_panes.eo.h \
+				  elm_photocam.eo.h \
+				  elm_photocam_pan.eo.h \
+				  elm_photo.eo.h \
+				  elc_player.eo.h \
+				  elm_plug.eo.h \
+				  elc_popup.eo.h \
+				  elm_prefs.eo.h \
+				  elm_progressbar.eo.h \
+				  elm_radio.eo.h \
+				  elm_route.eo.h \
+				  elm_scroller.eo.h \
+				  elm_segment_control.eo.h \
+				  elm_separator.eo.h \
+				  elm_slider.eo.h \
+				  elm_slideshow.eo.h \
+				  elm_spinner.eo.h \
+				  elm_systray.eo.h \
+				  elm_table.eo.h \
+				  elm_thumb.eo.h \
+				  elm_toolbar.eo.h \
+				  elm_video.eo.h \
+				  elm_web.eo.h \
+				  elm_win.eo.h \
+				  elm_layout.eo.legacy.h \
+				  elm_frame.eo.legacy.h \
+				  elm_hover.eo.legacy.h \
+				  elm_actionslider.eo.legacy.h \
+				  elm_atspi_app_object.eo.legacy.h \
+				  elm_bg.eo.legacy.h \
+				  elm_box.eo.legacy.h \
+				  elm_bubble.eo.legacy.h \
+				  elm_button.eo.legacy.h \
+				  elm_calendar.eo.legacy.h \
+				  elm_check.eo.legacy.h \
+				  elm_clock.eo.legacy.h \
+				  elm_colorselector.eo.legacy.h \
+				  elc_ctxpopup.eo.legacy.h \
+				  elm_datetime.eo.legacy.h \
+				  elm_dayselector.eo.legacy.h \
+				  elm_diskselector.eo.legacy.h \
+				  elm_entry.eo.legacy.h \
+				  elc_fileselector.eo.legacy.h \
+				  elc_fileselector_button.eo.legacy.h \
+				  elc_fileselector_entry.eo.legacy.h \
+				  elm_flipselector.eo.legacy.h \
+				  elm_flip.eo.legacy.h \
+				  elm_gengrid.eo.legacy.h \
+				  elm_genlist.eo.legacy.h \
+				  elm_gesture_layer.eo.legacy.h \
+				  elm_glview.eo.legacy.h \
+				  elm_grid.eo.legacy.h \
+				  elc_hoversel.eo.legacy.h \
+				  elm_image.eo.legacy.h \
+				  elm_icon.eo.legacy.h \
+				  elm_index.eo.legacy.h \
+				  elm_inwin.eo.legacy.h \
+				  elm_label.eo.legacy.h  \
+				  elm_list.eo.legacy.h \
+				  elm_map.eo.legacy.h \
+				  elm_menu.eo.legacy.h \
+				  elc_multibuttonentry.eo.legacy.h \
+				  elc_naviframe.eo.legacy.h \
+				  elm_panel.eo.legacy.h \
+				  elm_mapbuf.eo.legacy.h \
+				  elm_notify.eo.legacy.h \
+				  elm_panes.eo.legacy.h \
+				  elm_photocam.eo.legacy.h \
+				  elm_photo.eo.legacy.h \
+				  elm_plug.eo.legacy.h \
+				  elc_popup.eo.legacy.h \
+				  elm_prefs.eo.legacy.h \
+				  elm_progressbar.eo.legacy.h \
+				  elm_radio.eo.legacy.h \
+				  elm_route.eo.legacy.h \
+				  elm_scroller.eo.legacy.h \
+				  elm_segment_control.eo.legacy.h \
+				  elm_separator.eo.legacy.h \
+				  elm_slider.eo.legacy.h \
+				  elm_slideshow.eo.legacy.h \
+				  elm_spinner.eo.legacy.h \
+				  elm_table.eo.legacy.h \
+				  elm_thumb.eo.legacy.h \
+				  elm_toolbar.eo.legacy.h \
+				  elm_video.eo.legacy.h \
+				  elm_web.eo.legacy.h \
+				  elm_win.eo.legacy.h

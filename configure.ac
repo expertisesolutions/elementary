@@ -1,4 +1,4 @@
-EFL_VERSION([1], [9], [0], [release])
+EFL_VERSION([1], [10], [99], [dev])
 AC_INIT([elementary], [efl_version], [enlightenment-devel@lists.sourceforge.net])
 
 AC_PREREQ(2.60)
@@ -18,27 +18,20 @@ AH_BOTTOM([
 
 AC_USE_SYSTEM_EXTENSIONS
 
-AM_INIT_AUTOMAKE([1.6 dist-bzip2])
+AM_INIT_AUTOMAKE([1.6 dist-bzip2 dist-xz])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # pkg-config
 PKG_PROG_PKG_CONFIG
 
 MODULE_EDJE=`pkg-config --variable=module_arch edje`
-if test -z "$MODULE_EDJE"; then
-   # Backward compatibility -- TODO: remove when EFL 1.8 is released.
-   EDJE_VERSION=`$PKG_CONFIG edje --modversion | awk -F . '{printf("%s.%s.%s", $1, $2, $3);}'`
-   case "$host_os" in
-     mingw32ce* | cegcc*)
-       MODULE_EDJE="$host_os-$host_cpu"
-       ;;
-     *)
-       MODULE_EDJE="$host_os-$host_cpu-${EDJE_VERSION}"
-       ;;
-   esac
-fi
 AC_SUBST(MODULE_EDJE)
 AC_DEFINE_UNQUOTED(MODULE_EDJE, "$MODULE_EDJE", "Edje module architecture")
+
+# Needs to be moved into a macro, and also, needs a way to automatically fetch
+# from all the dependencies using the Requires.
+DEPS_EOLIAN_FLAGS=`pkg-config --variable=eolian_flags eo evas edje ecore`
+AC_SUBST(DEPS_EOLIAN_FLAGS)
 
 lt_enable_auto_import=""
 ELM_UNIX_DEF="#undef"
@@ -437,6 +430,30 @@ if test "x$want_elementary_wayland" = "xyes" -a "x$have_elementary_wayland" = "x
     AC_MSG_ERROR([ecore-wayland support requested, but ecore-wayland was not found by pkg-config.])
 fi
 
+have_elementary_drm="no"
+want_elementary_drm="auto"
+AC_ARG_ENABLE([ecore-drm],
+   [AC_HELP_STRING([--disable-ecore-drm], [disable ecore-drm support. @<:@default=detect@:>@])],
+   [want_elementary_drm=$enableval], [])
+
+if test "x$want_elementary_drm" != "xno"; then
+   PKG_CHECK_MODULES([ELEMENTARY_DRM],
+      [ecore-drm >= efl_version],
+      [
+       AC_DEFINE(HAVE_ELEMENTARY_DRM, 1, [DRM support for Elementary])
+       have_elementary_drm="yes"
+       requirement_elm="ecore-drm >= efl_version ${requirement_elm}"
+      ],
+      [have_elementary_drm="no"]
+   )
+else
+    have_elementary_drm="no"
+fi
+if test "x$want_elementary_drm" = "xyes" -a "x$have_elementary_drm" = "xno"; then
+    AC_MSG_ERROR([ecore-drm support requested, but ecore-drm was not found by pkg-config.])
+fi
+
+
 ELM_ELOCATION_DEF="#undef"
 have_elementary_elocation="no"
 want_elementary_elocation="auto"
@@ -629,6 +646,9 @@ EFL_WITH_BIN([eet], [eet-eet], [eet])
 EFL_WITH_BIN([edje], [edje-cc], [edje_cc])
 EFL_WITH_BIN([elementary], [elementary-codegen], [elementary_codegen])
 EFL_WITH_BIN([elementary], [elm-prefs-cc], [elm_prefs_cc])
+EFL_WITH_BIN([eolian], [eolian-gen], [eolian_gen])
+# Force the helper to try external eolian-gen
+AM_CONDITIONAL(HAVE_EOLIAN_GEN, [true])
 
 EFL_CHECK_DOXYGEN([build_doc="yes"], [build_doc="no"])
 
@@ -735,6 +755,7 @@ echo
 echo "  Engines:"
 echo "    X11....................: ${have_elementary_x}"
 echo "    Framebuffer............: ${have_elementary_fb}"
+echo "    DRM....................: ${have_elementary_drm}"
 echo "    PSL1GHT................: ${have_elementary_psl1ght}"
 echo "    SDL....................: ${have_elementary_sdl}"
 echo "    Cocoa..................: ${have_elementary_cocoa}"
@@ -751,6 +772,7 @@ echo "    Elocation..............: ${have_elementary_elocation}"
 echo
 echo "  eet......................: ${eet_eet}"
 echo "  edje_cc..................: ${edje_cc}"
+echo "  eolian_gen...............: ${eolian_gen}"
 echo
 echo "  Build elementary_test....: ${have_elementary_test}"
 echo "  Build elementary_codegen.: ${have_elementary_codegen}"

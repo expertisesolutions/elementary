@@ -1,0 +1,279 @@
+# Turkish translation for enlightenment
+# Copyright (c) 2013 Rosetta Contributors and Canonical Ltd 2013
+# This file is distributed under the same license as the enlightenment package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2013.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: enlightenment\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2013-12-30 11:50+0100\n"
+"PO-Revision-Date: 2014-04-18 13:35+0000\n"
+"Last-Translator: Ali E.İMREK <alierkanimrek@gmail.com>\n"
+"Language-Team: Turkish <tr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2014-04-19 06:05+0000\n"
+"X-Generator: Launchpad (build 16985)\n"
+
+#: src/lib/elc_fileselector.c:1341
+msgid "Up"
+msgstr "Yukarı"
+
+#: src/lib/elc_fileselector.c:1356
+msgid "Home"
+msgstr "Ev"
+
+#: src/lib/elc_fileselector.c:1583 src/lib/elm_entry.c:1346
+#: src/lib/elm_entry.c:1371
+msgid "Cancel"
+msgstr "İptal"
+
+#: src/lib/elc_fileselector.c:1592
+msgid "OK"
+msgstr "Tamam"
+
+#: src/lib/elc_multibuttonentry.c:614
+msgid "multi button entry label"
+msgstr "çoklu düğme giriş etiketi"
+
+#: src/lib/elc_multibuttonentry.c:635
+msgid "multi button entry item"
+msgstr "çoklu düğme giriş öğesi"
+
+#: src/lib/elc_multibuttonentry.c:1512
+msgid "multi button entry"
+msgstr "çoklu düğme girişi"
+
+#: src/lib/elc_naviframe.c:377
+msgid "Title"
+msgstr "Başlık"
+
+#: src/lib/elc_naviframe.c:906 src/lib/elc_naviframe.c:1130
+msgid "Back"
+msgstr "Geri"
+
+#: src/lib/elc_naviframe.c:1209
+msgid "Next"
+msgstr "Sonraki"
+
+#: src/lib/elc_popup.c:282 src/lib/elc_popup.c:908
+msgid "Popup Title"
+msgstr "Pencere başlığı"
+
+#: src/lib/elc_popup.c:292 src/lib/elc_popup.c:976
+msgid "Popup Body Text"
+msgstr "Pencere gövde metni"
+
+#: src/lib/elm_bubble.c:217
+msgid "Bubble"
+msgstr "Balon"
+
+#: src/lib/elm_button.c:58
+msgid "Clicked"
+msgstr "Tıklanmış"
+
+#: src/lib/elm_button.c:279 src/lib/elm_check.c:222 src/lib/elm_gengrid.c:705
+#: src/lib/elm_genlist.c:1464 src/lib/elm_list.c:1547 src/lib/elm_radio.c:265
+#: src/lib/elm_segment_control.c:537 src/lib/elm_spinner.c:561
+#: src/lib/elm_toolbar.c:1979
+msgid "State: Disabled"
+msgstr "Durum: Kapalı"
+
+#: src/lib/elm_button.c:304
+msgid "Button"
+msgstr "Düğme"
+
+#: src/lib/elm_calendar.c:142
+msgid "%B %Y"
+msgstr "%B %Y"
+
+#: src/lib/elm_calendar.c:151
+msgid "%B"
+msgstr "%B"
+
+#: src/lib/elm_calendar.c:160
+msgid "%Y"
+msgstr "%Y"
+
+#: src/lib/elm_calendar.c:274
+msgid "calendar item"
+msgstr "takvim nesnesi"
+
+#: src/lib/elm_calendar.c:300
+msgid "calendar decrement month button"
+msgstr "takvim ayı azaltma düğmesi"
+
+#: src/lib/elm_calendar.c:305
+msgid "calendar decrement year button"
+msgstr "takvim yılı azaltma düğmesi"
+
+#: src/lib/elm_calendar.c:310
+msgid "calendar increment month button"
+msgstr "takvim ayı arttırma düğmesi"
+
+#: src/lib/elm_calendar.c:315
+msgid "calendar increment year button"
+msgstr "takvim yılı arttırma düğmesi"
+
+#: src/lib/elm_calendar.c:320
+msgid "calendar month"
+msgstr "takvim ayı"
+
+#: src/lib/elm_calendar.c:325
+msgid "calendar year"
+msgstr "takvim yılı"
+
+#: src/lib/elm_check.c:52 src/lib/elm_check.c:235 src/lib/elm_radio.c:92
+#: src/lib/elm_radio.c:266
+msgid "State: On"
+msgstr "Durum: Açık"
+
+#: src/lib/elm_check.c:58 src/lib/elm_check.c:247 src/lib/elm_radio.c:268
+msgid "State: Off"
+msgstr "Durum: Kapalı"
+
+#: src/lib/elm_check.c:231 src/lib/elm_check.c:244
+msgid "State"
+msgstr "Durum"
+
+#: src/lib/elm_check.c:312
+msgid "Check"
+msgstr "Kontrol et"
+
+#: src/lib/elm_clock.c:301
+msgid "clock increment button for am,pm"
+msgstr "öö,ös için saat arttırma düğmesi"
+
+#: src/lib/elm_clock.c:309
+msgid "clock decrement button for am,pm"
+msgstr "öö,ös için saat azaltma düğmesi"
+
+#: src/lib/elm_clock.c:659
+msgid "State: Editable"
+msgstr "Durum: Düzenlenebilir"
+
+#: src/lib/elm_clock.c:695
+msgid "Clock"
+msgstr "Saat"
+
+#: src/lib/elm_colorselector.c:1370
+msgid "color selector palette item"
+msgstr "renk seçici paleti öğesi"
+
+#: src/lib/elm_config.c:2441
+msgid "default:LTR"
+msgstr "varsayılan:LTR"
+
+#: src/lib/elm_dayselector.c:422
+msgid "day selector item"
+msgstr "gün seçici ögesi"
+
+#: src/lib/elm_diskselector.c:681
+msgid "diskselector item"
+msgstr "disk seçici öğesi"
+
+#: src/lib/elm_entry.c:1333
+msgid "Copy"
+msgstr "Kopyala"
+
+#: src/lib/elm_entry.c:1338
+msgid "Cut"
+msgstr "Kes"
+
+#: src/lib/elm_entry.c:1342 src/lib/elm_entry.c:1365
+msgid "Paste"
+msgstr "Yapıştır"
+
+#: src/lib/elm_entry.c:1358
+msgid "Select"
+msgstr "Seç"
+
+#: src/lib/elm_entry.c:3306
+msgid "Entry"
+msgstr "Girdi"
+
+#: src/lib/elm_gengrid.c:735
+msgid "Gengrid Item"
+msgstr "Izgara öğesi"
+
+#: src/lib/elm_index.c:102
+msgid "Index"
+msgstr "Dizin"
+
+#: src/lib/elm_index.c:129
+msgid "Index Item"
+msgstr "fihrist öğesi"
+
+#: src/lib/elm_label.c:408
+msgid "Label"
+msgstr "Etiket"
+
+#: src/lib/elm_panel.c:54
+msgid "state: opened"
+msgstr "durum: açık"
+
+#: src/lib/elm_panel.c:55
+msgid "state: closed"
+msgstr "durum: kapalı"
+
+#: src/lib/elm_panel.c:118
+msgid "panel button"
+msgstr "panel düğmesi"
+
+#: src/lib/elm_progressbar.c:296
+msgid "progressbar"
+msgstr "ilerleme çubuğu"
+
+#: src/lib/elm_radio.c:296
+msgid "Radio"
+msgstr "Radyo"
+
+#: src/lib/elm_segment_control.c:540 src/lib/elm_toolbar.c:1981
+msgid "State: Selected"
+msgstr "Durum: Seçili"
+
+#: src/lib/elm_segment_control.c:542
+msgid "State: Unselected"
+msgstr "Bölge: Seçilmedi"
+
+#: src/lib/elm_segment_control.c:554
+msgid "Segment Control Item"
+msgstr "Bölüm Kontrol Öğesi"
+
+#: src/lib/elm_slider.c:894
+msgid "slider"
+msgstr "kaydırıcı"
+
+#: src/lib/elm_spinner.c:650
+msgid "spinner increment button"
+msgstr "değiştirici arttırma düğmesi"
+
+#: src/lib/elm_spinner.c:659
+msgid "spinner decrement button"
+msgstr "değiştirici azaltma düğmesi"
+
+#: src/lib/elm_spinner.c:667
+msgid "spinner"
+msgstr "değiştirici"
+
+#: src/lib/elm_toolbar.c:1450 src/lib/elm_toolbar.c:2040
+msgid "Selected"
+msgstr "Seçili"
+
+#: src/lib/elm_toolbar.c:1977
+msgid "Separator"
+msgstr "Ayraç"
+
+#: src/lib/elm_toolbar.c:1983
+msgid "Has menu"
+msgstr "menü"
+
+#: src/lib/elm_toolbar.c:2035
+msgid "Unselected"
+msgstr "Seçili değil"
+
+#: src/lib/elm_toolbar.c:2052
+msgid "Toolbar Item"
+msgstr "Araç Çubuğu Öğesi"

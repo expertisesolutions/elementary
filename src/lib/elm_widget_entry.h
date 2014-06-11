@@ -20,8 +20,8 @@ typedef struct _Mod_Api                     Mod_Api;
 /**
  * Base widget smart data extended with entry instance data.
  */
-typedef struct _Elm_Entry_Smart_Data        Elm_Entry_Smart_Data;
-struct _Elm_Entry_Smart_Data
+typedef struct _Elm_Entry_Data        Elm_Entry_Data;
+struct _Elm_Entry_Data
 {
    Evas_Object                          *hit_rect, *entry_edje, *scr_edje;
 
@@ -48,6 +48,7 @@ struct _Elm_Entry_Smart_Data
    Elm_Text_Format                       format;
    Evas_Coord                            last_w, ent_mw, ent_mh;
    Evas_Coord                            downx, downy;
+   Evas_Coord                            ox, oy;
    Eina_List                            *items; /** context menu item list */
    Eina_List                            *item_providers;
    Eina_List                            *markup_filters;
@@ -60,6 +61,7 @@ struct _Elm_Entry_Smart_Data
    Elm_Autocapital_Type                  autocapital_type;
    Elm_Input_Panel_Lang                  input_panel_lang;
    Elm_Input_Panel_Return_Key_Type       input_panel_return_key_type;
+   Edje_Cursor                           sel_handler_cursor;
    void                                 *input_panel_imdata;
    int                                   input_panel_imdata_len;
    int                                   input_panel_layout_variation;
@@ -145,7 +147,7 @@ typedef enum _Length_Unit
  */
 
 #define ELM_ENTRY_DATA_GET(o, sd) \
-  Elm_Entry_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_ENTRY_CLASS)
+  Elm_Entry_Data * sd = eo_data_scope_get(o, ELM_ENTRY_CLASS)
 
 #define ELM_ENTRY_DATA_GET_OR_RETURN(o, ptr)         \
   ELM_ENTRY_DATA_GET(o, ptr);                        \
@@ -166,7 +168,7 @@ typedef enum _Length_Unit
     }
 
 #define ELM_ENTRY_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_ENTRY_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_ENTRY_CLASS))) \
     return
 
 #endif

@@ -6,9 +6,11 @@
 #include "elm_priv.h"
 #include "elm_widget_popup.h"
 
-EAPI Eo_Op ELM_OBJ_POPUP_BASE_ID = EO_NOOP;
+#define ELM_INTERFACE_ATSPI_ACCESSIBLE_PROTECTED
+#include "elm_interface_atspi_accessible.h"
+#include "elm_interface_atspi_accessible.eo.h"
 
-#define MY_CLASS ELM_OBJ_POPUP_CLASS
+#define MY_CLASS ELM_POPUP_CLASS
 
 #define MY_CLASS_NAME "Elm_Popup"
 #define MY_CLASS_NAME_LEGACY "elm_popup"
@@ -23,10 +25,14 @@ static const char CONTENT_PART[] = "elm.swallow.content";
 
 static const char SIG_BLOCK_CLICKED[] = "block,clicked";
 static const char SIG_TIMEOUT[] = "timeout";
+static const char SIG_ITEM_FOCUSED[] = "item,focused";
+static const char SIG_ITEM_UNFOCUSED[] = "item,unfocused";
 
 static const Evas_Smart_Cb_Description _smart_callbacks[] = {
    {SIG_BLOCK_CLICKED, ""},
    {SIG_TIMEOUT, ""},
+   {SIG_ITEM_FOCUSED, ""},
+   {SIG_ITEM_UNFOCUSED, ""},
    {SIG_WIDGET_LANG_CHANGED, ""}, /**< handled by elm_widget */
    {SIG_WIDGET_ACCESS_CHANGED, ""}, /**< handled by elm_widget */
    {SIG_LAYOUT_FOCUSED, ""}, /**< handled by elm_layout */
@@ -34,22 +40,27 @@ static const Evas_Smart_Cb_Description _smart_callbacks[] = {
    {NULL, NULL}
 };
 
+static Eina_Bool _key_action_move(Evas_Object *obj, const char *params);
+
+static const Elm_Action key_actions[] = {
+   {"move", _key_action_move},
+   {NULL, NULL}
+};
+
 static void  _on_content_del(void *data, Evas *e, Evas_Object *obj, void *event_info);
 
-static void
-_elm_popup_smart_translate(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_translate(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Elm_Popup_Smart_Data *sd = _pd;
    Elm_Popup_Item *it;
    Eina_List *l;
 
    EINA_LIST_FOREACH(sd->items, l, it)
       elm_widget_item_translate(it);
 
-   eo_do_super(obj, MY_CLASS, elm_wdg_translate(NULL));
+   eo_do_super(obj, MY_CLASS, elm_obj_widget_translate());
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
 static void
@@ -181,7 +192,7 @@ _size_hints_changed_cb(void *data,
 }
 
 static void
-_list_del(Elm_Popup_Smart_Data *sd)
+_list_del(Elm_Popup_Data *sd)
 {
    if (!sd->scr) return;
 
@@ -195,7 +206,7 @@ _list_del(Elm_Popup_Smart_Data *sd)
 }
 
 static void
-_items_remove(Elm_Popup_Smart_Data *sd)
+_items_remove(Elm_Popup_Data *sd)
 {
    Elm_Popup_Item *it;
 
@@ -207,12 +218,11 @@ _items_remove(Elm_Popup_Smart_Data *sd)
    sd->items = NULL;
 }
 
-static void
-_elm_popup_smart_del(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_popup_evas_object_smart_del(Eo *obj, Elm_Popup_Data *sd)
 {
    unsigned int i;
 
-   Elm_Popup_Smart_Data *sd = _pd;
 
    evas_object_smart_callback_del
      (sd->notify, "block,clicked", _block_clicked_cb);
@@ -308,23 +318,19 @@ _access_obj_process(Eo *obj, Eina_Bool is_access)
      }
 }
 
-static void
-_elm_popup_smart_theme(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_theme_apply(Eo *obj, Elm_Popup_Data *sd)
 {
    Elm_Popup_Item *it;
    unsigned int i = 0;
    Eina_List *elist;
    char buf[1024], style[1024];
+   Eina_Bool int_ret = EINA_FALSE;
 
-   Eina_Bool int_ret;
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
 
-   Elm_Popup_Smart_Data *sd = _pd;
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-
-   eo_do_super(obj, MY_CLASS, elm_wdg_theme_apply(&int_ret));
-   if (!int_ret) return;
+   eo_do_super(obj, MY_CLASS, int_ret = elm_obj_widget_theme_apply());
+   if (!int_ret) return EINA_FALSE;
 
    _mirrored_set(obj, elm_widget_mirrored_get(obj));
 
@@ -392,7 +398,7 @@ _elm_popup_smart_theme(Eo *obj, void *_pd, va_list *list)
    /* access */
    if (_elm_config->access_mode) _access_obj_process(obj, EINA_TRUE);
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
 static void
@@ -407,15 +413,14 @@ _item_sizing_eval(Elm_Popup_Item *it)
    evas_object_size_hint_max_set(edje, max_w, max_h);
 }
 
-static void
-_elm_popup_smart_sizing_eval(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_popup_elm_layout_sizing_eval(Eo *obj, Elm_Popup_Data *sd)
 {
    Eina_List *elist;
    Elm_Popup_Item *it;
    Evas_Coord h_box = 0, minh_box = 0;
    Evas_Coord minw = -1, minh = -1;
 
-   Elm_Popup_Smart_Data *sd = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
 
    if (sd->items)
@@ -440,21 +445,16 @@ _elm_popup_smart_sizing_eval(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    evas_object_size_hint_max_set(obj, -1, -1);
 }
 
-static void
-_elm_popup_smart_sub_object_del(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_sub_object_del(Eo *obj, Elm_Popup_Data *sd, Evas_Object *sobj)
 {
    Elm_Popup_Item *it;
+   Eina_Bool int_ret = EINA_FALSE;
 
-   Evas_Object *sobj = va_arg(*list, Evas_Object *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
-   Eina_Bool int_ret;
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
 
-   Elm_Popup_Smart_Data *sd = _pd;
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
-
-   eo_do_super(obj, MY_CLASS, elm_wdg_sub_object_del(sobj, &int_ret));
-   if (!int_ret) return;
+   eo_do_super(obj, MY_CLASS, int_ret = elm_obj_widget_sub_object_del(sobj));
+   if (!int_ret) return EINA_FALSE;
 
    if (sobj == sd->title_icon)
      {
@@ -474,7 +474,7 @@ _elm_popup_smart_sub_object_del(Eo *obj, void *_pd, va_list *list)
           }
      }
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
 static void
@@ -843,6 +843,26 @@ _item_signal_emit_hook(Elm_Object_Item *it,
 }
 
 static void
+_item_focused_cb(void *data,
+                 Evas_Object *obj EINA_UNUSED,
+                 void *event_info EINA_UNUSED)
+{
+   Elm_Object_Item *it = data;
+
+   evas_object_smart_callback_call(WIDGET(it), SIG_ITEM_FOCUSED, it);
+}
+
+static void
+_item_unfocused_cb(void *data,
+                   Evas_Object *obj EINA_UNUSED,
+                   void *event_info EINA_UNUSED)
+{
+   Elm_Object_Item *it = data;
+
+   evas_object_smart_callback_call(WIDGET(it), SIG_ITEM_UNFOCUSED, it);
+}
+
+static void
 _item_new(Elm_Popup_Item *it)
 {
    char style[1024];
@@ -857,6 +877,7 @@ _item_new(Elm_Popup_Item *it)
    elm_widget_item_signal_emit_hook_set(it, _item_signal_emit_hook);
 
    VIEW(it) = elm_layout_add(WIDGET(it));
+   elm_object_focus_allow_set(VIEW(it), EINA_TRUE);
 
    snprintf(style, sizeof(style), "popup/%s", elm_widget_style_get(WIDGET(it)));
    if (!elm_layout_theme_set(VIEW(it), "popup", "item", style))
@@ -866,6 +887,8 @@ _item_new(Elm_Popup_Item *it)
         elm_layout_signal_callback_add(VIEW(it), "elm,action,click", "*",
                                        _item_select_cb, it);
         evas_object_size_hint_align_set(VIEW(it), EVAS_HINT_FILL, EVAS_HINT_FILL);
+        evas_object_smart_callback_add(VIEW(it), SIG_LAYOUT_FOCUSED, _item_focused_cb, it);
+        evas_object_smart_callback_add(VIEW(it), SIG_LAYOUT_UNFOCUSED, _item_unfocused_cb, it);
         evas_object_show(VIEW(it));
      }
 }
@@ -977,22 +1000,19 @@ end:
    return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_text_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_layout_text_set(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, const char *part, const char *label)
 {
-   const char *part = va_arg(*list, const char *);
-   const char *label = va_arg(*list, const char *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Eina_Bool int_ret;
+   Eina_Bool int_ret = EINA_FALSE;
 
    if (!part || !strcmp(part, "default"))
      int_ret = _content_text_set(obj, label);
    else if (!strcmp(part, "title,text"))
      int_ret = _title_text_set(obj, label);
    else
-     eo_do_super(obj, MY_CLASS, elm_obj_layout_text_set(part, label, &int_ret));
+     eo_do_super(obj, MY_CLASS, int_ret = elm_obj_layout_text_set(part, label));
 
-   if (ret) *ret = int_ret;
+   return int_ret;
 }
 
 static const char *
@@ -1016,18 +1036,19 @@ _content_text_get(const Evas_Object *obj)
    return str;
 }
 
-static void
-_elm_popup_smart_text_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static const char*
+_elm_popup_elm_layout_text_get(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, const char *part)
 {
-   const char *part = va_arg(*list, const char *);
-   const char **text = va_arg(*list, const char **);
+   const char *text = NULL;
 
    if (!part || !strcmp(part, "default"))
-     *text = _content_text_get(obj);
+     text = _content_text_get(obj);
    else if (!strcmp(part, "title,text"))
-     *text = _title_text_get(obj);
+     text = _title_text_get(obj);
    else
-     eo_do_super(obj, MY_CLASS, elm_obj_layout_text_get(part, text));
+     eo_do_super(obj, MY_CLASS, text = elm_obj_layout_text_get(part));
+
+   return text;
 }
 
 static Eina_Bool
@@ -1162,20 +1183,15 @@ _action_button_set(Evas_Object *obj,
    elm_layout_sizing_eval(obj);
 }
 
-static void
-_elm_popup_smart_content_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_container_content_set(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, const char *part, Evas_Object *content)
 {
-   const char *part = va_arg(*list, const char *);
-   Evas_Object *content = va_arg(*list, Evas_Object *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Eina_Bool int_ret;
-
    unsigned int i;
 
    if (!part || !strcmp(part, "default"))
-     int_ret = _content_set(obj, content);
+     return _content_set(obj, content);
    else if (!strcmp(part, "title,icon"))
-     int_ret = _title_icon_set(obj, content);
+     return _title_icon_set(obj, content);
    else if (!strncmp(part, "button", 6))
      {
         i = atoi(part + 6) - 1;
@@ -1183,22 +1199,20 @@ _elm_popup_smart_content_set(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
         if (i >= ELM_POPUP_ACTION_BUTTON_MAX)
           {
              ERR("The part name is invalid! : popup=%p", obj);
-             int_ret = EINA_FALSE;
-             return;
+             return EINA_FALSE;
           }
 
         _action_button_set(obj, content, i);
-
-        int_ret = EINA_TRUE;
      }
    else
      {
+        Eina_Bool int_ret = EINA_FALSE;
         eo_do_super(obj, MY_CLASS,
-                    elm_obj_container_content_set(part, content, &int_ret));
+                    int_ret = elm_obj_container_content_set(part, content));
+        return int_ret;
      }
 
-   if (ret) *ret = int_ret;
-   return;
+   return EINA_TRUE;
 }
 
 static Evas_Object *
@@ -1232,14 +1246,11 @@ _action_button_get(const Evas_Object *obj,
    return button;
 }
 
-static void
-_elm_popup_smart_content_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Evas_Object*
+_elm_popup_elm_container_content_get(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, const char *part)
 {
    Evas_Object *content = NULL;
    unsigned int i;
-
-   const char *part = va_arg(*list, const char *);
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
 
    if (!part || !strcmp(part, "default"))
      content = _content_get(obj);
@@ -1257,18 +1268,17 @@ _elm_popup_smart_content_get(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
    else
      {
         eo_do_super(obj, MY_CLASS,
-                    elm_obj_container_content_get(part, &content));
+                    content = elm_obj_container_content_get(part));
      }
 
    if (!content)
      goto err;
 
-   *ret = content;
-   return;
+   return content;
 
 err:
    WRN("The part name is invalid! : popup=%p", obj);
-   *ret = content;
+   return NULL;
 }
 
 static Evas_Object *
@@ -1308,14 +1318,11 @@ _title_icon_unset(Evas_Object *obj)
    return icon;
 }
 
-static void
-_elm_popup_smart_content_unset(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Evas_Object*
+_elm_popup_elm_container_content_unset(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, const char *part)
 {
    Evas_Object *content = NULL;
    unsigned int i;
-
-   const char *part = va_arg(*list, const char *);
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
 
    if (!part || !strcmp(part, "default"))
      content = _content_unset(obj);
@@ -1333,35 +1340,26 @@ _elm_popup_smart_content_unset(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
    else
      goto err;
 
-   *ret = content;
-   return;
+   return content;
 
 err:
    ERR("The part name is invalid! : popup=%p", obj);
 
-   *ret = content;
+   return NULL;
 }
 
-static void
-_elm_popup_smart_focus_next_manager_is(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_focus_next_manager_is(Eo *obj EINA_UNUSED, Elm_Popup_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_focus_next(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_focus_next(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, Elm_Focus_Direction dir, Evas_Object **next)
 {
    Evas_Object *ao;
    Eina_List *items = NULL;
    Eina_List *base_items = NULL;
-
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   Elm_Focus_Direction dir = va_arg(*list, Elm_Focus_Direction);
-   Evas_Object **next = va_arg(*list, Evas_Object **);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_TRUE;
 
    /* access */
    if (_elm_config->access_mode)
@@ -1379,11 +1377,14 @@ _elm_popup_smart_focus_next(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
    /* content area */
    if (sd->content) items = eina_list_append(items, sd->content_area);
 
+   /* items */
+   if (sd->box) items = eina_list_append(items, sd->box);
+
    /* action area */
    if (sd->action_area) items = eina_list_append(items, sd->action_area);
 
    /* base */
-   eo_do_super(obj, MY_CLASS, elm_obj_container_content_swallow_list_get(&base_items));
+   eo_do_super(obj, MY_CLASS, base_items = elm_obj_container_content_swallow_list_get());
 
    items = eina_list_merge(items, base_items);
 
@@ -1391,30 +1392,21 @@ _elm_popup_smart_focus_next(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
      *next = obj;
    eina_list_free(items);
 
-   return;
+   return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_focus_direction_manager_is(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_focus_direction_manager_is(Eo *obj EINA_UNUSED, Elm_Popup_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_focus_direction(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_focus_direction(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, const Evas_Object *base, double degree, Evas_Object **direction, double *weight)
 {
    Evas_Object *ao;
    Eina_List *items = NULL;
    Eina_List *base_items = NULL;
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   Evas_Object *base = va_arg(*list, Evas_Object *);
-   double degree = va_arg(*list, double);
-   Evas_Object **direction = va_arg(*list, Evas_Object **);
-   double *weight = va_arg(*list, double *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_TRUE;
 
    /* access */
    if (_elm_config->access_mode)
@@ -1432,11 +1424,14 @@ _elm_popup_smart_focus_direction(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
    /* content area */
    if (sd->content) items = eina_list_append(items, sd->content_area);
 
+   /* items */
+   if (sd->box) items = eina_list_append(items, sd->box);
+
    /* action area */
    if (sd->action_area) items = eina_list_append(items, sd->action_area);
 
    /* base*/
-   eo_do_super(obj, MY_CLASS, elm_obj_container_content_swallow_list_get(&base_items));
+   eo_do_super(obj, MY_CLASS, base_items = elm_obj_container_content_swallow_list_get());
 
    items = eina_list_merge(items, base_items);
 
@@ -1444,69 +1439,51 @@ _elm_popup_smart_focus_direction(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
      (obj, base, items, eina_list_data_get, degree, direction, weight);
    eina_list_free(items);
 
-   return;
+   return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_event(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+static Eina_Bool
+_key_action_move(Evas_Object *obj, const char *params)
 {
-   Evas_Object *src = va_arg(*list, Evas_Object *);
-   Evas_Callback_Type type = va_arg(*list, Evas_Callback_Type);
-   Evas_Event_Key_Down *ev = va_arg(*list, void *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   const char *dir = params;
 
-   if (ret) *ret = EINA_FALSE;
+   if (!strcmp(dir, "previous"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_PREVIOUS);
+   else if (!strcmp(dir, "next"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_NEXT);
+   else if (!strcmp(dir, "left"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_LEFT);
+   else if (!strcmp(dir, "right"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_RIGHT);
+   else if (!strcmp(dir, "up"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_UP);
+   else if (!strcmp(dir, "down"))
+     elm_widget_focus_cycle(obj, ELM_FOCUS_DOWN);
+   else return EINA_FALSE;
+
+   return EINA_TRUE;
+
+}
+
+EOLIAN static Eina_Bool
+_elm_popup_elm_widget_event(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, Evas_Object *src, Evas_Callback_Type type, void *event_info)
+{
    (void)src;
+   Evas_Event_Key_Down *ev = event_info;
 
-   if (elm_widget_disabled_get(obj)) return;
-   if (type != EVAS_CALLBACK_KEY_DOWN) return;
-   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return;
+   if (type != EVAS_CALLBACK_KEY_DOWN) return EINA_FALSE;
+   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return EINA_FALSE;
 
-   if (!strcmp(ev->key, "Tab"))
-     {
-        if (evas_key_modifier_is_set(ev->modifiers, "Shift"))
-          elm_widget_focus_cycle(obj, ELM_FOCUS_PREVIOUS);
-        else
-          elm_widget_focus_cycle(obj, ELM_FOCUS_NEXT);
+   if (!_elm_config_key_binding_call(obj, ev, key_actions))
+     return EINA_FALSE;
 
-        goto success;
-     }
-   else if ((!strcmp(ev->key, "Left")) ||
-            ((!strcmp(ev->key, "KP_Left")) && (!ev->string)))
-     {
-        elm_widget_focus_cycle(obj, ELM_FOCUS_LEFT);
-        goto success;
-     }
-   else if ((!strcmp(ev->key, "Right")) ||
-            ((!strcmp(ev->key, "KP_Right")) && (!ev->string)))
-     {
-        elm_widget_focus_cycle(obj, ELM_FOCUS_RIGHT);
-        goto success;
-     }
-   else if ((!strcmp(ev->key, "Up")) ||
-            ((!strcmp(ev->key, "KP_Up")) && (!ev->string)))
-     {
-        elm_widget_focus_cycle(obj, ELM_FOCUS_UP);
-        goto success;
-     }
-   else if ((!strcmp(ev->key, "Down")) ||
-            ((!strcmp(ev->key, "KP_Down")) && (!ev->string)))
-     {
-        elm_widget_focus_cycle(obj, ELM_FOCUS_DOWN);
-        goto success;
-     }
-
-   return;
-
-success:
    ev->event_flags |= EVAS_EVENT_FLAG_ON_HOLD;
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_popup_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_popup_evas_object_smart_add(Eo *obj, Elm_Popup_Data *priv)
 {
-   Elm_Popup_Smart_Data *priv = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
    char style[1024];
 
@@ -1568,19 +1545,15 @@ _elm_popup_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    edje_object_message_signal_process(wd->resize_obj);
 }
 
-static void
-_elm_popup_smart_parent_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_popup_elm_widget_parent_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, Evas_Object *parent)
 {
-   Elm_Popup_Smart_Data *sd = _pd;
-   Evas_Object *parent = va_arg(*list, Evas_Object *);
-
    elm_notify_parent_set(sd->notify, parent);
 }
 
-static void
-_elm_popup_smart_access(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_popup_elm_widget_access(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED, Eina_Bool is_access)
 {
-   Eina_Bool is_access = va_arg(*list, int);
    _access_obj_process(obj, is_access);
 }
 
@@ -1597,29 +1570,19 @@ elm_popup_add(Evas_Object *parent)
    return obj;
 }
 
-static void
-_constructor(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_popup_eo_base_constructor(Eo *obj, Elm_Popup_Data *_pd EINA_UNUSED)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
    eo_do(obj,
          evas_obj_type_set(MY_CLASS_NAME_LEGACY),
-         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks, NULL));
+         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks),
+         elm_interface_atspi_accessible_role_set(ELM_ATSPI_ROLE_POPUP_MENU));
 }
 
-EAPI void
-elm_popup_content_text_wrap_type_set(Evas_Object *obj,
-                                     Elm_Wrap_Type wrap)
+EOLIAN static void
+_elm_popup_content_text_wrap_type_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, Elm_Wrap_Type wrap)
 {
-   ELM_POPUP_CHECK(obj);
-   eo_do(obj, elm_obj_popup_content_text_wrap_type_set(wrap));
-}
-
-static void
-_content_text_wrap_type_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Wrap_Type wrap = va_arg(*list, Elm_Wrap_Type);
-   Elm_Popup_Smart_Data *sd = _pd;
-
    //Need to wrap the content text, so not allowing ELM_WRAP_NONE
    if (sd->content_text_wrap_type == ELM_WRAP_NONE) return;
 
@@ -1628,22 +1591,10 @@ _content_text_wrap_type_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
      elm_label_line_wrap_set(sd->text_content_obj, wrap);
 }
 
-EAPI Elm_Wrap_Type
-elm_popup_content_text_wrap_type_get(const Evas_Object *obj)
+EOLIAN static Elm_Wrap_Type
+_elm_popup_content_text_wrap_type_get(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd)
 {
-   ELM_POPUP_CHECK(obj) ELM_WRAP_LAST;
-   Elm_Wrap_Type ret = ELM_WRAP_LAST;
-   eo_do((Eo *) obj, elm_obj_popup_content_text_wrap_type_get(&ret));
-   return ret;
-}
-
-static void
-_content_text_wrap_type_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Wrap_Type *ret = va_arg(*list, Elm_Wrap_Type *);
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   *ret = sd->content_text_wrap_type;
+   return sd->content_text_wrap_type;
 }
 
 /* keeping old externals orient api for notify, but taking away the
@@ -1731,178 +1682,66 @@ _elm_notify_orient_set(Evas_Object *obj,
    elm_notify_align_set(obj, horizontal, vertical);
 }
 
-EAPI void
-elm_popup_orient_set(Evas_Object *obj,
-                     Elm_Popup_Orient orient)
+EOLIAN static void
+_elm_popup_orient_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, Elm_Popup_Orient orient)
 {
-   ELM_POPUP_CHECK(obj);
-   eo_do(obj, elm_obj_popup_orient_set(orient));
-}
-
-static void
-_orient_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Elm_Popup_Orient orient = va_arg(*list, Elm_Popup_Orient);
-   Elm_Popup_Smart_Data *sd = _pd;
-
    if (orient >= ELM_POPUP_ORIENT_LAST) return;
    _elm_notify_orient_set(sd->notify, (Elm_Notify_Orient)orient);
 }
 
-EAPI Elm_Popup_Orient
-elm_popup_orient_get(const Evas_Object *obj)
+EOLIAN static Elm_Popup_Orient
+_elm_popup_orient_get(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd)
 {
-   ELM_POPUP_CHECK(obj) - 1;
-   Elm_Popup_Orient ret = -1;
-   eo_do((Eo *) obj, elm_obj_popup_orient_get(&ret));
-   return ret;
+   return (Elm_Popup_Orient)_elm_notify_orient_get(sd->notify);
 }
 
-static void
-_orient_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_popup_align_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, double horizontal, double vertical)
 {
-   Elm_Popup_Orient *ret = va_arg(*list, Elm_Popup_Orient *);
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   *ret = (Elm_Popup_Orient)_elm_notify_orient_get(sd->notify);
-}
-
-EAPI void
-elm_popup_align_set(Evas_Object *obj, double horizontal, double vertical)
-{
-   ELM_POPUP_CHECK(obj);
-   eo_do(obj, elm_obj_popup_align_set(horizontal, vertical));
-}
-
-static void
-_align_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   double horizontal = va_arg(*list, double);
-   double vertical = va_arg(*list, double);
-   Elm_Popup_Smart_Data *sd = _pd;
-
    elm_notify_align_set(sd->notify, horizontal, vertical);
 }
 
-EAPI void
-elm_popup_align_get(const Evas_Object *obj, double *horizontal, double *vertical)
+EOLIAN static void
+_elm_popup_align_get(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, double *horizontal, double *vertical)
 {
-   ELM_POPUP_CHECK(obj);
-   eo_do((Eo *) obj, elm_obj_popup_align_get(horizontal, vertical));
-}
-
-static void
-_align_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   double *horizontal = va_arg(*list, double *);
-   double *vertical = va_arg(*list, double *);
-   Elm_Popup_Smart_Data *sd = _pd;
-
    elm_notify_align_get(sd->notify, horizontal, vertical);
 }
 
-EAPI void
-elm_popup_timeout_set(Evas_Object *obj,
-                      double timeout)
+EOLIAN static void
+_elm_popup_timeout_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, double timeout)
 {
-   ELM_POPUP_CHECK(obj);
-   eo_do(obj, elm_obj_popup_timeout_set(timeout));
-}
-
-static void
-_timeout_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   double timeout = va_arg(*list, double);
-   Elm_Popup_Smart_Data *sd = _pd;
-
    elm_notify_timeout_set(sd->notify, timeout);
 }
 
-EAPI double
-elm_popup_timeout_get(const Evas_Object *obj)
+EOLIAN static double
+_elm_popup_timeout_get(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd)
 {
-   ELM_POPUP_CHECK(obj) 0.0;
-   double ret = 0.0;
-   eo_do((Eo *) obj, elm_obj_popup_timeout_get(&ret));
-   return ret;
+   return elm_notify_timeout_get(sd->notify);
 }
 
-static void
-_timeout_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_popup_allow_events_set(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd, Eina_Bool allow)
 {
-   double *ret = va_arg(*list, double *);
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   *ret = elm_notify_timeout_get(sd->notify);
-}
-
-EAPI void
-elm_popup_allow_events_set(Evas_Object *obj,
-                           Eina_Bool allow)
-{
-   ELM_POPUP_CHECK(obj);
-   eo_do(obj, elm_obj_popup_allow_events_set(allow));
-}
-
-static void
-_allow_events_set(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Eina_Bool allow = va_arg(*list, int);
-
    Eina_Bool allow_events = !!allow;
-   Elm_Popup_Smart_Data *sd = _pd;
 
    elm_notify_allow_events_set(sd->notify, allow_events);
 }
 
-EAPI Eina_Bool
-elm_popup_allow_events_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_popup_allow_events_get(Eo *obj EINA_UNUSED, Elm_Popup_Data *sd)
 {
-   ELM_POPUP_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_popup_allow_events_get(&ret));
-   return ret;
+   return elm_notify_allow_events_get(sd->notify);
 }
 
-static void
-_allow_events_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static Elm_Object_Item*
+_elm_popup_item_append(Eo *obj, Elm_Popup_Data *sd, const char *label, Evas_Object *icon, Evas_Smart_Cb func, const void *data)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Elm_Popup_Smart_Data *sd = _pd;
-
-   *ret =  elm_notify_allow_events_get(sd->notify);
-}
-
-EAPI Elm_Object_Item *
-elm_popup_item_append(Evas_Object *obj,
-                      const char *label,
-                      Evas_Object *icon,
-                      Evas_Smart_Cb func,
-                      const void *data)
-{
-   ELM_POPUP_CHECK(obj) NULL;
-   Elm_Object_Item *ret = NULL;
-   eo_do(obj, elm_obj_popup_item_append(label, icon, func, data, &ret));
-   return ret;
-}
-
-static void
-_item_append(Eo *obj, void *_pd, va_list *list)
-{
-   const char *label = va_arg(*list, const char *);
-   Evas_Object *icon = va_arg(*list, Evas_Object *);
-   Evas_Smart_Cb func = va_arg(*list, Evas_Smart_Cb);
-   const void *data = va_arg(*list, const void *);
-   Elm_Object_Item **ret = va_arg(*list, Elm_Object_Item **);
-   if (ret) *ret = NULL;
-
    Evas_Object *prev_content;
    Elm_Popup_Item *it;
 
-   Elm_Popup_Smart_Data *sd = _pd;
 
    it = elm_widget_item_new(obj, Elm_Popup_Item);
-   if (!it) return;
+   if (!it) return NULL;
    if (sd->content || sd->text_content_obj)
      {
         prev_content = elm_layout_content_get
@@ -1927,76 +1766,13 @@ _item_append(Eo *obj, void *_pd, va_list *list)
    _scroller_size_calc(obj);
    elm_layout_sizing_eval(obj);
 
-   if (ret) *ret = (Elm_Object_Item *)it;
+   return (Elm_Object_Item *)it;
 }
 
 static void
-_class_constructor(Eo_Class *klass)
+_elm_popup_class_constructor(Eo_Class *klass)
 {
-   const Eo_Op_Func_Description func_desc[] = {
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _constructor),
-
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_ADD), _elm_popup_smart_add),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_DEL), _elm_popup_smart_del),
-
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_PARENT_SET), _elm_popup_smart_parent_set),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT), _elm_popup_smart_event),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_APPLY), _elm_popup_smart_theme),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_TRANSLATE), _elm_popup_smart_translate),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT_MANAGER_IS), _elm_popup_smart_focus_next_manager_is),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_NEXT),  _elm_popup_smart_focus_next),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ACCESS), _elm_popup_smart_access),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION_MANAGER_IS), _elm_popup_smart_focus_direction_manager_is),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_FOCUS_DIRECTION), _elm_popup_smart_focus_direction),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_SUB_OBJECT_DEL), _elm_popup_smart_sub_object_del),
-
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_SET), _elm_popup_smart_content_set),
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_GET), _elm_popup_smart_content_get),
-        EO_OP_FUNC(ELM_OBJ_CONTAINER_ID(ELM_OBJ_CONTAINER_SUB_ID_CONTENT_UNSET), _elm_popup_smart_content_unset),
-
-        EO_OP_FUNC(ELM_OBJ_LAYOUT_ID(ELM_OBJ_LAYOUT_SUB_ID_TEXT_SET), _elm_popup_smart_text_set),
-        EO_OP_FUNC(ELM_OBJ_LAYOUT_ID(ELM_OBJ_LAYOUT_SUB_ID_TEXT_GET), _elm_popup_smart_text_get),
-        EO_OP_FUNC(ELM_OBJ_LAYOUT_ID(ELM_OBJ_LAYOUT_SUB_ID_SIZING_EVAL), _elm_popup_smart_sizing_eval),
-
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_CONTENT_TEXT_WRAP_TYPE_SET), _content_text_wrap_type_set),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_CONTENT_TEXT_WRAP_TYPE_GET), _content_text_wrap_type_get),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ORIENT_SET), _orient_set),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ORIENT_GET), _orient_get),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_TIMEOUT_SET), _timeout_set),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_TIMEOUT_GET), _timeout_get),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ALLOW_EVENTS_SET), _allow_events_set),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ALLOW_EVENTS_GET), _allow_events_get),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ITEM_APPEND), _item_append),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ALIGN_SET), _align_set),
-        EO_OP_FUNC(ELM_OBJ_POPUP_ID(ELM_OBJ_POPUP_SUB_ID_ALIGN_GET), _align_get),
-        EO_OP_FUNC_SENTINEL
-  };
-   eo_class_funcs_set(klass, func_desc);
-
    evas_smart_legacy_type_register(MY_CLASS_NAME_LEGACY, klass);
 }
-static const Eo_Op_Description op_desc[] = {
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_CONTENT_TEXT_WRAP_TYPE_SET, "Sets the wrapping type of content text packed in content."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_CONTENT_TEXT_WRAP_TYPE_GET, "Returns the wrapping type of content text packed in content area of."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ORIENT_SET, "Sets the orientation of the popup in the parent region."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ORIENT_GET, "Returns the orientation of Popup."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_TIMEOUT_SET, "Sets a timeout to hide popup automatically."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_TIMEOUT_GET, "Returns the timeout value set to the popup (in seconds)."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ALLOW_EVENTS_SET, "Sets whether events should be passed to by a click outside."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ALLOW_EVENTS_GET, "Returns value indicating whether allow event is enabled or not."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ITEM_APPEND, "Add a new item to a Popup object."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ALIGN_SET, "Set the popup alignment relative to its parent."),
-     EO_OP_DESCRIPTION(ELM_OBJ_POPUP_SUB_ID_ALIGN_GET, "Return the popup alignment relative to its parent."),
-     EO_OP_DESCRIPTION_SENTINEL
-};
-static const Eo_Class_Description class_desc = {
-     EO_VERSION,
-     MY_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_POPUP_BASE_ID, op_desc, ELM_OBJ_POPUP_SUB_ID_LAST),
-     NULL,
-     sizeof(Elm_Popup_Smart_Data),
-     _class_constructor,
-     NULL
-};
-EO_DEFINE_CLASS(elm_obj_popup_class_get, &class_desc, ELM_OBJ_LAYOUT_CLASS, NULL);
+
+#include "elc_popup.eo.c"

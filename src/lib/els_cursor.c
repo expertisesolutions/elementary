@@ -133,7 +133,7 @@ static const int _cursors_count = sizeof(_cursors)/sizeof(struct _Cursor_Id);
 
 struct _Elm_Cursor
 {
-   Evas_Object *obj;
+   Evas_Object *obj, *hotobj;
    Evas_Object *eventarea, *owner;
    const char *style, *cursor_name;
    int hot_x, hot_y;
@@ -166,7 +166,40 @@ _elm_cursor_obj_del(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_UN
         evas_object_event_callback_del_full(cur->obj, EVAS_CALLBACK_DEL,
                                             _elm_cursor_obj_del, cur);
         cur->obj = NULL;
+        ELM_SAFE_FREE(cur->hotobj, evas_object_del);
      }
+}
+
+static void
+_elm_cursor_set_hot_spots(Elm_Cursor *cur)
+{
+   const char *str;
+   Evas_Coord cx, cy, x, y, w, h;
+   int prev_hot_x, prev_hot_y;
+
+   prev_hot_x = cur->hot_x;
+   prev_hot_y = cur->hot_y;
+   
+   evas_object_geometry_get(cur->obj, &cx, &cy, NULL, NULL);
+   evas_object_geometry_get(cur->hotobj, &x, &y, &w, &h);
+   cur->hot_x = (x + (w / 2)) - cx;
+   cur->hot_y = (y + (h / 2)) - cy;
+
+   str = edje_object_data_get(cur->obj, "hot_x");
+   if (str) cur->hot_x = atoi(str);
+   str = edje_object_data_get(cur->obj, "hot_y");
+   if (str) cur->hot_y = atoi(str);
+   
+   if ((cur->visible) &&
+       ((prev_hot_x != cur->hot_x) || (prev_hot_y != cur->hot_y)))
+     ecore_evas_object_cursor_set(cur->ee, cur->obj, ELM_OBJECT_LAYER_CURSOR,
+                                  cur->hot_x, cur->hot_y);
+}
+
+static void
+_elm_cursor_hot_change(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   _elm_cursor_set_hot_spots(data);
 }
 
 static Eina_Bool
@@ -176,8 +209,7 @@ _elm_cursor_obj_add(Evas_Object *obj, Elm_Cursor *cur)
 
    cur->obj = edje_object_add(cur->evas);
 
-   if (!cur->obj)
-     return EINA_FALSE;
+   if (!cur->obj) return EINA_FALSE;
 
    if (!_elm_theme_object_set(obj, cur->obj, "cursor", cur->cursor_name,
                              cur->style ? cur->style : "default"))
@@ -185,38 +217,27 @@ _elm_cursor_obj_add(Evas_Object *obj, Elm_Cursor *cur)
         ELM_SAFE_FREE(cur->obj, evas_object_del);
         return EINA_FALSE;
      }
+   cur->hotobj = evas_object_rectangle_add(cur->evas);
+   evas_object_color_set(cur->hotobj, 0, 0, 0, 0);
+   edje_object_part_swallow(cur->obj, "elm.content.hotspot", cur->hotobj);
+   evas_object_event_callback_add(cur->obj, EVAS_CALLBACK_MOVE,
+                                  _elm_cursor_hot_change, cur);
+   evas_object_event_callback_add(cur->obj, EVAS_CALLBACK_RESIZE,
+                                  _elm_cursor_hot_change, cur);
 
    evas_object_event_callback_add(cur->obj, EVAS_CALLBACK_DEL,
                                   _elm_cursor_obj_del, cur);
-
    edje_object_size_min_get(cur->obj, &x, &y);
+   edje_object_size_min_restricted_calc(cur->obj, &x, &y, x, y);
    evas_object_resize(cur->obj, x, y);
    return EINA_TRUE;
 }
 
 static void
-_elm_cursor_set_hot_spots(Elm_Cursor *cur)
+_elm_cursor_set(Elm_Cursor *cur)
 {
-   const char *str;
-
-   str = edje_object_data_get(cur->obj, "hot_x");
-   if (str) cur->hot_x = atoi(str);
-   else cur->hot_x = 0;
-
-   str = edje_object_data_get(cur->obj, "hot_y");
-   if (str) cur->hot_y = atoi(str);
-   else cur->hot_y = 0;
-}
-
-static void
-_elm_cursor_mouse_in(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
-{
-   Elm_Cursor *cur = data;
-
-   Evas_Event_Mouse_In *ev = event_info;
-   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return;
-
    if (cur->visible) return;
+
    evas_event_freeze(cur->evas);
    cur->visible = EINA_TRUE;
    if (!cur->use_engine)
@@ -229,6 +250,15 @@ _elm_cursor_mouse_in(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_U
      }
    else
      {
+        if (cur->obj)
+          {
+             evas_object_del(cur->obj);
+             cur->obj = NULL;
+             ELM_SAFE_FREE(cur->hotobj, evas_object_del);
+          }
+        ecore_evas_object_cursor_set(cur->ee, NULL,
+                                     ELM_OBJECT_LAYER_CURSOR, cur->hot_x,
+                                     cur->hot_y);
 #ifdef HAVE_ELEMENTARY_X
         if (cur->x.win)
           ecore_x_window_cursor_set(cur->x.win, cur->x.cursor);
@@ -239,6 +269,17 @@ _elm_cursor_mouse_in(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_U
 #endif
      }
    evas_event_thaw(cur->evas);
+}
+
+static void
+_elm_cursor_mouse_in(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
+{
+   Elm_Cursor *cur = data;
+
+   Evas_Event_Mouse_In *ev = event_info;
+   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return;
+
+   _elm_cursor_set(cur);
 }
 
 static void
@@ -267,7 +308,7 @@ _elm_cursor_mouse_out(void *data, Evas *evas EINA_UNUSED, Evas_Object *obj EINA_
      {
         pcur->visible = EINA_FALSE;
         evas_event_thaw(cur->evas);
-        _elm_cursor_mouse_in(pcur, NULL, NULL, NULL);
+        _elm_cursor_set(pcur);
         return;
      }
 
@@ -326,28 +367,34 @@ _elm_cursor_cur_set(Elm_Cursor *cur)
 
    if (cur->use_engine)
      {
-#ifdef HAVE_ELEMENTARY_X
-        cur->x.win = elm_win_xwindow_get(cur->eventarea);
-        if (cur->x.win)
+        Evas_Object *top;
+
+        top = elm_widget_top_get(cur->owner);
+        if ((top) && (eo_isa(top, ELM_WIN_CLASS)))
           {
-             struct _Cursor_Id *cur_id;
-
-             cur_id = bsearch(&(cur->cursor_name), _cursors, _cursors_count,
-                              sizeof(struct _Cursor_Id), _elm_cursor_strcmp);
-
-             if (!cur_id)
+#ifdef HAVE_ELEMENTARY_X
+             cur->x.win = elm_win_xwindow_get(top);
+             if (cur->x.win)
                {
-                  INF("X cursor couldn't be found: %s. Using default.",
-                      cur->cursor_name);
-                  cur->x.cursor = ecore_x_cursor_shape_get(ECORE_X_CURSOR_X);
+                  struct _Cursor_Id *cur_id;
+                  
+                  cur_id = bsearch(&(cur->cursor_name), _cursors, _cursors_count,
+                                   sizeof(struct _Cursor_Id), _elm_cursor_strcmp);
+                  
+                  if (!cur_id)
+                    {
+                       INF("X cursor couldn't be found: %s. Using default.",
+                           cur->cursor_name);
+                       cur->x.cursor = ecore_x_cursor_shape_get(ECORE_X_CURSOR_X);
+                    }
+                  else
+                    cur->x.cursor = ecore_x_cursor_shape_get(cur_id->id);
                }
-             else
-                cur->x.cursor = ecore_x_cursor_shape_get(cur_id->id);
-          }
 #endif
 #ifdef HAVE_ELEMENTARY_WAYLAND
-        cur->wl.win = elm_win_wl_window_get(cur->eventarea);
+             cur->wl.win = elm_win_wl_window_get(top);
 #endif
+          }
      }
 }
 

@@ -258,7 +258,7 @@ _elm_clouseau_reload()
    _CLOUSEAU_LOAD_SYMBOL(_clouseau_info, app_connect);
 
    _clouseau_info.init();
-   if(!_clouseau_info.app_connect(elm_app_name_get()))
+   if (!_clouseau_info.app_connect(elm_app_name_get()))
      {
         ERR("Failed connecting to the clouseau server.");
      }
@@ -330,10 +330,11 @@ elm_shutdown(void)
    ecore_event_handler_del(system_handlers[1]);
 
    _elm_win_shutdown();
+   _elm_atspi_bridge_shutdown();
+
    while (_elm_win_deferred_free) ecore_main_loop_iterate();
 
    _elm_clouseau_unload();
-   _elm_atspi_bridge_shutdown();
 // wrningz :(
 //   _prefix_shutdown();
    ELM_SAFE_FREE(app_name, eina_stringshare_del);
@@ -890,6 +891,7 @@ elm_quicklaunch_prepare(int    argc,
 #else
    (void)argc;
    (void)argv;
+   (void)cwd;
    return EINA_FALSE;
 #endif
 }
@@ -1530,6 +1532,21 @@ elm_object_scroll_lock_y_get(const Evas_Object *obj)
    return elm_widget_drag_lock_y_get(obj);
 }
 
+EAPI void
+elm_object_scroll_item_loop_enabled_set(Evas_Object *obj,
+                                        Eina_Bool   enable)
+{
+   EINA_SAFETY_ON_NULL_RETURN(obj);
+   elm_widget_item_loop_enabled_set(obj, enable);
+}
+
+EAPI Eina_Bool
+elm_object_scroll_item_loop_enabled_get(const Evas_Object *obj)
+{
+   EINA_SAFETY_ON_NULL_RETURN_VAL(obj, EINA_FALSE);
+   return elm_widget_item_loop_enabled_get(obj);
+}
+
 EAPI Eina_Bool
 elm_object_widget_check(const Evas_Object *obj)
 {
@@ -1720,6 +1737,13 @@ elm_object_orientation_mode_disabled_get(const Evas_Object *obj)
    return elm_widget_orientation_mode_disabled_get(obj);
 }
 
+EAPI Elm_Object_Item *
+elm_object_focused_item_get(const Evas_Object *obj)
+{
+   EINA_SAFETY_ON_NULL_RETURN_VAL(obj, NULL);
+   return elm_widget_focused_item_get(obj);
+}
+
 EAPI void
 elm_object_item_access_info_set(Elm_Object_Item *it, const char *txt)
 {
@@ -1830,6 +1854,7 @@ EAPI void elm_object_item_del_cb_set(Elm_Object_Item *it, Evas_Smart_Cb del_cb)
 
 EAPI void elm_object_item_del(Elm_Object_Item *it)
 {
+   if (!it) return;
    _elm_widget_item_del((Elm_Widget_Item *)it);
 }
 
@@ -1933,4 +1958,16 @@ int
 elm_object_item_track_get(const Elm_Object_Item *it)
 {
    return elm_widget_item_track_get((Elm_Widget_Item *)it);
+}
+
+EAPI void
+elm_object_item_focus_set(Elm_Object_Item *item, Eina_Bool focused)
+{
+   elm_widget_item_focus_set(item, focused);
+}
+
+EAPI Eina_Bool
+elm_object_item_focus_get(const Elm_Object_Item *item)
+{
+   return elm_widget_item_focus_get(item);
 }

@@ -22,8 +22,8 @@ typedef struct _Action_Area_Data Action_Area_Data;
 /**
  * Base layout smart data extended with popup instance data.
  */
-typedef struct _Elm_Popup_Smart_Data Elm_Popup_Smart_Data;
-struct _Elm_Popup_Smart_Data
+typedef struct _Elm_Popup_Data Elm_Popup_Data;
+struct _Elm_Popup_Data
 {
    Evas_Object          *notify;
    Evas_Object          *title_icon;
@@ -70,7 +70,7 @@ struct _Action_Area_Data
  */
 
 #define ELM_POPUP_DATA_GET(o, sd) \
-  Elm_Popup_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_POPUP_CLASS)
+  Elm_Popup_Data * sd = eo_data_scope_get(o, ELM_POPUP_CLASS)
 
 #define ELM_POPUP_DATA_GET_OR_RETURN(o, ptr)         \
   ELM_POPUP_DATA_GET(o, ptr);                        \
@@ -91,7 +91,7 @@ struct _Action_Area_Data
     }
 
 #define ELM_POPUP_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_POPUP_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_POPUP_CLASS))) \
     return
 
 #define ELM_POPUP_ITEM_CHECK(it)                            \

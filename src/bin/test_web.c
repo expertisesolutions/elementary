@@ -9,6 +9,8 @@ typedef struct
    Evas_Object *btn_back;
    Evas_Object *btn_fwd;
    Evas_Object *url_entry;
+   Evas_Object *bx;
+   Evas_Object *hoversel;
    Eina_List *sub_wins;
    Eina_Bool js_hooks : 1;
 } Web_Test;
@@ -313,6 +315,22 @@ _bring_in_region_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info E
    elm_web_region_bring_in(wt->web, 50, 0, 1, 1);
 }
 
+static void
+_on_fullscreen_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Web_Test *wt = data;
+   elm_box_unpack(wt->bx, wt->hoversel);
+   evas_object_hide(wt->hoversel);
+}
+
+static void
+_on_unfullscreen_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Web_Test *wt = data;
+   elm_box_pack_start(wt->bx, wt->hoversel);
+   evas_object_show(wt->hoversel);
+}
+
 typedef struct
 {
    const char* name;
@@ -345,6 +363,36 @@ _useragent_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info)
 }
 
 static void
+_dialog_test_cb(void *data, Evas_Object *obj, void *event_info)
+{
+   Web_Test *wt = data;
+   const char *selected = elm_object_item_text_get(event_info);
+   const char dialog_html[] = "<!doctype html><body>"
+       "<script>"
+       "var confirm_test = function() {"
+       " if (window.confirm('confirm') == true) {"
+       "   document.getElementById('r').innerHTML = 'You pressed OK';"
+       " } else {"
+       "   document.getElementById('r').innerHTML = 'You pressed Cancel';"
+       " }"
+       "};"
+       "var prompt_test = function() {"
+       " document.getElementById('r').innerHTML = window.prompt('Enter your name', 'EFL');"
+       "};"
+       "</script>"
+       "Result: <div id='r'> </div>"
+       "<input type='button' value='alert' onclick=\"window.alert('alert pressed');\">"
+       "<input type='button' value='confirm' onclick=\"confirm_test();\">"
+       "<input type='button' value='prompt' onclick=\"prompt_test();\">"
+       "</body>";
+
+   printf("selected test : %s\n", selected);
+   elm_object_text_set(obj, selected);
+
+   elm_web_html_string_load(wt->web, dialog_html, NULL, NULL);
+}
+
+static void
 _select_tag_test_cb(void *data, Evas_Object *obj, void *event_info)
 {
    Web_Test *wt = data;
@@ -374,11 +422,19 @@ _new_window_test_cb(void *data, Evas_Object *obj, void *event_info)
    const char *selected = elm_object_item_text_get(event_info);
    const char new_window_html[] = "<!doctype html><body>"
        "<script>"
-       "var open = function() {"
-       "  window.open('http://www.enlightenment.org','','width=400,height=300');"
-       "};"
+       "var h = null;"
+       "var test = function() {"
+       "  if (!h) {"
+       "    h = window.open('http://www.enlightenment.org','','width=400,height=300');"
+       "    document.getElementById('btn').value='close window';"
+       "  } else {"
+       "    h.close();"
+       "    h = null;"
+       "    document.getElementById('btn').value='open new window';"
+       "  }"
+       "}"
        "</script>"
-       "<input type='button' onclick='open();' value='click to open new window'>"
+       "<input type='button' id='btn' onclick='test();' value='open new window'>"
        "</body>";
 
    printf("selected test : %s\n", selected);
@@ -386,6 +442,33 @@ _new_window_test_cb(void *data, Evas_Object *obj, void *event_info)
 
    elm_web_html_string_load(wt->web, new_window_html, NULL, NULL);
 }
+
+static void
+_fullscreen_test_cb(void *data, Evas_Object *obj, void *event_info)
+{
+   Web_Test *wt = data;
+   const char *selected = elm_object_item_text_get(event_info);
+   const char fullscreen_html[] = "<!doctype html><body>"
+       "<script>"
+       "var launch = function(obj) {"
+       "  var f = document.webkitFullscreenElement;"
+       "  if (f) document.webkitExitFullscreen();"
+       "  if (f != obj) obj.webkitRequestFullscreen();"
+       "}\n"
+       "var test_full = function() { launch(document.documentElement); }\n"
+       "var test_small = function() { launch(document.getElementById('box')); }\n"
+       "</script>"
+       "<input type='button' onclick='test_full();' value='request fullscreen'>"
+       "<div id='box' style='width:100px;height:100px;background-color:blue;' onclick='test_small();'>small box</div>"
+       "<input type='button' onclick='test_small();' value='request fullscreen of box'>"
+       "</body>";
+
+   printf("selected test : %s\n", selected);
+   elm_object_text_set(obj, selected);
+
+   elm_web_html_string_load(wt->web, fullscreen_html, NULL, NULL);
+}
+
 static void
 _main_web_del_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
@@ -563,6 +646,8 @@ test_web_ui(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
    wt = calloc(1, sizeof(*wt));
    win = elm_win_util_standard_add("web", "Web");
 
+   evas_object_smart_callback_add(win, "fullscreen", _on_fullscreen_cb, wt);
+   evas_object_smart_callback_add(win, "unfullscreen", _on_unfullscreen_cb, wt);
    elm_win_autodel_set(win, EINA_TRUE);
 
    bx = elm_box_add(win);
@@ -574,10 +659,14 @@ test_web_ui(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
    elm_hoversel_hover_parent_set(hoversel, win);
    elm_object_text_set(hoversel, "Test cases");
 
+   elm_hoversel_item_add(hoversel, "alert/confirm/prompt", NULL, ELM_ICON_NONE,
+                         _dialog_test_cb, wt);
    elm_hoversel_item_add(hoversel, "<select> tag", NULL, ELM_ICON_NONE,
                          _select_tag_test_cb, wt);
    elm_hoversel_item_add(hoversel, "new window", NULL, ELM_ICON_NONE,
                          _new_window_test_cb, wt);
+   elm_hoversel_item_add(hoversel, "fullscreen", NULL, ELM_ICON_NONE,
+                         _fullscreen_test_cb, wt);
    elm_box_pack_end(bx, hoversel);
    evas_object_show(hoversel);
 
@@ -591,6 +680,8 @@ test_web_ui(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_in
 
    evas_object_event_callback_add(web, EVAS_CALLBACK_DEL, _main_web_del_cb, wt);
    wt->web = web;
+   wt->bx = bx;
+   wt->hoversel = hoversel;
 
 
    elm_web_html_string_load(wt->web,

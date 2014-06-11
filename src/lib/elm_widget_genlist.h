@@ -18,7 +18,7 @@
 /**
  * Base widget smart data extended with genlist instance data.
  */
-typedef struct _Elm_Genlist_Smart_Data Elm_Genlist_Smart_Data;
+typedef struct _Elm_Genlist_Data Elm_Genlist_Data;
 
 typedef enum
 {
@@ -27,7 +27,7 @@ typedef enum
    ELM_GENLIST_TREE_EFFECT_CONTRACT = 2
 } Elm_Genlist_Item_Move_Effect_Mode;
 
-struct _Elm_Genlist_Smart_Data
+struct _Elm_Genlist_Data
 {
    Eina_Inlist_Sorted_State             *state;
    Evas_Object                          *hit_rect;
@@ -38,6 +38,7 @@ struct _Elm_Genlist_Smart_Data
    Eina_List                            *selected; /* a list of
                                                     * selected
                                                     * items */
+   Eina_List                            *deselecting; /* a list of items currently being deselected */
    Eina_List                            *group_items; /* a list of
                                                        * groups index
                                                        * items */
@@ -46,6 +47,9 @@ struct _Elm_Genlist_Smart_Data
                                                      * being
                                                      * repositioned */
    Elm_Object_Item                      *last_selected_item;
+   Elm_Object_Item                      *focused_item; /**< a focused item by keypad arrow or mouse. This is set to NULL if widget looses focus. */
+   Elm_Object_Item                      *last_focused_item; /**< This records the last focused item when widget looses focus. This is required to set the focus on last focused item when widgets gets focus. */
+   Elm_Object_Item                      *prev_focused_item; /**< a previous focused item by keypad arrow or mouse. */
    Ecore_Job                            *calc_job;
    int                                   walking;
    int                                   item_width, item_height;
@@ -123,15 +127,13 @@ struct _Elm_Genlist_Smart_Data
    /* a scrollto type which remembers where to scroll ex) in, top,
     * middle */
    Elm_Genlist_Item_Scrollto_Type        scroll_to_type;
-   Evas_Object                          *alpha_bg; /* not to receive
-                                                    * event when tree
-                                                    * effect is not
-                                                    * finished */
+   Evas_Object                          *event_block_rect; /**< This object blocks the event in some cases. For example, when the tree effect is running and not finished, this object blocks events to the genlist. */
    Eina_List                            *move_items; /* items move for
                                                       * tree effect */
    Elm_Gen_Item                         *expanded_next_item;
    Ecore_Animator                       *tree_effect_animator;
    Elm_Genlist_Item_Move_Effect_Mode     move_effect_mode;
+   int                                   reorder_fast;
 
    Eina_Bool                             focus_on_selection_enabled : 1;
    Eina_Bool                             tree_effect_enabled : 1;
@@ -182,7 +184,8 @@ struct _Elm_Genlist_Smart_Data
                                                      * selection */
 
    Eina_Bool                             swipe : 1;
-   int                                   reorder_fast;
+   /**< value whether item loop feature is enabled or not. */
+   Eina_Bool                             item_loop_enable : 1;
 };
 
 typedef struct _Item_Block Item_Block;
@@ -192,7 +195,7 @@ struct Elm_Gen_Item_Type
 {
    Elm_Gen_Item           *it;
 
-   Elm_Genlist_Smart_Data *wsd;
+   Elm_Genlist_Data       *wsd;
 
    Item_Block             *block;
    Eina_List              *items;
@@ -240,7 +243,7 @@ struct _Item_Block
    int                     count;
    int                     num;
    int                     reorder_offset;
-   Elm_Genlist_Smart_Data *sd;
+   Elm_Genlist_Data       *sd;
    Eina_List              *items;
    Evas_Coord              x, y, w, h, minw, minh;
    int                     position;
@@ -269,11 +272,11 @@ struct _Item_Cache
    Eina_Bool    tree : 1; // it->group
 };
 
-typedef struct _Elm_Genlist_Pan_Smart_Data Elm_Genlist_Pan_Smart_Data;
-struct _Elm_Genlist_Pan_Smart_Data
+typedef struct _Elm_Genlist_Pan_Data Elm_Genlist_Pan_Data;
+struct _Elm_Genlist_Pan_Data
 {
    Evas_Object            *wobj;
-   Elm_Genlist_Smart_Data *wsd;
+   Elm_Genlist_Data       *wsd;
    Ecore_Job              *resize_job;
 };
 
@@ -284,13 +287,13 @@ struct _Elm_Genlist_Pan_Smart_Data
 #define GL_IT(_it) (_it->item)
 
 #define ELM_GENLIST_DATA_GET(o, sd) \
-  Elm_Genlist_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_GENLIST_CLASS)
+  Elm_Genlist_Data * sd = eo_data_scope_get(o, ELM_GENLIST_CLASS)
 
 #define ELM_GENLIST_DATA_GET_FROM_ITEM(it, sd) \
-  Elm_Genlist_Smart_Data * sd = GL_IT(it)->wsd
+  Elm_Genlist_Data * sd = GL_IT(it)->wsd
 
 #define ELM_GENLIST_PAN_DATA_GET(o, sd) \
-  Elm_Genlist_Pan_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_GENLIST_PAN_CLASS)
+  Elm_Genlist_Pan_Data * sd = eo_data_scope_get(o, ELM_GENLIST_PAN_CLASS)
 
 #define ELM_GENLIST_DATA_GET_OR_RETURN(o, ptr)       \
   ELM_GENLIST_DATA_GET(o, ptr);                      \
@@ -311,7 +314,7 @@ struct _Elm_Genlist_Pan_Smart_Data
     }
 
 #define ELM_GENLIST_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_GENLIST_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_GENLIST_CLASS))) \
     return
 
 #define ELM_GENLIST_ITEM_CHECK(it)                          \
@@ -325,6 +328,6 @@ struct _Elm_Genlist_Pan_Smart_Data
 #define ELM_GENLIST_ITEM_CHECK_OR_GOTO(it, label)              \
   ELM_WIDGET_ITEM_CHECK_OR_GOTO((Elm_Widget_Item *)it, label); \
   if (!it->base.widget || !eo_isa                              \
-        ((it->base.widget), ELM_OBJ_GENLIST_CLASS)) goto label;
+        ((it->base.widget), ELM_GENLIST_CLASS)) goto label;
 
 #endif

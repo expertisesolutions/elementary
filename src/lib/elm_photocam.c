@@ -8,16 +8,16 @@
 #include "elm_widget_photocam.h"
 #include "elm_interface_scrollable.h"
 
-EAPI Eo_Op ELM_OBJ_PHOTOCAM_PAN_BASE_ID = EO_NOOP;
+#define ELM_INTERFACE_ATSPI_ACCESSIBLE_PROTECTED
+#include "elm_interface_atspi_accessible.h"
+#include "elm_interface_atspi_accessible.eo.h"
 
-#define MY_PAN_CLASS ELM_OBJ_PHOTOCAM_PAN_CLASS
+#define MY_PAN_CLASS ELM_PHOTOCAM_PAN_CLASS
 
 #define MY_PAN_CLASS_NAME "Elm_Photocam_Pan"
 #define MY_PAN_CLASS_NAME_LEGACY "elm_photocam_pan"
 
-EAPI Eo_Op ELM_OBJ_PHOTOCAM_BASE_ID = EO_NOOP;
-
-#define MY_CLASS ELM_OBJ_PHOTOCAM_CLASS
+#define MY_CLASS ELM_PHOTOCAM_CLASS
 
 #define MY_CLASS_NAME "Elm_Photocam"
 #define MY_CLASS_NAME_LEGACY "elm_photocam"
@@ -77,8 +77,17 @@ static const Evas_Smart_Cb_Description _smart_callbacks[] = {
    {NULL, NULL}
 };
 
+static Eina_Bool _key_action_move(Evas_Object *obj, const char *params);
+static Eina_Bool _key_action_zoom(Evas_Object *obj, const char *params);
+
+static const Elm_Action key_actions[] = {
+   {"move", _key_action_move},
+   {"zoom", _key_action_zoom},
+   {NULL, NULL}
+};
+
 static inline void
-_photocam_image_file_set(Evas_Object *obj, Elm_Photocam_Smart_Data *sd)
+_photocam_image_file_set(Evas_Object *obj, Elm_Photocam_Data *sd)
 {
    if (sd->f)
      evas_object_image_mmap_set(obj, sd->f, NULL);
@@ -129,25 +138,17 @@ _calc_job_cb(void *data)
    evas_object_smart_changed(sd->pan_obj);
 }
 
-static void
-_elm_photocam_pan_smart_move(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_evas_object_smart_move(Eo *obj EINA_UNUSED, Elm_Photocam_Pan_Data *psd, Evas_Coord x EINA_UNUSED, Evas_Coord y EINA_UNUSED)
 {
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
-   va_arg(*list, Evas_Coord);
-   va_arg(*list, Evas_Coord);
-
    ecore_job_del(psd->wsd->calc_job);
    psd->wsd->calc_job = ecore_job_add(_calc_job_cb, psd->wobj);
 }
 
-static void
-_elm_photocam_pan_smart_resize(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_evas_object_smart_resize(Eo *obj, Elm_Photocam_Pan_Data *psd, Evas_Coord w, Evas_Coord h)
 {
-   Evas_Coord w = va_arg(*list, Evas_Coord);
-   Evas_Coord h = va_arg(*list, Evas_Coord);
    Evas_Coord ow, oh;
-
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
 
    evas_object_geometry_get(obj, NULL, NULL, &ow, &oh);
    if ((ow == w) && (oh == h)) return;
@@ -185,7 +186,7 @@ _image_place(Evas_Object *obj,
    if (sd->show.show)
      {
         sd->show.show = EINA_FALSE;
-        eo_do(obj, elm_scrollable_interface_content_region_show
+        eo_do(obj, elm_interface_scrollable_content_region_show
               (sd->show.x, sd->show.y, sd->show.w, sd->show.h));
      }
 }
@@ -337,14 +338,13 @@ _grid_place(Evas_Object *obj,
      }
 }
 
-static void
-_elm_photocam_pan_smart_calculate(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_photocam_pan_evas_object_smart_calculate(Eo *obj, Elm_Photocam_Pan_Data *psd)
 {
    Elm_Phocam_Grid *g;
    Eina_List *l;
    Evas_Coord ox, oy, ow, oh;
 
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
    ELM_WIDGET_DATA_GET_OR_RETURN(psd->wobj, wd);
 
    evas_object_geometry_get(obj, &ox, &oy, &ow, &oh);
@@ -363,37 +363,26 @@ _elm_photocam_pan_smart_calculate(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
      }
 }
 
-static void
-_elm_photocam_pan_smart_pos_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_elm_pan_pos_set(Eo *obj, Elm_Photocam_Pan_Data *psd, Evas_Coord x, Evas_Coord y)
 {
-   Evas_Coord x = va_arg(*list, Evas_Coord);
-   Evas_Coord y = va_arg(*list, Evas_Coord);
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
-
    if ((x == psd->wsd->pan_x) && (y == psd->wsd->pan_y)) return;
    psd->wsd->pan_x = x;
    psd->wsd->pan_y = y;
    evas_object_smart_changed(obj);
 }
 
-static void
-_elm_photocam_pan_smart_pos_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_elm_pan_pos_get(Eo *obj EINA_UNUSED, Elm_Photocam_Pan_Data *psd, Evas_Coord *x, Evas_Coord *y)
 {
-   Evas_Coord *x = va_arg(*list, Evas_Coord *);
-   Evas_Coord *y = va_arg(*list, Evas_Coord *);
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
-
    if (x) *x = psd->wsd->pan_x;
    if (y) *y = psd->wsd->pan_y;
 }
 
-static void
-_elm_photocam_pan_smart_pos_max_get(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_elm_pan_pos_max_get(Eo *obj, Elm_Photocam_Pan_Data *psd, Evas_Coord *x, Evas_Coord *y)
 {
    Evas_Coord ow, oh;
-   Evas_Coord *x = va_arg(*list, Evas_Coord *);
-   Evas_Coord *y = va_arg(*list, Evas_Coord *);
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
 
    evas_object_geometry_get(obj, NULL, NULL, &ow, &oh);
    ow = psd->wsd->minw - ow;
@@ -404,67 +393,34 @@ _elm_photocam_pan_smart_pos_max_get(Eo *obj, void *_pd, va_list *list)
    if (y) *y = oh;
 }
 
-static void
-_elm_photocam_pan_smart_pos_min_get(Eo *obj EINA_UNUSED, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_elm_pan_pos_min_get(Eo *obj EINA_UNUSED, Elm_Photocam_Pan_Data *_pd EINA_UNUSED, Evas_Coord *x, Evas_Coord *y)
 {
-   Evas_Coord *x = va_arg(*list, Evas_Coord *);
-   Evas_Coord *y = va_arg(*list, Evas_Coord *);
    if (x) *x = 0;
    if (y) *y = 0;
 }
 
-static void
-_elm_photocam_pan_smart_content_size_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_pan_elm_pan_content_size_get(Eo *obj EINA_UNUSED, Elm_Photocam_Pan_Data *psd, Evas_Coord *w, Evas_Coord *h)
 {
-   Evas_Coord *w = va_arg(*list, Evas_Coord *);
-   Evas_Coord *h = va_arg(*list, Evas_Coord *);
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
-
    if (w) *w = psd->wsd->minw;
    if (h) *h = psd->wsd->minh;
 }
 
-static void
-_elm_photocam_pan_destructor(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_photocam_pan_eo_base_destructor(Eo *obj, Elm_Photocam_Pan_Data *psd)
 {
-   Elm_Photocam_Pan_Smart_Data *psd = _pd;
    eo_data_unref(psd->wobj, psd->wsd);
    eo_do_super(obj, MY_PAN_CLASS, eo_destructor());
 }
 
 static void
-_photocam_pan_class_constructor(Eo_Class *klass)
+_elm_photocam_pan_class_constructor(Eo_Class *klass)
 {
-      const Eo_Op_Func_Description func_desc[] = {
-           EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_photocam_pan_destructor),
-
-           EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_RESIZE), _elm_photocam_pan_smart_resize),
-           EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_MOVE), _elm_photocam_pan_smart_move),
-           EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_CALCULATE), _elm_photocam_pan_smart_calculate),
-           EO_OP_FUNC(ELM_OBJ_PAN_ID(ELM_OBJ_PAN_SUB_ID_POS_SET), _elm_photocam_pan_smart_pos_set),
-           EO_OP_FUNC(ELM_OBJ_PAN_ID(ELM_OBJ_PAN_SUB_ID_POS_GET), _elm_photocam_pan_smart_pos_get),
-           EO_OP_FUNC(ELM_OBJ_PAN_ID(ELM_OBJ_PAN_SUB_ID_POS_MAX_GET), _elm_photocam_pan_smart_pos_max_get),
-           EO_OP_FUNC(ELM_OBJ_PAN_ID(ELM_OBJ_PAN_SUB_ID_POS_MIN_GET), _elm_photocam_pan_smart_pos_min_get),
-           EO_OP_FUNC(ELM_OBJ_PAN_ID(ELM_OBJ_PAN_SUB_ID_CONTENT_SIZE_GET), _elm_photocam_pan_smart_content_size_get),
-           EO_OP_FUNC_SENTINEL
-      };
-      eo_class_funcs_set(klass, func_desc);
-
-      evas_smart_legacy_type_register(MY_PAN_CLASS_NAME_LEGACY, klass);
+   evas_smart_legacy_type_register(MY_PAN_CLASS_NAME_LEGACY, klass);
 }
 
-static const Eo_Class_Description _elm_photocam_pan_class_desc = {
-     EO_VERSION,
-     MY_PAN_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(NULL, NULL, 0),
-     NULL,
-     sizeof(Elm_Photocam_Pan_Smart_Data),
-     _photocam_pan_class_constructor,
-     NULL
-};
-
-EO_DEFINE_CLASS(elm_obj_photocam_pan_class_get, &_elm_photocam_pan_class_desc, ELM_OBJ_PAN_CLASS, NULL);
+#include "elm_photocam_pan.eo.c"
 
 static int
 _nearest_pow2_get(int num)
@@ -749,13 +705,14 @@ static Eina_Bool
 _zoom_do(Evas_Object *obj,
          double t)
 {
-   Evas_Coord xx, yy, ow, oh;
+   Evas_Coord xx, yy, ow = 0, oh = 0;
 
    ELM_PHOTOCAM_DATA_GET(obj, sd);
 
    sd->size.w = (sd->size.ow * (1.0 - t)) + (sd->size.nw * t);
    sd->size.h = (sd->size.oh * (1.0 - t)) + (sd->size.nh * t);
-   eo_do(obj, elm_scrollable_interface_content_viewport_size_get(&ow, &oh));
+   eo_do(obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &ow, &oh));
    xx = (sd->size.spos.x * sd->size.w) - (ow / 2);
    yy = (sd->size.spos.y * sd->size.h) - (oh / 2);
    if (xx < 0) xx = 0;
@@ -877,15 +834,14 @@ _mouse_up_cb(void *data,
    sd->on_hold = EINA_FALSE;
 }
 
-static void
-_elm_photocam_smart_on_focus(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_photocam_elm_widget_on_focus(Eo *obj, Elm_Photocam_Data *_pd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
+   ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd, EINA_FALSE);
    Eina_Bool int_ret = EINA_FALSE;
 
-   eo_do_super(obj, MY_CLASS, elm_wdg_on_focus(&int_ret));
-   if (!int_ret) return;
+   eo_do_super(obj, MY_CLASS, int_ret = elm_obj_widget_on_focus());
+   if (!int_ret) return EINA_FALSE;
 
    if (elm_widget_focus_get(obj))
      {
@@ -900,22 +856,19 @@ _elm_photocam_smart_on_focus(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
         evas_object_focus_set(wd->resize_obj, EINA_FALSE);
      }
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
-static void
-_elm_photocam_smart_theme(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+EOLIAN static Eina_Bool
+_elm_photocam_elm_widget_theme_apply(Eo *obj, Elm_Photocam_Data *sd EINA_UNUSED)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   if (ret) *ret = EINA_FALSE;
    Eina_Bool int_ret = EINA_FALSE;
-
-   eo_do_super(obj, MY_CLASS, elm_wdg_theme_apply(&int_ret));
-   if (!int_ret) return;
+   eo_do_super(obj, MY_CLASS, int_ret = elm_obj_widget_theme_apply());
+   if (!int_ret) return EINA_FALSE;
 
    _sizing_eval(obj);
 
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
 static void
@@ -964,97 +917,101 @@ _scroll_cb(Evas_Object *obj,
    evas_object_smart_callback_call(obj, SIG_SCROLL, NULL);
 }
 
-static void
-_elm_photocam_smart_event(Eo *obj, void *_pd EINA_UNUSED, va_list *list)
+static Eina_Bool
+_key_action_move(Evas_Object *obj, const char *params)
 {
-   Evas_Object *src = va_arg(*list, Evas_Object *);
-   Evas_Callback_Type type = va_arg(*list, Evas_Callback_Type);
-   Evas_Event_Key_Down *ev = va_arg(*list, void *);
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
+   const char *dir = params;
 
-   if (ret) *ret = EINA_FALSE;
-   (void) src;
-
-   double zoom;
    Evas_Coord x = 0;
    Evas_Coord y = 0;
-   Evas_Coord v_w = 0;
    Evas_Coord v_h = 0;
    Evas_Coord step_x = 0;
    Evas_Coord step_y = 0;
    Evas_Coord page_x = 0;
    Evas_Coord page_y = 0;
 
-   if (elm_widget_disabled_get(obj)) return;
-   if (type != EVAS_CALLBACK_KEY_DOWN) return;
-   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return;
-
    eo_do(obj,
-         elm_scrollable_interface_content_pos_get(&x, &y),
-         elm_scrollable_interface_step_size_get(&step_x, &step_y),
-         elm_scrollable_interface_page_size_get(&page_x, &page_y),
-         elm_scrollable_interface_content_viewport_size_get(&v_w, &v_h));
+         elm_interface_scrollable_content_pos_get(&x, &y),
+         elm_interface_scrollable_step_size_get(&step_x, &step_y),
+         elm_interface_scrollable_page_size_get(&page_x, &page_y),
+         elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, NULL, &v_h));
 
-   if ((!strcmp(ev->key, "Left")) ||
-       ((!strcmp(ev->key, "KP_Left")) && (!ev->string)))
+   if (!strcmp(dir, "left"))
      {
         x -= step_x;
      }
-   else if ((!strcmp(ev->key, "Right")) ||
-            ((!strcmp(ev->key, "KP_Right")) && (!ev->string)))
+   else if (!strcmp(dir, "right"))
      {
         x += step_x;
      }
-   else if ((!strcmp(ev->key, "Up")) ||
-            ((!strcmp(ev->key, "KP_Up")) && (!ev->string)))
+   else if (!strcmp(dir, "up"))
      {
         y -= step_y;
      }
-   else if ((!strcmp(ev->key, "Down")) ||
-            ((!strcmp(ev->key, "KP_Down")) && (!ev->string)))
+   else if (!strcmp(dir, "down"))
      {
         y += step_y;
      }
-   else if ((!strcmp(ev->key, "Prior")) ||
-            ((!strcmp(ev->key, "KP_Prior")) && (!ev->string)))
+   else if (!strcmp(dir, "prior"))
      {
         if (page_y < 0)
           y -= -(page_y * v_h) / 100;
         else
           y -= page_y;
      }
-   else if ((!strcmp(ev->key, "Next")) ||
-            ((!strcmp(ev->key, "KP_Next")) && (!ev->string)))
+   else if (!strcmp(dir, "next"))
      {
         if (page_y < 0)
           y += -(page_y * v_h) / 100;
         else
           y += page_y;
      }
-   else if ((!strcmp(ev->key, "KP_Add")))
+   else return EINA_FALSE;
+
+   eo_do(obj, elm_interface_scrollable_content_pos_set(x, y, EINA_TRUE));
+   return EINA_TRUE;
+}
+
+static Eina_Bool
+_key_action_zoom(Evas_Object *obj, const char *params)
+{
+   const char *dir = params;
+   double zoom;
+
+   if (!strcmp(dir, "in"))
      {
         zoom = elm_photocam_zoom_get(obj);
         zoom -= 0.5;
         elm_photocam_zoom_mode_set(obj, ELM_PHOTOCAM_ZOOM_MODE_MANUAL);
         elm_photocam_zoom_set(obj, zoom);
-        if (ret) *ret = EINA_TRUE;
-        return;
      }
-   else if ((!strcmp(ev->key, "KP_Subtract")))
+   else if (!strcmp(dir, "out"))
      {
         zoom = elm_photocam_zoom_get(obj);
         zoom += 0.5;
         elm_photocam_zoom_mode_set(obj, ELM_PHOTOCAM_ZOOM_MODE_MANUAL);
         elm_photocam_zoom_set(obj, zoom);
-        if (ret) *ret = EINA_TRUE;
-        return;
      }
-   else return;
+   else return EINA_FALSE;
+
+   return EINA_TRUE;
+}
+
+EOLIAN static Eina_Bool
+_elm_photocam_elm_widget_event(Eo *obj, Elm_Photocam_Data *_pd EINA_UNUSED, Evas_Object *src, Evas_Callback_Type type, void *event_info)
+{
+   (void) src;
+   Evas_Event_Key_Down *ev = event_info;
+
+   if (type != EVAS_CALLBACK_KEY_DOWN) return EINA_FALSE;
+   if (ev->event_flags & EVAS_EVENT_FLAG_ON_HOLD) return EINA_FALSE;
+
+   if (!_elm_config_key_binding_call(obj, ev, key_actions))
+     return EINA_FALSE;
 
    ev->event_flags |= EVAS_EVENT_FLAG_ON_HOLD;
-   eo_do(obj, elm_scrollable_interface_content_pos_set(x, y, EINA_TRUE));
-
-   if (ret) *ret = EINA_TRUE;
+   return EINA_TRUE;
 }
 
 Eina_Bool
@@ -1072,7 +1029,7 @@ _bounce_eval(void *data)
         sd->zoom_g_layer = EINA_FALSE;
         sd->g_layer_zoom.bounce.animator = NULL;
 
-        eo_do(obj, elm_scrollable_interface_freeze_set(EINA_FALSE));
+        eo_do(obj, elm_interface_scrollable_freeze_set(EINA_FALSE));
 
         return ECORE_CALLBACK_CANCEL;
      }
@@ -1090,7 +1047,7 @@ _bounce_eval(void *data)
         sd->g_layer_zoom.imy = 0;
         sd->zoom_g_layer = EINA_FALSE;
 
-        eo_do(obj, elm_scrollable_interface_freeze_set(EINA_FALSE));
+        eo_do(obj, elm_interface_scrollable_freeze_set(EINA_FALSE));
 
         _zoom_do(obj, 1.0);
         sd->g_layer_zoom.bounce.animator = NULL;
@@ -1119,7 +1076,7 @@ _g_layer_zoom_do(Evas_Object *obj,
                  Elm_Gesture_Zoom_Info *g_layer)
 {
    int regx, regy, regw, regh, ix, iy, iw, ih;
-   Evas_Coord rx, ry, rw, rh;
+   Evas_Coord rx, ry, rw = 0, rh = 0;
    int xx, yy;
 
    ELM_PHOTOCAM_DATA_GET(obj, sd);
@@ -1127,8 +1084,9 @@ _g_layer_zoom_do(Evas_Object *obj,
    sd->zoom = sd->g_layer_start / g_layer->zoom;
    sd->size.ow = sd->size.w;
    sd->size.oh = sd->size.h;
-   eo_do(obj, elm_scrollable_interface_content_pos_get(&rx, &ry));
-   eo_do(obj, elm_scrollable_interface_content_viewport_size_get(&rw, &rh));
+   eo_do(obj, elm_interface_scrollable_content_pos_get(&rx, &ry));
+   eo_do(obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &rw, &rh));
    if ((rw <= 0) || (rh <= 0)) return;
 
    sd->size.nw = (double)sd->size.imw / sd->zoom;
@@ -1181,16 +1139,17 @@ _g_layer_zoom_start_cb(void *data,
    Elm_Gesture_Zoom_Info *p = event_info;
    ELM_PHOTOCAM_DATA_GET(obj, sd);
    double marginx = 0, marginy = 0;
-   Evas_Coord rw, rh;
+   Evas_Coord rw = 0, rh = 0;
    int x, y, w, h;
 
    ELM_SAFE_FREE(sd->g_layer_zoom.bounce.animator, ecore_animator_del);
    sd->zoom_g_layer = EINA_TRUE;
 
-   eo_do(obj, elm_scrollable_interface_freeze_set(EINA_TRUE));
+   eo_do(obj, elm_interface_scrollable_freeze_set(EINA_TRUE));
 
    elm_photocam_image_region_get(obj, &x, &y, &w, &h);
-   eo_do(obj, elm_scrollable_interface_content_viewport_size_get(&rw, &rh));
+   eo_do(obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &rw, &rh));
 
    if (rw > sd->size.nw)
      marginx = (rw - sd->size.nw) / 2;
@@ -1211,7 +1170,7 @@ static Evas_Event_Flags
 _g_layer_zoom_move_cb(void *data,
                       void *event_info)
 {
-   Elm_Photocam_Smart_Data *sd = eo_data_scope_get(data, MY_CLASS);
+   Elm_Photocam_Data *sd = eo_data_scope_get(data, MY_CLASS);
    Elm_Gesture_Zoom_Info *p = event_info;
 
    _g_layer_zoom_do(data, sd->zoom_point_x, sd->zoom_point_y, p);
@@ -1227,7 +1186,8 @@ _g_layer_zoom_end_cb(void *data,
    ELM_PHOTOCAM_DATA_GET(obj, sd);
    Evas_Coord rw, rh;
 
-   eo_do(obj, elm_scrollable_interface_content_viewport_size_get(&rw, &rh));
+   eo_do(obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &rw, &rh));
    sd->g_layer_start = 1.0;
 
    if (sd->g_layer_zoom.imx || sd->g_layer_zoom.imy)
@@ -1309,19 +1269,18 @@ _g_layer_zoom_end_cb(void *data,
      }
    else
      {
-        eo_do(obj, elm_scrollable_interface_freeze_set(EINA_FALSE));
+        eo_do(obj, elm_interface_scrollable_freeze_set(EINA_FALSE));
         sd->zoom_g_layer = EINA_FALSE;
      }
 
    return EVAS_EVENT_FLAG_NONE;
 }
 
-static void
-_elm_photocam_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_photocam_evas_object_smart_add(Eo *obj, Elm_Photocam_Data *priv)
 {
-   Elm_Photocam_Smart_Data *priv = _pd;
    Eina_Bool bounce = _elm_config->thumbscroll_bounce_enable;
-   Elm_Photocam_Pan_Smart_Data *pan_data;
+   Elm_Photocam_Pan_Data *pan_data;
    Evas_Object *edje;
    Evas_Coord minw, minh;
 
@@ -1346,16 +1305,16 @@ _elm_photocam_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
 
    elm_widget_can_focus_set(obj, EINA_TRUE);
 
-   eo_do(obj, elm_scrollable_interface_objects_set(edje, priv->hit_rect));
+   eo_do(obj, elm_interface_scrollable_objects_set(edje, priv->hit_rect));
 
    eo_do(obj,
-         elm_scrollable_interface_animate_start_cb_set(_scroll_animate_start_cb),
-         elm_scrollable_interface_animate_stop_cb_set(_scroll_animate_stop_cb),
-         elm_scrollable_interface_drag_start_cb_set(_scroll_drag_start_cb),
-         elm_scrollable_interface_drag_stop_cb_set(_scroll_drag_stop_cb),
-         elm_scrollable_interface_scroll_cb_set(_scroll_cb));
+         elm_interface_scrollable_animate_start_cb_set(_scroll_animate_start_cb),
+         elm_interface_scrollable_animate_stop_cb_set(_scroll_animate_stop_cb),
+         elm_interface_scrollable_drag_start_cb_set(_scroll_drag_start_cb),
+         elm_interface_scrollable_drag_stop_cb_set(_scroll_drag_stop_cb),
+         elm_interface_scrollable_scroll_cb_set(_scroll_cb));
 
-   eo_do(obj, elm_scrollable_interface_bounce_allow_set(bounce, bounce));
+   eo_do(obj, elm_interface_scrollable_bounce_allow_set(bounce, bounce));
 
    priv->pan_obj = eo_add(MY_PAN_CLASS, evas_object_evas_get(obj));
    pan_data = eo_data_scope_get(priv->pan_obj, MY_PAN_CLASS);
@@ -1363,7 +1322,7 @@ _elm_photocam_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    pan_data->wobj = obj;
    pan_data->wsd = priv;
 
-   eo_do(obj, elm_scrollable_interface_extern_pan_set(priv->pan_obj));
+   eo_do(obj, elm_interface_scrollable_extern_pan_set(priv->pan_obj));
 
    priv->g_layer_start = 1.0;
    priv->zoom = 1;
@@ -1394,12 +1353,10 @@ _elm_photocam_smart_add(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
 
 }
 
-static void
-_elm_photocam_smart_del(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_photocam_evas_object_smart_del(Eo *obj, Elm_Photocam_Data *sd)
 {
    Elm_Phocam_Grid *g;
-
-   Elm_Photocam_Smart_Data *sd = _pd;
 
    EINA_LIST_FREE(sd->grids, g)
      {
@@ -1422,35 +1379,25 @@ _elm_photocam_smart_del(Eo *obj, void *_pd, va_list *list EINA_UNUSED)
    eo_do_super(obj, MY_CLASS, evas_obj_smart_del());
 }
 
-static void
-_elm_photocam_smart_move(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_evas_object_smart_move(Eo *obj, Elm_Photocam_Data *sd, Evas_Coord x, Evas_Coord y)
 {
-   Evas_Coord x = va_arg(*list, Evas_Coord);
-   Evas_Coord y = va_arg(*list, Evas_Coord);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    eo_do_super(obj, MY_CLASS, evas_obj_smart_move(x, y));
 
    evas_object_move(sd->hit_rect, x, y);
 }
 
-static void
-_elm_photocam_smart_resize(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_evas_object_smart_resize(Eo *obj, Elm_Photocam_Data *sd, Evas_Coord w, Evas_Coord h)
 {
-   Evas_Coord w = va_arg(*list, Evas_Coord);
-   Evas_Coord h = va_arg(*list, Evas_Coord);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    eo_do_super(obj, MY_CLASS, evas_obj_smart_resize(w, h));
 
    evas_object_resize(sd->hit_rect, w, h);
 }
 
-static void
-_elm_photocam_smart_member_add(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_evas_object_smart_member_add(Eo *obj, Elm_Photocam_Data *sd, Evas_Object *member)
 {
-   Evas_Object *member = va_arg(*list, Evas_Object *);
-   Elm_Photocam_Smart_Data *sd = _pd;
 
    eo_do_super(obj, MY_CLASS, evas_obj_smart_member_add(member));
 
@@ -1467,27 +1414,18 @@ elm_photocam_add(Evas_Object *parent)
    return obj;
 }
 
-static void
-_constructor(Eo *obj, void *_pd EINA_UNUSED, va_list *list EINA_UNUSED)
+EOLIAN static void
+_elm_photocam_eo_base_constructor(Eo *obj, Elm_Photocam_Data *_pd EINA_UNUSED)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
    eo_do(obj,
          evas_obj_type_set(MY_CLASS_NAME_LEGACY),
-         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks, NULL));
-}
-
-EAPI Evas_Load_Error
-elm_photocam_file_set(Evas_Object *obj,
-                      const char *file)
-{
-   ELM_PHOTOCAM_CHECK(obj) EVAS_LOAD_ERROR_NONE;
-   Evas_Load_Error ret = EVAS_LOAD_ERROR_NONE;
-   eo_do(obj, elm_obj_photocam_file_set(file, &ret));
-   return ret;
+         evas_obj_smart_callbacks_descriptions_set(_smart_callbacks),
+         elm_interface_atspi_accessible_role_set(ELM_ATSPI_ROLE_IMAGE));
 }
 
 static void
-_internal_file_set(Eo *obj, Elm_Photocam_Smart_Data *sd, const char *file, Eina_File *f, Evas_Load_Error *ret)
+_internal_file_set(Eo *obj, Elm_Photocam_Data *sd, const char *file, Eina_File *f, Evas_Load_Error *ret)
 {
    ELM_WIDGET_DATA_GET_OR_RETURN(obj, wd);
    Evas_Load_Error err;
@@ -1550,7 +1488,7 @@ static void
 _elm_photocam_download_done(void *data, Elm_Url *url EINA_UNUSED, Eina_Binbuf *download)
 {
    Eo *obj = data;
-   Elm_Photocam_Smart_Data *sd = eo_data_scope_get(obj, MY_CLASS);
+   Elm_Photocam_Data *sd = eo_data_scope_get(obj, MY_CLASS);
    Eina_File *f;
    size_t length;
    Evas_Load_Error ret = EVAS_LOAD_ERROR_NONE;
@@ -1584,7 +1522,7 @@ static void
 _elm_photocam_download_cancel(void *data, Elm_Url *url EINA_UNUSED, int error)
 {
    Eo *obj = data;
-   Elm_Photocam_Smart_Data *sd = eo_data_scope_get(obj, MY_CLASS);
+   Elm_Photocam_Data *sd = eo_data_scope_get(obj, MY_CLASS);
    Elm_Photocam_Error err = { error, EINA_FALSE };
 
    evas_object_smart_callback_call(obj, SIG_DOWNLOAD_ERROR, &err);
@@ -1607,14 +1545,10 @@ static const char *remote_uri[] = {
   "http://", "https://", "ftp://"
 };
 
-static void
-_file_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static Evas_Load_Error
+_elm_photocam_file_set(Eo *obj, Elm_Photocam_Data *sd, const char *file)
 {
-   const char *file = va_arg(*list, const char *);
-   Evas_Load_Error *ret = va_arg(*list, Evas_Load_Error *);
-   if (ret) *ret = EVAS_LOAD_ERROR_NONE;
-
-   Elm_Photocam_Smart_Data *sd = _pd;
+   Evas_Load_Error ret = EVAS_LOAD_ERROR_NONE;
    unsigned int i;
 
    _grid_clear_all(obj);
@@ -1647,42 +1581,24 @@ _file_set(Eo *obj, void *_pd, va_list *list)
           if (sd->remote)
             {
                evas_object_smart_callback_call(obj, SIG_DOWNLOAD_START, NULL);
-               return ;
+               return ret;
             }
           break;
        }
 
-   _internal_file_set(obj, sd, file, NULL, ret);
-}
+   _internal_file_set(obj, sd, file, NULL, &ret);
 
-EAPI const char *
-elm_photocam_file_get(const Evas_Object *obj)
-{
-   ELM_PHOTOCAM_CHECK(obj) NULL;
-   const char *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_photocam_file_get(&ret));
    return ret;
 }
 
-static void
-_file_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static const char*
+_elm_photocam_file_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   const char **ret = va_arg(*list, const char **);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->file;
+   return sd->file;
 }
 
-EAPI void
-elm_photocam_zoom_set(Evas_Object *obj,
-                      double zoom)
-{
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_obj_photocam_zoom_set(zoom));
-}
-
-static void
-_zoom_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_zoom_set(Eo *obj, Elm_Photocam_Data *sd, double zoom)
 {
    double z;
    Eina_List *l;
@@ -1691,17 +1607,15 @@ _zoom_set(Eo *obj, void *_pd, va_list *list)
    Evas_Coord pw, ph, rx, ry, rw, rh;
    int zoom_changed = 0, started = 0;
 
-   double zoom = va_arg(*list, double);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    if (zoom <= (1.0 / 256.0)) zoom = (1.0 / 256.0);
    if (zoom == sd->zoom) return;
 
    sd->zoom = zoom;
    sd->size.ow = sd->size.w;
    sd->size.oh = sd->size.h;
-   eo_do(obj, elm_scrollable_interface_content_pos_get(&rx, &ry));
-   eo_do(obj, elm_scrollable_interface_content_viewport_size_get(&rw, &rh));
+   eo_do(obj, elm_interface_scrollable_content_pos_get(&rx, &ry));
+   eo_do(obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &rw, &rh));
    if ((rw <= 0) || (rh <= 0)) return;
 
    if (sd->mode == ELM_PHOTOCAM_ZOOM_MODE_MANUAL)
@@ -1905,39 +1819,16 @@ done:
      evas_object_smart_callback_call(obj, SIG_ZOOM_CHANGE, NULL);
 }
 
-EAPI double
-elm_photocam_zoom_get(const Evas_Object *obj)
+EOLIAN static double
+_elm_photocam_zoom_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   ELM_PHOTOCAM_CHECK(obj) 1.0;
-   double ret = 1.0;
-   eo_do((Eo *) obj, elm_obj_photocam_zoom_get(&ret));
-   return ret;
+   return sd->zoom;
 }
 
-static void
-_zoom_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   double *ret = va_arg(*list, double *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->zoom;
-}
-
-EAPI void
-elm_photocam_zoom_mode_set(Evas_Object *obj,
-                           Elm_Photocam_Zoom_Mode mode)
-{
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_obj_photocam_zoom_mode_set(mode));
-}
-
-static void
-_zoom_mode_set(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_zoom_mode_set(Eo *obj, Elm_Photocam_Data *sd, Elm_Photocam_Zoom_Mode mode)
 {
    double tz;
-
-   Elm_Photocam_Zoom_Mode mode = va_arg(*list, Elm_Photocam_Zoom_Mode);
-   Elm_Photocam_Smart_Data *sd = _pd;
 
    if (sd->mode == mode) return;
    sd->mode = mode;
@@ -1947,68 +1838,27 @@ _zoom_mode_set(Eo *obj, void *_pd, va_list *list)
    elm_photocam_zoom_set(obj, tz);
 }
 
-EAPI Elm_Photocam_Zoom_Mode
-elm_photocam_zoom_mode_get(const Evas_Object *obj)
+EOLIAN static Elm_Photocam_Zoom_Mode
+_elm_photocam_zoom_mode_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   ELM_PHOTOCAM_CHECK(obj) ELM_PHOTOCAM_ZOOM_MODE_LAST;
-   Elm_Photocam_Zoom_Mode ret = ELM_PHOTOCAM_ZOOM_MODE_LAST;
-   eo_do((Eo *) obj, elm_obj_photocam_zoom_mode_get(&ret));
-   return ret;
+   return sd->mode;
 }
 
-static void
-_zoom_mode_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_image_size_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd, int *w, int *h)
 {
-   Elm_Photocam_Zoom_Mode *ret = va_arg(*list, Elm_Photocam_Zoom_Mode *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->mode;
-}
-
-EAPI void
-elm_photocam_image_size_get(const Evas_Object *obj,
-                            int *w,
-                            int *h)
-{
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do((Eo *) obj, elm_obj_photocam_image_size_get(w, h));
-}
-
-static void
-_image_size_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   int *w = va_arg(*list, int *);
-   int *h = va_arg(*list, int *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    if (w) *w = sd->size.imw;
    if (h) *h = sd->size.imh;
 }
 
-EAPI void
-elm_photocam_image_region_get(const Evas_Object *obj,
-                              int *x,
-                              int *y,
-                              int *w,
-                              int *h)
-{
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do((Eo *) obj, elm_obj_photocam_image_region_get(x, y, w, h));
-}
-
-static void
-_image_region_get(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_image_region_get(Eo *obj, Elm_Photocam_Data *sd, int *x, int *y, int *w, int *h)
 {
    Evas_Coord sx, sy, sw, sh;
 
-   int *x = va_arg(*list, int *);
-   int *y = va_arg(*list, int *);
-   int *w = va_arg(*list, int *);
-   int *h = va_arg(*list, int *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   eo_do((Eo *)obj, elm_scrollable_interface_content_pos_get(&sx, &sy));
-   eo_do((Eo *)obj, elm_scrollable_interface_content_viewport_size_get(&sw, &sh));
+   eo_do((Eo *)obj, elm_interface_scrollable_content_pos_get(&sx, &sy));
+   eo_do((Eo *)obj, elm_interface_scrollable_content_viewport_geometry_get
+         (NULL, NULL, &sw, &sh));
    if (sd->size.w > 0)
      {
         if (x)
@@ -2052,27 +1902,10 @@ _image_region_get(Eo *obj, void *_pd, va_list *list)
      }
 }
 
-EAPI void
-elm_photocam_image_region_show(Evas_Object *obj,
-                               int x,
-                               int y,
-                               int w,
-                               int h)
-{
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_obj_photocam_image_region_show(x, y, w, h));
-}
-
-static void
-_image_region_show(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_image_region_show(Eo *obj, Elm_Photocam_Data *sd, int x, int y, int w, int h)
 {
    int rx, ry, rw, rh;
-
-   int x = va_arg(*list, int);
-   int y = va_arg(*list, int);
-   int w = va_arg(*list, int);
-   int h = va_arg(*list, int);
-   Elm_Photocam_Smart_Data *sd = _pd;
 
    if ((sd->size.imw < 1) || (sd->size.imh < 1)) return;
    rx = (x * sd->size.w) / sd->size.imw;
@@ -2097,7 +1930,7 @@ _image_region_show(Eo *obj, void *_pd, va_list *list)
         _zoom_do(obj, 1.0);
         evas_object_smart_callback_call(obj, SIG_ZOOM_STOP, NULL);
      }
-   eo_do(obj, elm_scrollable_interface_content_region_show(rx, ry, rw, rh));
+   eo_do(obj, elm_interface_scrollable_content_region_show(rx, ry, rw, rh));
 }
 
 EAPI void
@@ -2108,19 +1941,13 @@ elm_photocam_image_region_bring_in(Evas_Object *obj,
                                    int h EINA_UNUSED)
 {
    ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_scrollable_interface_region_bring_in(x, y, w, h));
+   eo_do(obj, elm_interface_scrollable_region_bring_in(x, y, w, h));
 }
 
-static void
-_image_region_bring_in(Eo *obj, void *_pd, va_list *list)
+EOLIAN static void
+_elm_photocam_elm_interface_scrollable_region_bring_in(Eo *obj, Elm_Photocam_Data *sd, Evas_Coord x, Evas_Coord y, Evas_Coord w, Evas_Coord h)
 {
-   int x = va_arg(*list, int);
-   int y = va_arg(*list, int);
-   int w = va_arg(*list, int);
-   int h = va_arg(*list, int);
    int rx, ry, rw, rh;
-
-   Elm_Photocam_Smart_Data *sd = _pd;
 
    if ((sd->size.imw < 1) || (sd->size.imh < 1)) return;
    rx = (x * sd->size.w) / sd->size.imw;
@@ -2146,23 +1973,12 @@ _image_region_bring_in(Eo *obj, void *_pd, va_list *list)
         _zoom_do(obj, 1.0);
         evas_object_smart_callback_call(obj, SIG_ZOOM_STOP, NULL);
      }
-   eo_do_super(obj, MY_CLASS, elm_scrollable_interface_region_bring_in(rx, ry, rw, rh));
+   eo_do_super(obj, MY_CLASS, elm_interface_scrollable_region_bring_in(rx, ry, rw, rh));
 }
 
-EAPI void
-elm_photocam_paused_set(Evas_Object *obj,
-                        Eina_Bool paused)
+EOLIAN static void
+_elm_photocam_paused_set(Eo *obj, Elm_Photocam_Data *sd, Eina_Bool paused)
 {
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_obj_photocam_paused_set(paused));
-}
-
-static void
-_paused_set(Eo *obj, void *_pd, va_list *list)
-{
-   Eina_Bool paused = va_arg(*list, int);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    paused = !!paused;
 
    if (sd->paused == paused) return;
@@ -2184,40 +2000,16 @@ _paused_set(Eo *obj, void *_pd, va_list *list)
      }
 }
 
-EAPI Eina_Bool
-elm_photocam_paused_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_photocam_paused_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   ELM_PHOTOCAM_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_photocam_paused_get(&ret));
-   return ret;
+   return sd->paused;
 }
 
-static void
-_paused_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+EOLIAN static Evas_Object*
+_elm_photocam_internal_image_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->paused;
-}
-
-EAPI Evas_Object *
-elm_photocam_internal_image_get(const Evas_Object *obj)
-{
-   ELM_PHOTOCAM_CHECK(obj) NULL;
-   Evas_Object *ret = NULL;
-   eo_do((Eo *) obj, elm_obj_photocam_internal_image_get(&ret));
-   return ret;
-}
-
-static void
-_internal_image_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
-{
-   Evas_Object **ret = va_arg(*list, Evas_Object **);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->img;
+   return sd->img;
 }
 
 EAPI void
@@ -2227,7 +2019,7 @@ elm_photocam_bounce_set(Evas_Object *obj,
 {
    ELM_PHOTOCAM_CHECK(obj);
 
-   eo_do(obj, elm_scrollable_interface_bounce_allow_set(h_bounce, v_bounce));
+   eo_do(obj, elm_interface_scrollable_bounce_allow_set(h_bounce, v_bounce));
 }
 
 EAPI void
@@ -2237,23 +2029,12 @@ elm_photocam_bounce_get(const Evas_Object *obj,
 {
    ELM_PHOTOCAM_CHECK(obj);
 
-   eo_do((Eo *)obj, elm_scrollable_interface_bounce_allow_get(h_bounce, v_bounce));
+   eo_do((Eo *)obj, elm_interface_scrollable_bounce_allow_get(h_bounce, v_bounce));
 }
 
-EAPI void
-elm_photocam_gesture_enabled_set(Evas_Object *obj,
-                                 Eina_Bool gesture)
+EOLIAN static void
+_elm_photocam_gesture_enabled_set(Eo *obj, Elm_Photocam_Data *sd, Eina_Bool gesture)
 {
-   ELM_PHOTOCAM_CHECK(obj);
-   eo_do(obj, elm_obj_photocam_gesture_enabled_set(gesture));
-}
-
-static void
-_gesture_enabled_set(Eo *obj, void *_pd, va_list *list)
-{
-   Eina_Bool gesture = va_arg(*list, int);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
    gesture = !!gesture;
 
    if (sd->do_gesture == gesture) return;
@@ -2282,91 +2063,16 @@ _gesture_enabled_set(Eo *obj, void *_pd, va_list *list)
      _g_layer_zoom_end_cb, obj);
 }
 
-EAPI Eina_Bool
-elm_photocam_gesture_enabled_get(const Evas_Object *obj)
+EOLIAN static Eina_Bool
+_elm_photocam_gesture_enabled_get(Eo *obj EINA_UNUSED, Elm_Photocam_Data *sd)
 {
-   ELM_PHOTOCAM_CHECK(obj) EINA_FALSE;
-   Eina_Bool ret = EINA_FALSE;
-   eo_do((Eo *) obj, elm_obj_photocam_gesture_enabled_get(&ret));
-   return ret;
+   return sd->do_gesture;
 }
 
 static void
-_gesture_enabled_get(Eo *obj EINA_UNUSED, void *_pd, va_list *list)
+_elm_photocam_class_constructor(Eo_Class *klass)
 {
-   Eina_Bool *ret = va_arg(*list, Eina_Bool *);
-   Elm_Photocam_Smart_Data *sd = _pd;
-
-   *ret = sd->do_gesture;
-}
-
-static void
-_class_constructor(Eo_Class *klass)
-{
-   const Eo_Op_Func_Description func_desc[] = {
-        EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _constructor),
-
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_MEMBER_ADD), _elm_photocam_smart_member_add),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_ADD), _elm_photocam_smart_add),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_DEL), _elm_photocam_smart_del),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_RESIZE), _elm_photocam_smart_resize),
-        EO_OP_FUNC(EVAS_OBJ_SMART_ID(EVAS_OBJ_SMART_SUB_ID_MOVE), _elm_photocam_smart_move),
-
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_THEME_APPLY), _elm_photocam_smart_theme),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_EVENT), _elm_photocam_smart_event),
-        EO_OP_FUNC(ELM_WIDGET_ID(ELM_WIDGET_SUB_ID_ON_FOCUS), _elm_photocam_smart_on_focus),
-
-        EO_OP_FUNC(ELM_SCROLLABLE_INTERFACE_ID(ELM_SCROLLABLE_INTERFACE_SUB_ID_REGION_BRING_IN), _image_region_bring_in),
-
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_FILE_SET), _file_set),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_FILE_GET), _file_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_SET), _zoom_set),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_GET), _zoom_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_MODE_SET), _zoom_mode_set),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_MODE_GET), _zoom_mode_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_SIZE_GET), _image_size_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_REGION_GET), _image_region_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_REGION_SHOW), _image_region_show),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_PAUSED_SET), _paused_set),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_PAUSED_GET), _paused_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_INTERNAL_IMAGE_GET), _internal_image_get),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_GESTURE_ENABLED_SET), _gesture_enabled_set),
-        EO_OP_FUNC(ELM_OBJ_PHOTOCAM_ID(ELM_OBJ_PHOTOCAM_SUB_ID_GESTURE_ENABLED_GET), _gesture_enabled_get),
-
-        EO_OP_FUNC_SENTINEL
-   };
-   eo_class_funcs_set(klass, func_desc);
-
    evas_smart_legacy_type_register(MY_CLASS_NAME_LEGACY, klass);
 }
 
-static const Eo_Op_Description op_desc[] = {
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_FILE_SET, "Set the photo file to be shown."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_FILE_GET, "Returns the path of the current image file."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_SET, "Set the zoom level of the photo."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_GET, "Get the zoom level of the photo."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_MODE_SET, "Set the zoom mode."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_ZOOM_MODE_GET, "Get the zoom mode."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_SIZE_GET, "Get the current image pixel width and height."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_REGION_GET, "Get the region of the image that is currently shown."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_IMAGE_REGION_SHOW, "Set the viewed region of the image."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_PAUSED_SET, "Set the paused state for photocam."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_PAUSED_GET, "Get the paused state for photocam."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_INTERNAL_IMAGE_GET, "Get the internal low-res image used for photocam."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_GESTURE_ENABLED_SET, "Set the gesture state for photocam."),
-     EO_OP_DESCRIPTION(ELM_OBJ_PHOTOCAM_SUB_ID_GESTURE_ENABLED_GET, "Get the gesture state for photocam."),
-     EO_OP_DESCRIPTION_SENTINEL
-};
-
-static const Eo_Class_Description class_desc = {
-     EO_VERSION,
-     MY_CLASS_NAME,
-     EO_CLASS_TYPE_REGULAR,
-     EO_CLASS_DESCRIPTION_OPS(&ELM_OBJ_PHOTOCAM_BASE_ID, op_desc, ELM_OBJ_PHOTOCAM_SUB_ID_LAST),
-     NULL,
-     sizeof(Elm_Photocam_Smart_Data),
-     _class_constructor,
-     NULL
-};
-
-EO_DEFINE_CLASS(elm_obj_photocam_class_get, &class_desc, ELM_OBJ_WIDGET_CLASS, ELM_SCROLLABLE_INTERFACE, NULL);
+#include "elm_photocam.eo.c"

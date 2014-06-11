@@ -73,12 +73,12 @@ group { name: "e/widgets/syscon/main";
             rel1.to_y: "e.swallow.extra";
             rel2.offset: -1 -14;
             rel2.relative: 0.5 1.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "button_text";
             align: 0.5 1.0;
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                text_class: "button";
             }
@@ -119,6 +119,7 @@ group { name: "e/widgets/syscon/item/button";
    alias: "e/desklock/pin_button";
    images.image: "button_normal.png" COMP;
    images.image: "button_clicked.png" COMP;
+   images.image: "win_glow.png" COMP;
    parts {
       part { name: "base";
          description { state: "default" 0.0;
@@ -174,11 +175,11 @@ group { name: "e/widgets/syscon/item/button";
             rel2.offset: -7 -7;
             rel2.to: "base";
             align: 0.5 1.0;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "button_text";
             text { font: FN; size: 10;
                min: 1 1;
+               ellipsis: -1;
                align: 0.5 0.5;
                text_class: "button";
             }
@@ -196,8 +197,7 @@ group { name: "e/widgets/syscon/item/button";
          description { state: "default" 0.0;
             rel1.to: "e.text.label";
             rel2.to: "e.text.label";
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
             color_class: "button_text_disabled";
             text { font: FN; size: 10;
                text_source: "e.text.label";
@@ -208,6 +208,25 @@ group { name: "e/widgets/syscon/item/button";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
+            visible: 1;
+         }
+      }
+      part { name: "glow"; mouse_events: 0;
+         description { state: "default" 0.0;
+            image.normal: "win_glow.png";
+            image.border: 9 9 9 9;
+            image.middle: 0;
+            rel1.to: "base";
+            rel1.offset: -2 -3;
+            rel2.to: "base";
+            rel2.offset: 1 0;
+            fill.smooth: 0;
+            color: 255 255 255 0;
+            visible: 0;
+         }
+         description { state: "focused" 0.0;
+            inherit: "default" 0.0;
+            color: 255 255 255 150;
             visible: 1;
          }
       }
@@ -252,6 +271,62 @@ group { name: "e/widgets/syscon/item/button";
          target: "icon_clip";
          target: "label_clip";
          target: "label2";
+      }
+      program { signal: "e,state,focused"; source: "e";
+         action: STATE_SET "focused" 0.0;
+         target: "glow";
+      }
+      program { signal: "e,state,unfocused"; source: "e";
+         action: STATE_SET "default" 0.0;
+         target: "glow";
+      }
+   }
+}
+
+group { name: "e/modules/syscon/button";
+   images.image: "btn_round_0.png" COMP;
+   images.image: "btn_round_1.png" COMP;
+   images.image: "btn_round_2.png" COMP;
+   parts {
+      part { name: "base";
+         description { state: "default" 0.0;
+            image.normal: "btn_round_0.png";
+            aspect: 1.0 1.0; aspect_preference: BOTH;
+         }
+         description { state: "hilight" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "btn_round_1.png";
+         }
+         description { state: "clicked" 0.0;
+            inherit: "default" 0.0;
+            image.normal: "btn_round_2.png";
+         }
+      }
+   }
+   programs {
+      program {
+         signal: "mouse,down,1"; source: "base";
+         action: STATE_SET "clicked" 0.0;
+         target: "base";
+      }
+      program {
+         signal: "mouse,up,1"; source: "base";
+         action: STATE_SET "hilight" 0.0;
+         target: "base";
+      }
+      program {
+         signal: "mouse,in"; source: "base";
+         action: STATE_SET "hilight" 0.0;
+         target: "base";
+      }
+      program {
+         signal: "mouse,out"; source: "base";
+         action: STATE_SET "default" 0.0;
+         target: "base";
+      }
+      program {
+         signal: "mouse,clicked,1*"; source: "base";
+         action: SIGNAL_EMIT "e,action,shutdown,show" "e";
       }
    }
 }

@@ -143,6 +143,7 @@ group { name: "elm/radio/base/default";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -152,6 +153,7 @@ group { name: "elm/radio/base/default";
             rel2.to: "elm.swallow.content";
             text {
                min: 1 1;
+               ellipsis: -1;
                text: "M";
             }
          }
@@ -164,8 +166,7 @@ group { name: "elm/radio/base/default";
             rel1.to_x: "elm.swallow.content";
             rel1.relative: 1.0 0.0;
             rel2.offset: -3 -3;
-            color: 255 255 255 255;
-            color3: 0 0 0 128;
+            color: FN_COL_DEFAULT;
             color_class: "radio_text";
             text { font: FN; size: 10;
               min: 0 0;
@@ -175,13 +176,13 @@ group { name: "elm/radio/base/default";
          }
          description { state: "disabled" 0.0;
             inherit: "default" 0.0;
-            color: 21 21 21 255;
-            color3: 255 255 255 25;
+            color: FN_COL_DISABLE;
          }
          description { state: "visible" 0.0;
             inherit: "default" 0.0;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
          description { state: "disabled_visible" 0.0;
             inherit: "default" 0.0;
@@ -189,6 +190,7 @@ group { name: "elm/radio/base/default";
             color3: 255 255 255 25;
             visible: 1;
             text.min: 1 1;
+            text.ellipsis: -1;
          }
       }
       part { name: "event"; type: RECT;

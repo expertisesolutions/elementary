@@ -1,0 +1,115 @@
+class Elm_App_Server_View (Eo_Base)
+{
+   legacy_prefix: null;
+   eo_prefix: elm_app_server_view;
+   constructors {
+      constructor {
+         /*@ Class constructor of elm_app_server_view */
+         params {
+            @in const char *id; /*@ identifier of view */
+         }
+      }
+   }
+   properties {
+      progress {
+         set {
+         }
+         get {
+         }
+         values {
+            short progress;
+         }
+      }
+      new_events {
+         set {
+         }
+         get {
+         }
+         values {
+            int events;
+         }
+      }
+      icon {
+         set {
+         }
+         get {
+         }
+         values {
+            const char *icon;
+         }
+      }
+      title {
+         set {
+         }
+         get {
+         }
+         values {
+            const char *title;
+         }
+      }
+      window {
+         set {
+         }
+         values {
+            Evas_Object *win;
+         }
+      }
+      id {
+         get {
+         }
+         values {
+            Eina_Stringshare *ret;
+         }
+      }
+      state {
+         get {
+         }
+         values {
+            Elm_App_View_State ret;
+         }
+      }
+      path {
+         get {
+         }
+         values {
+            const char *ret;
+         }
+      }
+      pixels {
+         get {
+            /*@ Get application raw icon. */
+         }
+         set {
+            /*@ Set icon to application, using the raw pixels of image. */
+         }
+         values {
+            unsigned int w;
+            unsigned int h;
+            Eina_Bool has_alpha;
+            const unsigned char *pixels;
+         }
+      }
+   }
+   methods {
+      pause {
+      }
+      resume {
+      }
+      shallow {
+      }
+      close {
+      }
+   }
+   implements {
+      Eo_Base::constructor;
+      Eo_Base::destructor;
+   }
+   events {
+      resumed; /*@ Called when view must be resumed */
+      paused; /*@ Called when view must be paused */
+      closed; /*@ Called when view must be closed */
+      shallow; /*@ Called when view state is set to shallow */
+      save; /*@ Called when view state should be saved */
+   }
+
+}

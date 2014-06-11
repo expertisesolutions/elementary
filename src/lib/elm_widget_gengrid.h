@@ -18,8 +18,8 @@
 /**
  * Base widget smart data extended with gengrid instance data.
  */
-typedef struct _Elm_Gengrid_Smart_Data Elm_Gengrid_Smart_Data;
-struct _Elm_Gengrid_Smart_Data
+typedef struct _Elm_Gengrid_Data Elm_Gengrid_Data;
+struct _Elm_Gengrid_Data
 {
    Eina_Inlist_Sorted_State             *state;
    Evas_Object                          *hit_rect;
@@ -38,6 +38,9 @@ struct _Elm_Gengrid_Smart_Data
                                                      * being
                                                      * repositioned */
    Elm_Object_Item                      *last_selected_item;
+   Elm_Object_Item                      *focused_item; /**< a focused item by keypad arrow or mouse. This is set to NULL if widget looses focus. */
+   Elm_Object_Item                      *last_focused_item; /**< This records the last focused item when widget looses focus. This is required to set the focus on last focused item when widgets gets focus. */
+   Elm_Object_Item                      *prev_focused_item; /**< a previous focused item by keypad arrow or mouse. */
    Elm_Gen_Item                         *show_it;
    Elm_Gen_Item                         *bring_in_it;
    Elm_Gengrid_Item_Scrollto_Type        scroll_to_type;
@@ -71,6 +74,15 @@ struct _Elm_Gengrid_Smart_Data
    Evas_Coord                            old_pan_x, old_pan_y;
    long                                  items_lost;
    double                                align_x, align_y;
+
+   struct
+   {
+      Elm_Gen_Item                          *it1, *it2; /**< The items which are getting swapped */
+      Elm_Focus_Direction                   dir; /**< focus key direction */
+      Ecore_Pos_Map                         tween_mode; /**< Position mappings for animation */
+      Evas_Coord                            x1, y1, x2, y2; /**< Coordinates of it1 and it2 */
+      Eina_Bool                             running : 1; /**< animation is happening */
+   } reorder;
 
    Eina_Bool                             reorder_item_changed : 1;
    Eina_Bool                             move_effect_enabled : 1;
@@ -106,13 +118,17 @@ struct _Elm_Gengrid_Smart_Data
                                                      * selection */
    Eina_Bool                             show_region : 1;
    Eina_Bool                             bring_in : 1;
+   Eina_Bool                             mouse_down : 1; /**< a flag that mouse is down on the list at the moment. this flag is set to true on mouse and reset to false on mouse up */
+   Eina_Bool                             wheel_disabled : 1; /**< a flag that shows mouse wheel is disabled or not. */
+   /**< value whether item loop feature is enabled or not. */
+   Eina_Bool                             item_loop_enable : 1;
 };
 
 struct Elm_Gen_Item_Type
 {
    Elm_Gen_Item           *it;
 
-   Elm_Gengrid_Smart_Data *wsd;
+   Elm_Gengrid_Data       *wsd;
 
    Ecore_Animator         *item_reorder_move_animator;
    Evas_Coord              gx, gy, ox, oy, tx, ty, rx, ry;
@@ -123,11 +139,11 @@ struct Elm_Gen_Item_Type
    Eina_Bool               moving : 1;
 };
 
-typedef struct _Elm_Gengrid_Pan_Smart_Data Elm_Gengrid_Pan_Smart_Data;
-struct _Elm_Gengrid_Pan_Smart_Data
+typedef struct _Elm_Gengrid_Pan_Data Elm_Gengrid_Pan_Data;
+struct _Elm_Gengrid_Pan_Data
 {
    Evas_Object            *wobj;
-   Elm_Gengrid_Smart_Data *wsd;
+   Elm_Gengrid_Data       *wsd;
    Ecore_Job              *resize_job;
 };
 
@@ -136,10 +152,10 @@ struct _Elm_Gengrid_Pan_Smart_Data
  */
 
 #define ELM_GENGRID_DATA_GET(o, sd) \
-  Elm_Gengrid_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_GENGRID_CLASS)
+  Elm_Gengrid_Data * sd = eo_data_scope_get(o, ELM_GENGRID_CLASS)
 
 #define ELM_GENGRID_PAN_DATA_GET(o, sd) \
-  Elm_Gengrid_Pan_Smart_Data * sd = eo_data_scope_get(o, ELM_OBJ_GENGRID_PAN_CLASS)
+  Elm_Gengrid_Pan_Data * sd = eo_data_scope_get(o, ELM_GENGRID_PAN_CLASS)
 
 #define ELM_GENGRID_DATA_GET_OR_RETURN(o, ptr)       \
   ELM_GENGRID_DATA_GET(o, ptr);                      \
@@ -160,7 +176,7 @@ struct _Elm_Gengrid_Pan_Smart_Data
     }
 
 #define ELM_GENGRID_CHECK(obj)                              \
-  if (EINA_UNLIKELY(!eo_isa((obj), ELM_OBJ_GENGRID_CLASS))) \
+  if (EINA_UNLIKELY(!eo_isa((obj), ELM_GENGRID_CLASS))) \
     return
 
 #define ELM_GENGRID_ITEM_CHECK(it)                          \
@@ -174,6 +190,6 @@ struct _Elm_Gengrid_Pan_Smart_Data
 #define ELM_GENGRID_ITEM_CHECK_OR_GOTO(it, label)              \
   ELM_WIDGET_ITEM_CHECK_OR_GOTO((Elm_Widget_Item *)it, label); \
   if (!it->base.widget || !eo_isa                              \
-        ((it->base.widget), ELM_OBJ_GENGRID_CLASS)) goto label;
+        ((it->base.widget), ELM_GENGRID_CLASS)) goto label;
 
 #endif
