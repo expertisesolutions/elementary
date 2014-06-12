@@ -22,7 +22,7 @@ static Eina_Bool
 _list_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED)
 {
    printf("LIST selected model\n");
-
+   return EINA_TRUE;
 }
 
 static Eina_Bool
@@ -35,7 +35,7 @@ _tree_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_De
 
    eo_do(evt->child, emodel_eio_path_get(&path));
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(path));
-   eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _list_selected_cb, NULL));
+   eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _list_selected_cb, NULL));
 
    eo_do(view, elm_view_list_model_set(model));
    eo_unref(model);
@@ -63,7 +63,7 @@ elm_main(int argc, char **argv)
    eo_do(treemodel, emodel_eio_children_filter_set(_filter_cb, NULL));
 
    genlist = elm_genlist_add(win);
-   treeview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, treemodel));
+   treeview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, treemodel));
    eo_do(treeview, elm_view_list_property_connect("filename", "elm.text"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -72,7 +72,7 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    genlist = elm_genlist_add(win);
-   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, NULL));
+   fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, NULL));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -80,7 +80,7 @@ elm_main(int argc, char **argv)
    elm_box_pack_end(box, genlist);
    evas_object_show(genlist);
 
-   eo_do(treemodel, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _tree_selected_cb, fileview));
+   eo_do(treemodel, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _tree_selected_cb, fileview));
 
    evas_object_resize(win, 600, 520);
    evas_object_show(box);

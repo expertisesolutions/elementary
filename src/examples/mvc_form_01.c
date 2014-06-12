@@ -77,9 +77,9 @@ _child_prop_change_cb(void *data, Eo *obj, const Eo_Event_Description *desc EINA
    if(!strncmp(evt->prop, "is_dir", 6))
      {
         child_data->is_dir = atoi(eina_value_to_string(evt->value));
-        eo_do(obj, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
+        eo_do(obj, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_data));
         eo_do(obj, emodel_property_get("filename"));
-        //eo_do(child_data->model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_data));
+        //eo_do(child_data->model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_data));
         //eo_do(child_data->model, emodel_property_get("size"));
      }
    else if(!strncmp(evt->prop, "filename", 8))
@@ -132,7 +132,7 @@ _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_D
    child_evt->is_dir = EINA_FALSE;
 
    /* The first thing is to check if child is directory or not */
-   eo_do(evt->child, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _child_prop_change_cb, child_evt));
+   eo_do(evt->child, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_evt));
    eo_do(evt->child, emodel_property_get("is_dir"));
    return EINA_TRUE;
 }
@@ -174,17 +174,17 @@ elm_main(int argc, char **argv)
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
    EINA_SAFETY_ON_NULL_RETURN_VAL(model, 1);
 
-   evf = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
+   evf = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
    EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
 
    child_data->evf = evf;
    child_data->model = model;
-   eo_do(model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _prop_change_cb, NULL));
-   eo_do(model, eo_event_callback_add(EMODEL_CHILD_SELECTED_EVT, _child_selected_cb, child_data));
+   eo_do(model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _prop_change_cb, NULL));
+   eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _child_selected_cb, child_data));
 
    /* To load initial directory tree information */
    pinpoint_model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
-   eo_do(pinpoint_model, eo_event_callback_add(EMODEL_PROPERTY_CHANGE_EVT, _pinpoint_prop_change_cb, evf));
+   eo_do(pinpoint_model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _pinpoint_prop_change_cb, evf));
    eo_do(pinpoint_model, emodel_property_get("size"));
 
    /* for entry widget */
@@ -215,7 +215,7 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    /* File view setup */
-   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, model));
+   fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, model));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
