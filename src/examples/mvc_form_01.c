@@ -32,93 +32,6 @@ _main_win_del_cb(void *data, Evas_Object *obj, void *event)
 }
 
 /**
- * @brief Setup initial tree info on start-up.
- */
-static Eina_Bool
-_pinpoint_prop_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
-{
-   Emodel_Property_EVT *evt = event_info;
-   Eo *evf = data;
-   fprintf(stdout, "\"pinpoint\" property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
-   if(!strncmp(evt->prop, "size", 4))
-     {
-        Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_INT);
-        eina_value_set(value, atoi(eina_value_to_string(evt->value)));
-        eo_do(evf, elm_view_form_widget_set("size", value));
-     }
-   return EINA_TRUE;
-}
-
-/**
- * @brief Parent's property change callback.
- */
-static Eina_Bool
-_prop_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
-{
-   Emodel_Property_EVT *evt = event_info;
-   fprintf(stdout, "parent's property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
-   return EINA_TRUE;
-}
-
-/**
- * @brief Child's property change callback.
- * Behaves recursively if property event is directory.
- */ 
-static Eina_Bool
-_child_prop_change_cb(void *data, Eo *obj, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
-{
-   Emodel_Property_EVT *evt = event_info;
-   Form_Child_Data *child_data = data;
-   fprintf(stdout, "child's property '%s' changed to '%s'\n", evt->prop, eina_value_to_string(evt->value));
-
-   /**
-    * If child is directory then we update root label to new directory.
-    */
-   if(!strncmp(evt->prop, "is_dir", 6))
-     {
-        child_data->is_dir = atoi(eina_value_to_string(evt->value));
-        eo_do(obj, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_data));
-        eo_do(obj, emodel_property_get("filename"));
-        //eo_do(child_data->model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_data));
-        //eo_do(child_data->model, emodel_property_get("size"));
-     }
-   else if(!strncmp(evt->prop, "filename", 8))
-     {
-        /**
-         * Otherwise if it is file then we verify if previous child is directory so we
-         * can update the root widget accordingly.
-         */
-        if(EINA_TRUE == child_data->is_dir)
-          {
-             child_data->value_prev = eina_value_new(EINA_VALUE_TYPE_STRING);
-             eina_value_set(child_data->value_prev, dirname(eina_value_to_string(evt->value)));
-             eo_do(child_data->evf, elm_view_form_widget_set("current", evt->value));
-          }
-        else
-          {
-             /**
-              * Update thumb widget with new image.
-              */
-             eo_do(child_data->evf, elm_view_form_widget_set("thumb", evt->value));
-             if(NULL != child_data->value_prev)
-               {
-                  eo_do(child_data->evf, elm_view_form_widget_set("current", child_data->value_prev));
-               }
-          }
-     }
-   /**
-    * Update file/directory size widget.
-    */
-   else if(!strncmp(evt->prop, "size", 4))
-     {
-        Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_INT);
-        eina_value_set(value, atoi(eina_value_to_string(evt->value)));
-        eo_do(child_data->evf, elm_view_form_widget_set("size", value));
-     }
-   return EINA_TRUE;
-}
-
-/**
  * @brief Child callback
  */
 static Eina_Bool
@@ -127,13 +40,8 @@ _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_D
    Form_Child_Data *child_evt = data;
    Emodel_Children_EVT *evt = event_info;
    EINA_SAFETY_ON_NULL_RETURN_VAL(child_evt->evf, EINA_FALSE);
-   eo_ref(evt->child);
+   eo_do(child_evt->evf, elm_view_form_model_set(evt->child));
 
-   child_evt->is_dir = EINA_FALSE;
-
-   /* The first thing is to check if child is directory or not */
-   eo_do(evt->child, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _child_prop_change_cb, child_evt));
-   eo_do(evt->child, emodel_property_get("is_dir"));
    return EINA_TRUE;
 }
 
@@ -143,20 +51,17 @@ _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_D
  * @see DEFAULT_THUMBNAIL
  */
 static void
-_generation_error_cb(void *data, Evas_Object *o, void *event_info)
+_generation_error_cb(void *data, Evas_Object *thumb, void *event_info)
 {
-   Eo *evf = data;
-   Eina_Value *value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, DEFAULT_THUMBNAIL);
    fprintf(stderr, "thumbnail generation error, loading default %s.\n", DEFAULT_THUMBNAIL);
-   eo_do(evf, elm_view_form_widget_set("thumb", value));
+   elm_thumb_file_set(thumb, DEFAULT_THUMBNAIL, NULL);
+   elm_thumb_reload(thumb);
 }
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
-   Eo *fileview, *evf, *model, *pinpoint_model;
-   Eina_Value *value;
+   Eo *fileview, *evf, *model;
    Evas_Object *win, *panes, *panes_h, *bigbox;
    Evas_Object *rootpath_label, *thumb, *entry, *genlist;
    Evas_Object *size_label;
@@ -165,6 +70,7 @@ elm_main(int argc, char **argv)
    EINA_SAFETY_ON_NULL_RETURN_VAL(child_data, 1);
 
    ecore_init();
+   eio_init();
 
    if(argv[1] != NULL) dirname = argv[1];
    else dirname = FILEMODEL_PATH;
@@ -174,18 +80,12 @@ elm_main(int argc, char **argv)
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
    EINA_SAFETY_ON_NULL_RETURN_VAL(model, 1);
 
-   evf = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(model));
+   evf = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(NULL));
    EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
 
    child_data->evf = evf;
    child_data->model = model;
-   eo_do(model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _prop_change_cb, NULL));
    eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _child_selected_cb, child_data));
-
-   /* To load initial directory tree information */
-   pinpoint_model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
-   eo_do(pinpoint_model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _pinpoint_prop_change_cb, evf));
-   eo_do(pinpoint_model, emodel_property_get("size"));
 
    /* for entry widget */
    static Elm_Entry_Filter_Limit_Size limit_size = {
@@ -259,7 +159,7 @@ elm_main(int argc, char **argv)
    /* Thumb widget */
    elm_need_ethumb();
    thumb = elm_thumb_add(win);
-   evas_object_smart_callback_add(thumb, "generate,error", _generation_error_cb, evf);
+   evas_object_smart_callback_add(thumb, "generate,error", _generation_error_cb, NULL);
    evas_object_size_hint_weight_set(thumb, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(thumb, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(thumb);
@@ -274,39 +174,17 @@ elm_main(int argc, char **argv)
    elm_object_part_content_set(panes, "right", panes_h);
 
    /* Define widget properties */
-   eo_do(evf, elm_view_form_widget_add("current", rootpath_label));
+   eo_do(evf, elm_view_form_widget_add("filename", rootpath_label));
    eo_do(evf, elm_view_form_widget_add("size", size_label));
-   eo_do(evf, elm_view_form_widget_add("search", entry));
-   eo_do(evf, elm_view_form_widget_add("thumb", thumb));
-
-   /* Define default widget values*/
-   value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, dirname);
-   eo_do(evf, elm_view_form_widget_set("current", value));
-
-   /* Don't do anything useful except by testing Eina_Value update.
-    * it may be used to set a child in the tree, selecting another file/directory.
-    */
-   value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, "This entry does nothing except for updating Eina_Value. type anything.");
-   eo_do(evf, elm_view_form_widget_set("search", value));
-
-   /* Load default png image */
-   value = eina_value_new(EINA_VALUE_TYPE_STRING);
-   eina_value_set(value, DEFAULT_THUMBNAIL);
-   eo_do(evf, elm_view_form_widget_set("thumb", value));
-
-    /* query values */
-   eo_do(evf, elm_view_form_widget_get("current"));
-   eo_do(evf, elm_view_form_widget_get("search"));
-   eo_do(evf, elm_view_form_widget_get("thumb"));
+   eo_do(evf, elm_view_form_widget_add("filename", entry));
+   eo_do(evf, elm_view_form_widget_add("filename", thumb));
 
    /* cleanup */
    elm_run();
+   elm_shutdown();
    eo_unref(model);
    eo_unref(evf);
-   eo_unref(pinpoint_model);
-   elm_shutdown();
+   eio_shutdown();
    ecore_shutdown();
    free(child_data);
    return 0;

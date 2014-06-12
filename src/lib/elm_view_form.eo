@@ -36,33 +36,7 @@ class Elm_View_Form (Eo_Base)
                  Evas_Object *evas;
              }
         }
-        widget_set {
-            /*@ Set widget's value */
-            /**
-             * @def elm_view_form_widget_set
-             * @since 1.8
-             *
-             * @in propname
-             * @in value
-             */
-             params {
-                 const char *propname;
-                 Eina_Value *value;
-             }
-        }
-        widget_get {
-            /*@ Get widget's value */
-            /**
-             * @def elm_view_form_widget_get
-             * @since 1.8
-             *
-             * @in propname
-             */
-             params {
-                 const char *propname;
-             }
-        }
-    }
+   }
    implements {
       Eo_Base::destructor;
       Eo_Base::constructor;

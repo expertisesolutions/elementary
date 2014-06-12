@@ -72,7 +72,7 @@ _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    EINA_SAFETY_ON_NULL_RETURN_VAL(data, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(part, NULL);
    View_List_ItemData *idata = data;
-   Elm_View_List_Data *self = (Elm_View_List_Data *)idata->self;
+   Elm_View_List_Data *self = idata->self;
    Eina_Value *value;
 
    const char *prop = eina_hash_find(self->prop_con, part);
@@ -233,7 +233,7 @@ _emodel_children_count_get_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_De
 {
    View_List_ItemData *pdata = data;
    unsigned int i, *len = event_info;
-   Elm_View_List_Data *self = (Elm_View_List_Data *)pdata->self;
+   Elm_View_List_Data *self = pdata->self;
 
    for (i = 0; i < *len; i++)
      {
