@@ -1,6 +1,14 @@
 class Elm_View_Form (Eo_Base)
 {
     legacy_prefix: null;
+    constructors {
+        constructor {
+            /*@ Constructor wrapper */
+             params {
+                 Eo *model;
+             }
+        }
+    }
     methods {
         model_set {
             /*@ Set model */
