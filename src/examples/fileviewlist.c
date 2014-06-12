@@ -8,6 +8,7 @@
 #include <Elementary.h>
 #include <Emodel.h>
 #include <emodel_eio.h>
+#include <emodel_eio.eo.h>
 #include <stdio.h>
 
 #define EMODEL_TEST_FILENAME_PATH "/tmp"
@@ -30,7 +31,7 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    filemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
-   fileview = eo_add_custom(ELM_OBJ_VIEW_LIST_CLASS, NULL, elm_view_list_add(genlist, filemodel));
+   fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, filemodel));
    eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
