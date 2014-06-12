@@ -8,12 +8,6 @@
 #include "elm_priv.h"
 #include <assert.h>
 
-/**
- * @brief Elm View List Class
- *
- */
-//EAPI Eo_Op ELM_VIEW_LIST_BASE_ID = EO_NOOP;
-
 #define MY_CLASS ELM_VIEW_LIST_CLASS
 #define MY_CLASS_NAME "View List"
 
@@ -42,11 +36,11 @@ struct _View_List_ItemData
   int index;
 };
 
-//
+
 static void _emodel_child_get(void *data, Eo *child, void *event_info);
 static Eina_Bool _emodel_children_count_get_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info);
-//
-///* --- Genlist Callbacks --- */
+
+/* --- Genlist Callbacks --- */
 static void
 _item_sel_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
@@ -55,7 +49,7 @@ _item_sel_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_i
    EINA_SAFETY_ON_NULL_RETURN(idata);
    eo_do(idata->parent->model, emodel_child_select_set(idata->model));
 }
-//
+
 static void
 _item_del(void *data, Evas_Object *obj EINA_UNUSED)
 {
@@ -64,13 +58,13 @@ _item_del(void *data, Evas_Object *obj EINA_UNUSED)
    eina_hash_free(idata->parts);
    free(data);
 }
-//
+
 static void
 _hash_free(void *data)
 {
    eina_value_free(data);
 }
-//
+
 static Evas_Object *
 _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
 {
@@ -168,7 +162,7 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
    return NULL;
 }
-//
+
 static void
 _expand_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
@@ -180,22 +174,22 @@ _expand_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *e
         eo_do(idata->model, emodel_children_count_get());
      }
 }
-//
+
 static void
 _contract_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info)
 {
    Elm_Object_Item *item = event_info;
    elm_genlist_item_expanded_set(item, EINA_FALSE);
 }
-//
+
 static void
 _contracted_cb(void *data EINA_UNUSED, Evas_Object *o EINA_UNUSED, void *event_info)
 {
    Elm_Object_Item *glit = event_info;
    elm_genlist_item_subitems_clear(glit);
 }
-//
-///* --- Emodel Callbacks --- */
+
+/* --- Emodel Callbacks --- */
 static Eina_Bool
 _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
@@ -227,7 +221,7 @@ _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Descr
 
    return EINA_TRUE;
 }
-//
+
 static Eina_Bool
 _emodel_properties_change_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED)
 {
@@ -284,7 +278,7 @@ _emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED)
    if (idata->parts)
      eina_hash_foreach(idata->parts, _get_parts_fn, idata);
 }
-//
+
 static void
 _priv_model_set(Elm_View_List_Data *self, Eo *model)
 {
@@ -311,7 +305,7 @@ _priv_model_set(Elm_View_List_Data *self, Eo *model)
    eo_do(self->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_GET, _emodel_children_count_get_cb, self->rootdata));
    eo_do(self->model, emodel_children_count_get());
 }
-//
+
 
 static void
 _elm_view_list_eo_base_constructor(Eo *obj, Elm_View_List_Data *_pd EINA_UNUSED)
@@ -320,9 +314,9 @@ _elm_view_list_eo_base_constructor(Eo *obj, Elm_View_List_Data *_pd EINA_UNUSED)
    fprintf(stderr, "only custom constructor can be used with '%s' class", MY_CLASS_NAME);
 }
 
-///**
-// * @brief Elm View List Class impl.
-// */
+/**
+ * @brief Elm View List Class impl.
+ */
 static void
 _elm_view_list_constructor(Eo *obj, Elm_View_List_Data *_pd, Evas_Object *genlist, Eo *model)
 {
@@ -347,7 +341,7 @@ _elm_view_list_constructor(Eo *obj, Elm_View_List_Data *_pd, Evas_Object *genlis
    evas_object_smart_callback_add(self->genlist, "contract,request", _contract_request_cb, self);
    evas_object_smart_callback_add(self->genlist, "contracted", _contracted_cb, self);
 }
-//
+
 static void
 _elm_view_list_eo_base_destructor(Eo *obj, Elm_View_List_Data *_pd)
 {
@@ -368,7 +362,7 @@ _elm_view_list_eo_base_destructor(Eo *obj, Elm_View_List_Data *_pd)
 
    eo_do_super(obj, MY_CLASS, eo_destructor());
 }
-//
+
 static void
 _elm_view_list_evas_object_get(Eo *obj, Elm_View_List_Data *_pd, Evas_Object **widget)
 {
@@ -379,7 +373,7 @@ _elm_view_list_evas_object_get(Eo *obj, Elm_View_List_Data *_pd, Evas_Object **w
 
    *widget = self->genlist;
 }
-//
+
 static void
 _elm_view_list_property_connect(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, const char *property, const char *part)
 {
@@ -392,7 +386,7 @@ _elm_view_list_property_connect(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, co
 
    free(eina_hash_set(self->prop_con, part, strdup(property)));
 }
-//
+
 static void
 _elm_view_list_model_set(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, Eo *model)
 {
@@ -410,44 +404,4 @@ _elm_view_list_model_get(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, Eo **mode
    EINA_SAFETY_ON_NULL_RETURN(model);
    *model = self->model;
 }
-//
-/*
-static void
-_view_list_class_constructor(Eo_Class *klass)
-{
-   const Eo_Op_Func_Description func_descs[] = {
-      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_list_add),
-      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_list_destructor),
-      EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET), _elm_view_list_evas_object_get),
-      EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT), _elm_view_list_property_connect),
-      EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_SET), _elm_view_list_model_set),
-      EO_OP_FUNC(ELM_VIEW_LIST_ID(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_GET), _elm_view_list_model_get),
-      EO_OP_FUNC_SENTINEL
-   };
-
-   eo_class_funcs_set(klass, func_descs);
-}
-
-
-static const Eo_Op_Description op_descs[] = {
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_EVAS_OBJECT_GET, "Return Evas object list"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_PROPERTY_CONNECT, "Connect a property to one part"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_SET, "Set a model and update view"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_LIST_SUB_ID_MODEL_GET, "Get Current model"),
-   EO_OP_DESCRIPTION_SENTINEL
-};
-
-static Eo_Class_Description view_list_class_descs = {
-   EO_VERSION,
-   MY_CLASS_NAME,
-   EO_CLASS_TYPE_REGULAR,
-   EO_CLASS_DESCRIPTION_OPS(&ELM_VIEW_LIST_BASE_ID, op_descs, ELM_OBJ_VIEW_LIST_SUB_ID_LAST),
-   NULL,
-   sizeof(Elm_View_List_Private),
-   _view_list_class_constructor,
-   NULL
-};
-
-EO_DEFINE_CLASS(elm_obj_view_list_class_get, &view_list_class_descs, EO_BASE_CLASS, NULL);
-*/
 #include "elm_view_list.eo.c"

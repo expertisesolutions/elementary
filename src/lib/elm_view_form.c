@@ -11,23 +11,18 @@
 #include "elm_priv.h"
 #include <assert.h>
 
-/**
- * @brief Elm View Form Class
- */
-//EAPI Eo_Op ELM_VIEW_FORM_BASE_ID = EO_NOOP;
-
 #define MY_CLASS ELM_VIEW_FORM_CLASS
 #define MY_CLASS_NAME "View_Form"
 
 typedef struct _Elm_View_Form_Data Elm_View_Form_Data;
 typedef struct _Elm_View_Form_Widget Elm_View_Form_Widget;
-//
-///**
-// * @brief Local-use callbacks
-// */
+
+/**
+ * @brief Local-use callbacks
+ */
 typedef void (*Elm_View_Form_Event_Cb)(Elm_View_Form_Widget *, Elm_View_Form_Data *, Evas_Object *);
 typedef void (*Elm_View_Form_Widget_Object_Set_Cb)(Eo *, Evas_Object *, Eina_Value *, const char *);
-//
+
 struct _Elm_View_Form_Widget
 {
    const char *widget_propname;
@@ -43,7 +38,7 @@ struct _Elm_View_Form_Data
    Eina_Value *properties;
    Eina_List *l;
 };
-//
+
 static Eina_Bool
 _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
@@ -66,26 +61,26 @@ _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Descr
 
    return EINA_TRUE;
 }
-//
-//
-///**
-// * @brief Get Evas_Object property name.
-// */
-///static const char *
-//_elm_form_view_property_from_object_get(Elm_View_Form_Private *priv, Evas_Object *obj)
-//{
-//   for(Eina_List *l = priv->l; l; l = eina_list_next(l))
-//     {
-//        Elm_View_Form_Widget *w = eina_list_data_get(l);
-//        if(w->widget_obj == obj) return w->widget_propname;
-//     }
-//   return NULL;
-//}
-//*/
-///**
-// * @brief Set widget.
-// * Works, so far, for widget(s): Entry, Label
-// */
+
+
+/**
+ * @brief Get Evas_Object property name.
+ */
+/*static const char *
+_elm_form_view_property_from_object_get(Elm_View_Form_Private *priv, Evas_Object *obj)
+{
+   for(Eina_List *l = priv->l; l; l = eina_list_next(l))
+     {
+        Elm_View_Form_Widget *w = eina_list_data_get(l);
+        if(w->widget_obj == obj) return w->widget_propname;
+     }
+   return NULL;
+}
+*/
+/**
+ * @brief Set widget.
+ * Works, so far, for widget(s): Entry, Label
+ */
 static void
 _elm_evas_object_entry(Eo *obj, Evas_Object *entry, Eina_Value *value, const char *propname)
 {
@@ -97,11 +92,11 @@ _elm_evas_object_entry(Eo *obj, Evas_Object *entry, Eina_Value *value, const cha
 
    fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, entry);
 }
-//
-///**
-// * @brief Update widget's Eina_Value.
-// *    Works, so far, for widget(s): Entry, Label
-// */
+
+/**
+ * @brief Update widget's Eina_Value.
+ *    Works, so far, for widget(s): Entry, Label
+ */
 static void
 _elm_evas_object_entry_value_update(Elm_View_Form_Widget *widget, Elm_View_Form_Data *_pd EINA_UNUSED, Evas_Object *obj)
 {
@@ -114,8 +109,8 @@ _elm_evas_object_entry_value_update(Elm_View_Form_Widget *widget, Elm_View_Form_
    eina_value_set(widget->widget_value, text);
    fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, text, widget->widget_obj);
 }
-//
-//
+
+
 static void
 _elm_evas_object_thumb(Eo *obj, Evas_Object *thumb, Eina_Value *value, const char *propname)
 {
@@ -129,12 +124,12 @@ _elm_evas_object_thumb(Eo *obj, Evas_Object *thumb, Eina_Value *value, const cha
    eo_do(obj, emodel_property_set(propname, value));
    fprintf(stdout, "%s:%d: new text: %s:%p\n", __FUNCTION__, __LINE__, filename, thumb);
 }
-//
-///**
-// * @brief Evas object callback implementation.
-// *    Updates Widget's value if not the same object
-// *    and the widget itself.
-// */
+
+/**
+ * @brief Evas object callback implementation.
+ *    Updates Widget's value if not the same object
+ *    and the widget itself.
+ */
 static void
 _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
@@ -155,12 +150,12 @@ _elm_evas_object_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj, v
 
    eo_do(obj, emodel_property_set(w->widget_propname, w->widget_value));
 }
-//
-///**
-// * @brief Add new widget object.
-// *    Adds new widget object on the list
-// *    and perform initial setup.
-// */
+
+/**
+ * @brief Add new widget object.
+ *    Adds new widget object on the list
+ *    and perform initial setup.
+ */
 static Eina_Bool
 _elm_view_widget_add(Elm_View_Form_Data *_pd, const char *propname, Evas_Object *widget_obj)
 {
@@ -206,14 +201,14 @@ _elm_view_widget_add(Elm_View_Form_Data *_pd, const char *propname, Evas_Object 
 
    return EINA_TRUE;
 }
-///**
-// * Helper functions - End
-// */
-//
-//
-///**
-// * @brief constructor
-// */
+/**
+ * Helper functions - End
+ */
+
+
+/**
+ * @brief constructor
+ */
 static void
 _elm_view_form_constructor(Eo *obj, Elm_View_Form_Data *_pd, Eo *model)
 {
@@ -234,10 +229,10 @@ _elm_view_form_eo_base_constructor(Eo *obj, Elm_View_Form_Data *_pd EINA_UNUSED)
    fprintf(stderr, "only custom constructor can be used with '%s' class", MY_CLASS_NAME);
 }
 
-//
-///**
-// * @brief destructor
-// */
+
+/**
+ * @brief destructor
+ */
 static void
 _elm_view_form_eo_base_destructor(Eo *obj, Elm_View_Form_Data *_pd)
 {
@@ -320,41 +315,5 @@ _elm_view_form_widget_get(Eo *obj EINA_UNUSED, Elm_View_Form_Data *_pd, const ch
      }
 }
 
-#if 0
-static void
-_view_form_class_constructor(Eo_Class *klass)
-{
-   const Eo_Op_Func_Description func_descs[] = {
-      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_CONSTRUCTOR), _elm_view_form_constructor),
-      EO_OP_FUNC(EO_BASE_ID(EO_BASE_SUB_ID_DESTRUCTOR), _elm_view_form_destructor),
-      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_MODEL_SET), _elm_view_form_model_set),
-      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD), _elm_view_form_widget_add),
-      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET), _elm_view_form_widget_set),
-      EO_OP_FUNC(ELM_VIEW_FORM_ID(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_GET), _elm_view_form_widget_get),
-      EO_OP_FUNC_SENTINEL
-   };
-   eo_class_funcs_set(klass, func_descs);
-}
-
-static const Eo_Op_Description op_descs[] = {
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_MODEL_SET, "Set model"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_ADD, "Add new widget"),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_SET, "Set property's value."),
-   EO_OP_DESCRIPTION(ELM_OBJ_VIEW_FORM_SUB_ID_WIDGET_GET, "Get property's value"),
-   EO_OP_DESCRIPTION_SENTINEL
-};
-
-static Eo_Class_Description view_form_class_descs = {
-   EO_VERSION,
-   MY_CLASS_NAME,
-   EO_CLASS_TYPE_REGULAR,
-   EO_CLASS_DESCRIPTION_OPS(&ELM_VIEW_FORM_BASE_ID, op_descs, ELM_OBJ_VIEW_FORM_SUB_ID_LAST),
-   NULL,
-   sizeof(Elm_View_Form_Private),
-   _view_form_class_constructor,
-   NULL
-};
-EO_DEFINE_CLASS(elm_obj_view_form_class_get, &view_form_class_descs, EO_BASE_CLASS, NULL);
 #endif
-
 #include "elm_view_form.eo.c"
