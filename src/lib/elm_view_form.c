@@ -315,5 +315,4 @@ _elm_view_form_widget_get(Eo *obj EINA_UNUSED, Elm_View_Form_Data *_pd, const ch
      }
 }
 
-#endif
 #include "elm_view_form.eo.c"
