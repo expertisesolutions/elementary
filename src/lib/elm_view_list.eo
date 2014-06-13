@@ -4,9 +4,15 @@ class Elm_View_List (Eo_Base)
     constructors {
         constructor {
             /*@ Constructor wrapper */
+            /**
+             * @def elm_view_list_constructor
+             * @since 1.8
+             *
+             * @in model
+             */
              params {
-                 Evas_Object *genlist;
-                 Eo *model;
+                 Evas_Object *genlist; /*@ Genlist object */
+                 Eo *model; /*@ Emodel object */
              }
         }
     }
@@ -20,7 +26,7 @@ class Elm_View_List (Eo_Base)
              * @out widget
              */
              params {
-                 Evas_Object **widget;
+                 Evas_Object **widget; /*@ Returned widget */
              }
         }
         property_connect {
@@ -33,8 +39,8 @@ class Elm_View_List (Eo_Base)
              * @in part
              */
              params {
-                 const char *property;
-                 const char *part;
+                 const char *property; /*@ Property name */
+                 const char *part; /*@ Edje's theme part */
              }
         }
         model_set {
@@ -46,7 +52,7 @@ class Elm_View_List (Eo_Base)
              * @in model
              */
              params {
-                 Eo *model;
+                 Eo *model; /*@ New Emodel to set */
              }
         }
         model_get {
@@ -58,7 +64,7 @@ class Elm_View_List (Eo_Base)
              * @out model
              */
              params {
-                 Eo **model;
+                 Eo **model; /*@ Returned Emodel */
              }
         }
     }

@@ -4,8 +4,14 @@ class Elm_View_Form (Eo_Base)
     constructors {
         constructor {
             /*@ Constructor wrapper */
+            /**
+             * @def elm_view_form_constructor
+             * @since 1.8
+             *
+             * @in model
+             */
              params {
-                 Eo *model;
+                 Eo *model; /*@ Emodel object */
              }
         }
     }
@@ -19,7 +25,7 @@ class Elm_View_Form (Eo_Base)
              * @in model
              */
              params {
-                 Eo *model;
+                 Eo *model; /*@ Emodel object */
              }
         }
         widget_add {
@@ -32,8 +38,8 @@ class Elm_View_Form (Eo_Base)
              * @in evas
              */
              params {
-                 const char *propname;
-                 Evas_Object *evas;
+                 const char *propname; /*@ Property name */
+                 Evas_Object *evas; /*@ Evas widget */
              }
         }
    }
