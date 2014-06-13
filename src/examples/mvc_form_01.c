@@ -176,8 +176,8 @@ elm_main(int argc, char **argv)
    /* Define widget properties */
    eo_do(evf, elm_view_form_widget_add("filename", rootpath_label));
    eo_do(evf, elm_view_form_widget_add("size", size_label));
-   eo_do(evf, elm_view_form_widget_add("filename", entry));
-   eo_do(evf, elm_view_form_widget_add("filename", thumb));
+   eo_do(evf, elm_view_form_widget_add("path", entry));
+   eo_do(evf, elm_view_form_widget_add("path", thumb));
 
    /* cleanup */
    elm_run();
