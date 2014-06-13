@@ -111,7 +111,6 @@ _elm_evas_object_text_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *o
    Eina_Value *value;
    Elm_View_Form_Data *priv = (Elm_View_Form_Data *)data;
    Elm_View_Form_Widget *w = NULL;
-   printf("CHANGE TEXT CB %d\n", __LINE__);
 
    for(Eina_List *l = priv->l; l; l = eina_list_next(l))
      {
@@ -123,11 +122,9 @@ _elm_evas_object_text_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *o
    EINA_SAFETY_ON_NULL_RETURN(w);
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
    text = elm_object_text_get(obj);
-   printf("CHANGE TEXT CB text=%s - property=%s %d\n", text, w->widget_propname, __LINE__);
    eina_value_set(value, text);
    eo_do(priv->model_obj, emodel_property_set(w->widget_propname, value));
    eina_value_free(value);
-   printf("CHANGE TEXT CB %d\n", __LINE__);
 }
 /**
  * @brief Add new widget object.

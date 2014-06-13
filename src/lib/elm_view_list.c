@@ -28,7 +28,7 @@ struct _Elm_View_List_Data
 
 struct _View_List_ItemData
 {
-  Elm_View_List_Data *self;
+  Elm_View_List_Data *priv;
   Elm_Object_Item *item;
   Eo *model;
   Eina_Hash *parts;
@@ -72,10 +72,10 @@ _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    EINA_SAFETY_ON_NULL_RETURN_VAL(data, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(part, NULL);
    View_List_ItemData *idata = data;
-   Elm_View_List_Data *self = idata->self;
+   Elm_View_List_Data *priv = idata->priv;
    Eina_Value *value;
 
-   const char *prop = eina_hash_find(self->prop_con, part);
+   const char *prop = eina_hash_find(priv->prop_con, part);
    if (prop == NULL) prop = part;
 
    if (idata->parts == NULL)
@@ -126,10 +126,10 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    EINA_SAFETY_ON_NULL_RETURN_VAL(data, NULL);
    EINA_SAFETY_ON_NULL_RETURN_VAL(part, NULL);
    View_List_ItemData *idata = data;
-   Elm_View_List_Data *self = idata->self;
+   Elm_View_List_Data *priv = idata->priv;
    Eina_Value *value;
 
-   const char *prop = eina_hash_find(self->prop_con, part);
+   const char *prop = eina_hash_find(priv->prop_con, part);
    if (prop == NULL) prop = part;
 
    if (idata->parts == NULL)
@@ -233,17 +233,17 @@ _emodel_children_count_get_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_De
 {
    View_List_ItemData *pdata = data;
    unsigned int i, *len = event_info;
-   Elm_View_List_Data *self = pdata->self;
+   Elm_View_List_Data *priv = pdata->priv;
 
    for (i = 0; i < *len; i++)
      {
         View_List_ItemData *idata = malloc(sizeof(View_List_ItemData));
         memset(idata, 0, sizeof(View_List_ItemData));
         EINA_SAFETY_ON_NULL_RETURN_VAL(idata, EINA_TRUE);
-        idata->self = self;
+        idata->priv = priv;
         idata->index = i;
         idata->parent = pdata;
-        idata->item = elm_genlist_item_append(self->genlist, self->itc, idata, pdata->item,
+        idata->item = elm_genlist_item_append(priv->genlist, priv->itc, idata, pdata->item,
                                                        ELM_GENLIST_ITEM_TREE, _item_sel_cb, NULL);
      }
 
@@ -280,30 +280,30 @@ _emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED)
 }
 
 static void
-_priv_model_set(Elm_View_List_Data *self, Eo *model)
+_priv_model_set(Elm_View_List_Data *priv, Eo *model)
 {
-   if (self->model != NULL)
+   if (priv->model != NULL)
      {
-         eo_do(self->genlist, elm_obj_genlist_clear());
-         eo_unref(self->model);
-         self->model = NULL;
-         free(self->rootdata);
-         self->rootdata = NULL;
+         eo_do(priv->genlist, elm_obj_genlist_clear());
+         eo_unref(priv->model);
+         priv->model = NULL;
+         free(priv->rootdata);
+         priv->rootdata = NULL;
      }
 
    if (model == NULL)
      return;
 
-   self->model = model;
-   eo_ref(self->model);
+   priv->model = model;
+   eo_ref(priv->model);
 
-   self->rootdata = malloc(sizeof(View_List_ItemData));
-   memset(self->rootdata, 0, sizeof(View_List_ItemData));
-   self->rootdata->self = self;
-   self->rootdata->model = self->model;
+   priv->rootdata = malloc(sizeof(View_List_ItemData));
+   memset(priv->rootdata, 0, sizeof(View_List_ItemData));
+   priv->rootdata->priv = priv;
+   priv->rootdata->model = priv->model;
 
-   eo_do(self->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_GET, _emodel_children_count_get_cb, self->rootdata));
-   eo_do(self->model, emodel_children_count_get());
+   eo_do(priv->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_GET, _emodel_children_count_get_cb, priv->rootdata));
+   eo_do(priv->model, emodel_children_count_get());
 }
 
 
@@ -321,44 +321,44 @@ static void
 _elm_view_list_constructor(Eo *obj, Elm_View_List_Data *_pd, Evas_Object *genlist, Eo *model)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
-   Elm_View_List_Data *self = (Elm_View_List_Data *)_pd;
+   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
 
-   self->genlist = genlist;
-   EINA_SAFETY_ON_NULL_RETURN(self->genlist);
-   //eo_ref(self->genlist);
+   priv->genlist = genlist;
+   EINA_SAFETY_ON_NULL_RETURN(priv->genlist);
+   //eo_ref(priv->genlist);
 
-   _priv_model_set(self, model);
+   _priv_model_set(priv, model);
 
-   self->itc = elm_genlist_item_class_new();
-   self->itc->item_style = "default";
-   self->itc->func.text_get = _item_text_get;
-   self->itc->func.content_get = _item_content_get;
-   self->itc->func.state_get = NULL;
-   self->itc->func.del = _item_del;
-   self->prop_con = eina_hash_string_superfast_new(free);
+   priv->itc = elm_genlist_item_class_new();
+   priv->itc->item_style = "default";
+   priv->itc->func.text_get = _item_text_get;
+   priv->itc->func.content_get = _item_content_get;
+   priv->itc->func.state_get = NULL;
+   priv->itc->func.del = _item_del;
+   priv->prop_con = eina_hash_string_superfast_new(free);
 
-   evas_object_smart_callback_add(self->genlist, "expand,request", _expand_request_cb, self);
-   evas_object_smart_callback_add(self->genlist, "contract,request", _contract_request_cb, self);
-   evas_object_smart_callback_add(self->genlist, "contracted", _contracted_cb, self);
+   evas_object_smart_callback_add(priv->genlist, "expand,request", _expand_request_cb, priv);
+   evas_object_smart_callback_add(priv->genlist, "contract,request", _contract_request_cb, priv);
+   evas_object_smart_callback_add(priv->genlist, "contracted", _contracted_cb, priv);
 }
 
 static void
 _elm_view_list_eo_base_destructor(Eo *obj, Elm_View_List_Data *_pd)
 {
-   Elm_View_List_Data *self = (Elm_View_List_Data *)_pd;
-   EINA_SAFETY_ON_NULL_RETURN(self);
+   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
    EINA_SAFETY_ON_NULL_RETURN(obj);
 
-   eo_do(self->genlist, elm_obj_genlist_clear());
-   elm_genlist_item_class_free(self->itc);
-   //evas_object_smart_callback_del(self->genlist, "expand,request", _expand_request_cb);
-   //evas_object_smart_callback_del(self->genlist, "contract,request", _contract_request_cb);
-   //evas_object_smart_callback_del(self->genlist, "contracted", _contracted_cb);
+   eo_do(priv->genlist, elm_obj_genlist_clear());
+   elm_genlist_item_class_free(priv->itc);
+   //evas_object_smart_callback_del(priv->genlist, "expand,request", _expand_request_cb);
+   //evas_object_smart_callback_del(priv->genlist, "contract,request", _contract_request_cb);
+   //evas_object_smart_callback_del(priv->genlist, "contracted", _contracted_cb);
 
-   free(self->rootdata);
-   self->rootdata = NULL;
-   //eo_unref(self->genlist);
-   eo_unref(self->model);
+   free(priv->rootdata);
+   priv->rootdata = NULL;
+   //eo_unref(priv->genlist);
+   eo_unref(priv->model);
 
    eo_do_super(obj, MY_CLASS, eo_destructor());
 }
@@ -366,42 +366,42 @@ _elm_view_list_eo_base_destructor(Eo *obj, Elm_View_List_Data *_pd)
 static void
 _elm_view_list_evas_object_get(Eo *obj, Elm_View_List_Data *_pd, Evas_Object **widget)
 {
-   Elm_View_List_Data *self = _pd;
-   EINA_SAFETY_ON_NULL_RETURN(self);
+   Elm_View_List_Data *priv = _pd;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
    EINA_SAFETY_ON_NULL_RETURN(obj);
    EINA_SAFETY_ON_NULL_RETURN(widget);
 
-   *widget = self->genlist;
+   *widget = priv->genlist;
 }
 
 static void
 _elm_view_list_property_connect(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, const char *property, const char *part)
 {
-   Elm_View_List_Data *self = (Elm_View_List_Data *)_pd;
-   EINA_SAFETY_ON_NULL_RETURN(self);
+   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
 
-   EINA_SAFETY_ON_NULL_RETURN(self->prop_con);
+   EINA_SAFETY_ON_NULL_RETURN(priv->prop_con);
    EINA_SAFETY_ON_NULL_RETURN(property);
    EINA_SAFETY_ON_NULL_RETURN(part);
 
-   free(eina_hash_set(self->prop_con, part, strdup(property)));
+   free(eina_hash_set(priv->prop_con, part, strdup(property)));
 }
 
 static void
 _elm_view_list_model_set(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, Eo *model)
 {
-   Elm_View_List_Data *self = (Elm_View_List_Data *)_pd;
-   EINA_SAFETY_ON_NULL_RETURN(self);
+   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
    EINA_SAFETY_ON_NULL_RETURN(model);
-   _priv_model_set(self, model);
+   _priv_model_set(priv, model);
 }
 
 static void
 _elm_view_list_model_get(Eo *obj EINA_UNUSED, Elm_View_List_Data *_pd, Eo **model)
 {
-   Elm_View_List_Data *self = (Elm_View_List_Data *)_pd;
-   EINA_SAFETY_ON_NULL_RETURN(self);
+   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
+   EINA_SAFETY_ON_NULL_RETURN(priv);
    EINA_SAFETY_ON_NULL_RETURN(model);
-   *model = self->model;
+   *model = priv->model;
 }
 #include "elm_view_list.eo.c"
