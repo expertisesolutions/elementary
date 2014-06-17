@@ -37,7 +37,7 @@ struct _View_List_ItemData
 };
 
 
-static void _emodel_child_get(void *data, Eo *child, void *event_info);
+static void _emodel_child_get(void *data, Eo *child, void *event_info, int error);
 static Eina_Bool _emodel_children_count_get_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info);
 
 /* --- Genlist Callbacks --- */
@@ -267,7 +267,7 @@ _get_parts_fn(const Eina_Hash *hash EINA_UNUSED, const void *key, void *data EIN
 }
 
 static void
-_emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED)
+_emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED, int error EINA_UNUSED)
 {
    View_List_ItemData *idata = data;
    idata->model = child;
