@@ -33,30 +33,14 @@ AC_DEFINE_UNQUOTED(MODULE_EDJE, "$MODULE_EDJE", "Edje module architecture")
 DEPS_EOLIAN_FLAGS=`pkg-config --variable=eolian_flags eo evas edje ecore`
 AC_SUBST(DEPS_EOLIAN_FLAGS)
 
-lt_enable_auto_import=""
 ELM_UNIX_DEF="#undef"
 ELM_WIN32_DEF="#undef"
-ELM_WINCE_DEF="#undef"
 have_windows="no"
 have_dlopen="no"
 case "$host_os" in
-   mingw32ce*)
-      PKG_CHECK_MODULES([EVIL], [evil])
-      AC_DEFINE(HAVE_EVIL, 1, [Set to 1 if evil package is installed.])
-      lt_enable_auto_import="-Wl,--enable-auto-import"
-      ELM_WINCE_DEF="#define"
-      have_windows="yes"
-dnl managed by evil
-      AC_DEFINE(HAVE_DLADDR)
-      have_dlopen="yes"
-      dlopen_libs=-ldl
-      requirement_elm="evil"
-      have_socket="no"
-    ;;
    mingw*)
       PKG_CHECK_MODULES([EVIL], [evil])
       AC_DEFINE(HAVE_EVIL, 1, [Set to 1 if evil package is installed.])
-      lt_enable_auto_import="-Wl,--enable-auto-import"
       ELM_WIN32_DEF="#define"
       have_windows="yes"
 dnl managed by evil
@@ -65,12 +49,14 @@ dnl managed by evil
       dlopen_libs=-ldl
       requirement_elm="evil"
       have_socket="no"
+      default_engine=software_gdi
       ;;
    *solaris*)
       ELM_UNIX_DEF="#define"
       have_socket="yes"
       have_dlopen="yes"
       AC_CHECK_LIB([socket], [connect], [], [have_socket="no"])
+      default_engine=software_x11
       ;;
    darwin*)
       ELM_UNIX_DEF="#define"
@@ -78,6 +64,7 @@ dnl managed by evil
       have_dlopen="yes"
       AC_CHECK_HEADERS([crt_externs.h])
       AC_DEFINE([environ], [(*_NSGetEnviron())], ["apple doesn't follow POSIX in this case."])
+      default_engine=opengl_cocoa
       ;;
    *)
       ELM_UNIX_DEF="#define"
@@ -95,10 +82,15 @@ dnl managed by evil
         fi
       fi
       have_socket="yes"
+      default_engine=software_x11
       ;;
 esac
+
 AM_CONDITIONAL([BUILD_RUN], [test "x$have_socket" = "xyes"])
 AM_CONDITIONAL([BUILD_MODULES], [test "x$have_dlopen" = "xyes"])
+
+AC_SUBST([default_engine])
+AC_DEFINE_UNQUOTED([DEFAULT_ENGINE], ["$default_engine"], ["Default engine according to host"])
 
 m4_ifdef([v_mic],
    [
@@ -107,13 +99,9 @@ m4_ifdef([v_mic],
     EFL_COMPILER_FLAG([-W])
    ])
 
-AC_LIBTOOL_WIN32_DLL
-define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
-define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT([win32-dll disable-static pic-only])
 EFL_INIT
-#AC_PROG_LIBTOOL
 
 AC_GNU_SOURCE
 
@@ -130,14 +118,7 @@ ELM_VERSION_MINOR="v_min"
 AC_SUBST(ELM_VERSION_MAJOR)
 AC_SUBST(ELM_VERSION_MINOR)
 
-case "$host_os" in
-  mingw32ce* | cegcc*)
-    MODULE_ARCH="v"
-    ;;
-  *)
-    MODULE_ARCH="v-v_maj.v_min.v_mic"
-    ;;
-esac
+MODULE_ARCH="v-v_maj.v_min.v_mic"
 AC_SUBST(MODULE_ARCH)
 AC_DEFINE_UNQUOTED(MODULE_ARCH, "$MODULE_ARCH", "Module architecture")
 
@@ -189,10 +170,8 @@ getuid \
 ])
 
 AC_SUBST(dlopen_libs)
-AC_SUBST(lt_enable_auto_import)
 AC_SUBST(ELM_UNIX_DEF)
 AC_SUBST(ELM_WIN32_DEF)
-AC_SUBST(ELM_WINCE_DEF)
 
 AM_CONDITIONAL([ELEMENTARY_WINDOWS_BUILD], [test "x${have_windows}" = "xyes"])
 
@@ -382,29 +361,6 @@ else
 fi
 if test "x$want_elementary_win32" = "xyes" -a "x$have_elementary_win32" = "xno"; then
     AC_MSG_ERROR([ecore-win32 support requested, but ecore-win32 was not found by pkg-config.])
-fi
-
-have_elementary_wince="no"
-want_elementary_wince="auto"
-AC_ARG_ENABLE([ecore-wince],
-   [AC_HELP_STRING([--disable-ecore-wince], [disable ecore-wince support. @<:@default=detect@:>@])],
-   [want_elementary_wince=$enableval], [])
-
-if test "x$want_elementary_wince" != "xno"; then
-   PKG_CHECK_MODULES([ELEMENTARY_WINCE],
-      [ecore-wince >= efl_version],
-      [
-       AC_DEFINE(HAVE_ELEMENTARY_WINCE, 1, [Windows CE support for Elementary])
-       have_elementary_wince="yes"
-       requirement_elm="ecore-wince >= efl_version ${requirement_elm}"
-      ],
-      [have_elementary_wince="no"]
-   )
-else
-    have_elementary_wince="no"
-fi
-if test "x$want_elementary_wince" = "xyes" -a "x$have_elementary_wince" = "xno"; then
-    AC_MSG_ERROR([ecore-wince support requested, but ecore-wince was not found by pkg-config.])
 fi
 
 have_elementary_wayland="no"
@@ -731,8 +687,11 @@ data/desktop/Makefile
 data/edje_externals/Makefile
 config/Makefile
 config/default/Makefile
+config/default/base.src
 config/standard/Makefile
+config/standard/base.src
 config/mobile/Makefile
+config/mobile/base.src
 $po_makefile_in
 cmakeconfig/ElementaryConfig.cmake
 cmakeconfig/ElementaryConfigVersion.cmake
@@ -760,7 +719,6 @@ echo "    PSL1GHT................: ${have_elementary_psl1ght}"
 echo "    SDL....................: ${have_elementary_sdl}"
 echo "    Cocoa..................: ${have_elementary_cocoa}"
 echo "    Windows XP.............: ${have_elementary_win32}"
-echo "    Windows CE.............: ${have_elementary_wince}"
 echo "    Wayland................: ${have_elementary_wayland}"
 echo
 echo "  Features:"

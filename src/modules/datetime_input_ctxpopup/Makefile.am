@@ -15,7 +15,6 @@ AM_CPPFLAGS = \
 @ELEMENTARY_FB_CFLAGS@ \
 @ELEMENTARY_SDL_CFLAGS@ \
 @ELEMENTARY_WIN32_CFLAGS@ \
-@ELEMENTARY_WINCE_CFLAGS@ \
 @ELEMENTARY_ELOCATION_CFLAGS@ \
 @ELEMENTARY_EWEATHER_CFLAGS@ \
 @ELEMENTARY_WEB_CFLAGS@ \
@@ -35,5 +34,5 @@ pkg_LTLIBRARIES = module.la
 module_la_SOURCES = datetime_input_ctxpopup.c
 
 module_la_LIBADD = @ELEMENTARY_LIBS@ $(top_builddir)/src/lib/libelementary.la
-module_la_LDFLAGS = -no-undefined @lt_enable_auto_import@ -module -avoid-version
+module_la_LDFLAGS = -no-undefined -module -avoid-version
 module_la_LIBTOOLFLAGS = --tag=disable-static

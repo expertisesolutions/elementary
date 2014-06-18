@@ -27,7 +27,6 @@ AM_CPPFLAGS = \
 @ELEMENTARY_FB_CFLAGS@ \
 @ELEMENTARY_SDL_CFLAGS@ \
 @ELEMENTARY_WIN32_CFLAGS@ \
-@ELEMENTARY_WINCE_CFLAGS@ \
 @ELEMENTARY_ELOCATION_CFLAGS@ \
 @ELEMENTARY_WEB_CFLAGS@ \
 @ELEMENTARY_EMAP_CFLAGS@ \
@@ -61,7 +60,7 @@ elm_vertical_frame.c \
 elm_horizontal_frame.c
 
 module_la_LIBADD = @ELEMENTARY_LIBS@ $(top_builddir)/src/lib/libelementary.la @EVIL_LIBS@
-module_la_LDFLAGS = -no-undefined @lt_enable_auto_import@ -module -avoid-version
+module_la_LDFLAGS = -no-undefined -module -avoid-version
 module_la_LIBTOOLFLAGS = --tag=disable-static
 
 clean-local:

@@ -3061,7 +3061,8 @@ _elm_win_constructor(Eo *obj, Elm_Win_Data *sd, const char *name, Elm_Win_Type t
                   enginelist[ 8] = ELM_WAYLAND_EGL;
                   enginelist[ 9] = ELM_DRM;
                   enginelist[10] = ELM_OPENGL_SDL;
-                  enginelist[11] = NULL;
+                  enginelist[11] = ELM_SOFTWARE_WIN32;
+                  enginelist[12] = NULL;
                }
           }
         for (i = 0; i < 30; i++)
@@ -3638,7 +3639,6 @@ _elm_win_fullscreen_set(Eo *obj EINA_UNUSED, Elm_Win_Data *sd, Eina_Bool fullscr
 {
    // YYY: handle if sd->img_obj
    if (ENGINE_COMPARE(ELM_SOFTWARE_FB) ||
-       ENGINE_COMPARE(ELM_SOFTWARE_16_WINCE) || 
        ENGINE_COMPARE(ELM_DRM))
      {
         // these engines... can ONLY be fullscreen
@@ -3686,7 +3686,6 @@ _elm_win_fullscreen_get(Eo *obj EINA_UNUSED, Elm_Win_Data *sd)
 
    if (engine_name &&
        ((!strcmp(engine_name, ELM_SOFTWARE_FB)) ||
-        (!strcmp(engine_name, ELM_SOFTWARE_16_WINCE)) || 
         (!strcmp(engine_name, ELM_DRM))))
      {
         // these engines... can ONLY be fullscreen
