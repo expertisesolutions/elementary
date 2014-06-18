@@ -8,6 +8,7 @@ class Elm_View_List (Eo_Base)
              * @def elm_view_list_constructor
              * @since 1.8
              *
+             * @in genlist
              * @in model
              */
              params {
