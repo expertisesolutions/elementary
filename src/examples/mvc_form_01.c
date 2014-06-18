@@ -22,6 +22,23 @@ struct _Form_Child_Data
 };
 typedef struct _Form_Child_Data Form_Child_Data;
 
+struct _Emodel_Test_Formmvc_Data
+{
+   Eo *fileview;
+   Eo *evf;
+   Eo *model;
+};
+typedef struct _Emodel_Test_Formmvc_Data Emodel_Test_Formmvc_Data;
+
+static void
+_cleanup_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Emodel_Test_Formmvc_Data *priv = (Emodel_Test_Formmvc_Data *)data;
+   eo_unref(priv->fileview);
+   eo_unref(priv->evf);
+   eo_unref(priv->model);
+}
+
 static void
 _win_focused_cb(void *data, Evas_Object *obj, void *event)
 {
@@ -61,13 +78,16 @@ _generation_error_cb(void *data, Evas_Object *thumb, void *event_info)
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
-   Eo *fileview, *evf, *model;
+   //Eo *fileview, *evf, *model;
+   Emodel_Test_Formmvc_Data priv;
    Evas_Object *win, *panes, *panes_h, *bigbox;
    Evas_Object *rootpath_label, *thumb, *entry, *genlist;
    Evas_Object *size_label;
    char *dirname;
    Form_Child_Data *child_data = calloc(1, sizeof(Form_Child_Data));
    EINA_SAFETY_ON_NULL_RETURN_VAL(child_data, 1);
+
+   memset(&priv, 0, sizeof(Emodel_Test_Formmvc_Data));
 
    ecore_init();
    eio_init();
@@ -77,15 +97,15 @@ elm_main(int argc, char **argv)
 
 
    /* File tree is used as example */
-   model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
-   EINA_SAFETY_ON_NULL_RETURN_VAL(model, 1);
+   priv.model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(priv.model, 1);
 
-   evf = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(NULL));
-   EINA_SAFETY_ON_NULL_RETURN_VAL(evf, 1);
+   priv.evf = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(NULL));
+   EINA_SAFETY_ON_NULL_RETURN_VAL(priv.evf, 1);
 
-   child_data->evf = evf;
-   child_data->model = model;
-   eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _child_selected_cb, child_data));
+   child_data->evf = priv.evf;
+   child_data->model = priv.model;
+   eo_do(priv.model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _child_selected_cb, child_data));
 
    /* for entry widget */
    static Elm_Entry_Filter_Limit_Size limit_size = {
@@ -115,9 +135,12 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    /* File view setup */
-   fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, model));
-   eo_do(fileview, elm_view_list_property_connect("filename", "elm.text"));
-   eo_do(fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
+   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, priv.model));
+   eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"));
+   eo_do(priv.fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
+
+   /* Make sure to unreference objects in correct context */
+   evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
 
    /* Panes layout */
    panes = elm_panes_add(win);
@@ -174,16 +197,14 @@ elm_main(int argc, char **argv)
    elm_object_part_content_set(panes, "right", panes_h);
 
    /* Define widget properties */
-   eo_do(evf, elm_view_form_widget_add("filename", rootpath_label));
-   eo_do(evf, elm_view_form_widget_add("size", size_label));
-   eo_do(evf, elm_view_form_widget_add("path", entry));
-   eo_do(evf, elm_view_form_widget_add("path", thumb));
+   eo_do(priv.evf, elm_view_form_widget_add("filename", rootpath_label));
+   eo_do(priv.evf, elm_view_form_widget_add("size", size_label));
+   eo_do(priv.evf, elm_view_form_widget_add("path", entry));
+   eo_do(priv.evf, elm_view_form_widget_add("path", thumb));
 
    /* cleanup */
    elm_run();
    elm_shutdown();
-   eo_unref(model);
-   eo_unref(evf);
    eio_shutdown();
    ecore_shutdown();
    free(child_data);
