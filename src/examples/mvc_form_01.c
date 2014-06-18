@@ -31,7 +31,7 @@ struct _Emodel_Test_Formmvc_Data
 typedef struct _Emodel_Test_Formmvc_Data Emodel_Test_Formmvc_Data;
 
 static void
-_cleanup_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+_cleanup_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
    Emodel_Test_Formmvc_Data *priv = (Emodel_Test_Formmvc_Data *)data;
    eo_unref(priv->fileview);
@@ -52,7 +52,7 @@ _main_win_del_cb(void *data, Evas_Object *obj, void *event)
  * @brief Child callback
  */
 static Eina_Bool
-_child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
+_child_selected_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    Form_Child_Data *child_evt = data;
    Emodel_Children_EVT *evt = event_info;
@@ -68,7 +68,7 @@ _child_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_D
  * @see DEFAULT_THUMBNAIL
  */
 static void
-_generation_error_cb(void *data, Evas_Object *thumb, void *event_info)
+_generation_error_cb(void *data EINA_UNUSED, Evas_Object *thumb, void *event_info EINA_UNUSED)
 {
    fprintf(stderr, "thumbnail generation error, loading default %s.\n", DEFAULT_THUMBNAIL);
    elm_thumb_file_set(thumb, DEFAULT_THUMBNAIL, NULL);

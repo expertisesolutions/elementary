@@ -19,7 +19,7 @@ struct _Emodel_Test_Filemvc_Data
 typedef struct _Emodel_Test_Filemvc_Data Emodel_Test_Filemvc_Data;
 
 static void
-_cleanup_cb(void *data EINA_UNUSED, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+_cleanup_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
 {
    Emodel_Test_Filemvc_Data *priv = (Emodel_Test_Filemvc_Data *)data;
    eo_unref(priv->fileview);
@@ -43,7 +43,7 @@ _list_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_De
 }
 
 static Eina_Bool
-_tree_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED)
+_tree_selected_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    printf("TREE selected model\n");
    Eo *model, *view = data;
