@@ -44,7 +44,7 @@ class Elm_View_Form (Eo_Base)
         }
    }
    implements {
-      Eo_Base::destructor;
-      Eo_Base::constructor;
+      Eo_Base.destructor;
+      Eo_Base.constructor;
    }
 }
