@@ -59,14 +59,28 @@ _tree_selected_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *d
    return EINA_TRUE;
 }
 
+static void
+_widget_init(Evas_Object *widget, Evas_Object *box)
+{
+   if (box != NULL) {
+     elm_box_pack_end(box, widget);
+     elm_object_text_set(widget, "content");
+   }
+   evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(widget);
+}
+
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Emodel_Test_Filemvc_Data priv;
+   Eo *fileview, *treemodel, *treeview, *formview;
    Evas_Object *win, *box, *genlist;
 
    memset(&priv, 0, sizeof(Emodel_Test_Filemvc_Data));
 
+   //win
    win = elm_win_util_standard_add("viewlist", "Viewlist");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
@@ -78,30 +92,53 @@ elm_main(int argc, char **argv)
 
    ecore_init();
 
+   //treemodel
    priv.treemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
    eo_do(priv.treemodel, emodel_eio_children_filter_set(_filter_cb, NULL));
 
+   //treeview
    genlist = elm_genlist_add(win);
-   priv.treeview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, priv.treemodel));
+   priv.treeview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(priv.treemodel, genlist, ELM_GENLIST_ITEM_TREE, NULL));
    eo_do(priv.treeview, elm_view_list_property_connect("filename", "elm.text"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
-   evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   _widget_init(genlist, NULL);
    elm_box_pack_end(box, genlist);
-   evas_object_show(genlist);
 
+   //listview
    genlist = elm_genlist_add(win);
-   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, NULL));
+   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(NULL, genlist, ELM_GENLIST_ITEM_NONE, NULL));
    eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
-   evas_object_size_hint_weight_set(genlist, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(genlist, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   _widget_init(genlist, NULL);
    elm_box_pack_end(box, genlist);
-   evas_object_show(genlist);
 
    eo_do(priv.treemodel, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _tree_selected_cb, priv.fileview));
+   Evas_Object *bxr, *rootpath_label, *size_label, *entry;
+   //formview
+   bxr = elm_box_add(win);
+   _widget_init(bxr, NULL);
+   elm_box_pack_end(box, bxr);
 
+   /* Rootpath Label widget */
+   rootpath_label = elm_label_add(win);
+   elm_label_line_wrap_set(rootpath_label, ELM_WRAP_CHAR);
+   _widget_init(rootpath_label, bxr);
+
+   /* Size Label widget */
+   size_label = elm_label_add(win);
+   elm_label_line_wrap_set(size_label, ELM_WRAP_CHAR);
+   _widget_init(size_label, bxr);
+
+   /* Entry widget */
+   entry = elm_entry_add(win);
+   elm_entry_single_line_set(entry, EINA_TRUE);
+//   elm_entry_markup_filter_append(entry, elm_entry_filter_limit_size, &limit_size);
+   _widget_init(entry, bxr);
+
+//   formview = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(treemodel));
+
+   //showall
    evas_object_resize(win, 600, 520);
    evas_object_show(box);
    evas_object_show(win);

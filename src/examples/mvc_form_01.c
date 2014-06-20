@@ -135,7 +135,7 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    /* File view setup */
-   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, priv.model));
+   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(priv.model, genlist, ELM_GENLIST_ITEM_TREE, NULL));
    eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"));
    eo_do(priv.fileview, elm_view_list_property_connect("icon", "elm.swallow.icon"));
 
