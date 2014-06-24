@@ -159,8 +159,8 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         return NULL;
      }
 
-   eo_do(idata->model, emodel_prop_fetch(prop));
    eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
+   eo_do(idata->model, emodel_prop_fetch(prop));
    return NULL;
 }
 

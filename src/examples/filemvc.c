@@ -107,8 +107,9 @@ elm_main(int argc, char **argv)
 
    //listview
    genlist = elm_genlist_add(win);
-   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(NULL, genlist, ELM_GENLIST_ITEM_NONE, NULL));
+   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(NULL, genlist, ELM_GENLIST_ITEM_NONE, "double_label"));
    eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"),
+                   elm_view_list_property_connect("path", "elm.text.sub"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
    _widget_init(genlist, NULL);
