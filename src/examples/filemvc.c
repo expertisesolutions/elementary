@@ -75,7 +75,8 @@ EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Emodel_Test_Filemvc_Data priv;
-   Eo *fileview, *treemodel, *treeview, *formview;
+   //Eo *fileview, *treemodel, *treeview;
+   //Eo formview;
    Evas_Object *win, *box, *genlist;
 
    memset(&priv, 0, sizeof(Emodel_Test_Filemvc_Data));
