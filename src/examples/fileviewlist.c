@@ -49,7 +49,7 @@ elm_main(int argc, char **argv)
    evas_object_show(genlist);
 
    priv.filemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
-   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(genlist, priv.filemodel));
+   priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(priv.filemodel, genlist, ELM_GENLIST_ITEM_TREE, NULL));
    evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
 
    eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"));

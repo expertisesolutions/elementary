@@ -22,6 +22,7 @@ struct _Elm_View_List_Data
    Evas_Object *genlist;
    View_List_ItemData *rootdata;
    Elm_Genlist_Item_Class *itc;
+   Elm_Genlist_Item_Type itype;
    Eina_Hash *prop_con;
    Eo *model;
 };
@@ -244,7 +245,7 @@ _emodel_children_count_get_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_De
         idata->index = i;
         idata->parent = pdata;
         idata->item = elm_genlist_item_append(priv->genlist, priv->itc, idata, pdata->item,
-                                                       ELM_GENLIST_ITEM_TREE, _item_sel_cb, NULL);
+                                                       priv->itype, _item_sel_cb, NULL);
      }
 
    if (pdata->item && *len > 0)
@@ -318,19 +319,19 @@ _elm_view_list_eo_base_constructor(Eo *obj, Elm_View_List_Data *_pd EINA_UNUSED)
  * @brief Elm View List Class impl.
  */
 static void
-_elm_view_list_constructor(Eo *obj, Elm_View_List_Data *_pd, Evas_Object *genlist, Eo *model)
+_elm_view_list_constructor(Eo *obj, Elm_View_List_Data *priv, Eo *model, Evas_Object *genlist, Elm_Genlist_Item_Type itype, const char *istyle)
 {
    eo_do_super(obj, MY_CLASS, eo_constructor());
-   Elm_View_List_Data *priv = (Elm_View_List_Data *)_pd;
 
    priv->genlist = genlist;
+   priv->itype = itype;
    EINA_SAFETY_ON_NULL_RETURN(priv->genlist);
    //eo_ref(priv->genlist);
 
    _priv_model_set(priv, model);
 
    priv->itc = elm_genlist_item_class_new();
-   priv->itc->item_style = "default";
+   priv->itc->item_style = istyle;
    priv->itc->func.text_get = _item_text_get;
    priv->itc->func.content_get = _item_content_get;
    priv->itc->func.state_get = NULL;

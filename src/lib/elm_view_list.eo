@@ -8,12 +8,16 @@ class Elm_View_List (Eo_Base)
              * @def elm_view_list_constructor
              * @since 1.8
              *
-             * @in genlist
              * @in model
+             * @in genlist
+             * @in item_type
+             * @in item_style
              */
              params {
-                 Evas_Object *genlist; /*@ Genlist object */
                  Eo *model; /*@ Emodel object */
+                 Evas_Object *genlist; /*@ Genlist object */
+                 Elm_Genlist_Item_Type item_type; /*@ Item type */
+                 const char *item_style; /*@ The current item style name. @c NULL would be default. */
              }
         }
     }
