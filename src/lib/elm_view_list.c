@@ -47,7 +47,7 @@ _item_sel_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *event_i
    Elm_Object_Item *item = event_info;
    View_List_ItemData *idata = elm_object_item_data_get(item);
    EINA_SAFETY_ON_NULL_RETURN(idata);
-   eo_do(idata->parent->model, emodel_child_select_set(idata->model));
+   eo_do(idata->parent->model, emodel_child_select(idata->model));
 }
 
 static void
@@ -83,7 +83,7 @@ _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         if (idata->parent)
-              eo_do(idata->parent->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
+              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get, idata->index, 1, idata));
         return NULL;
      }
 
@@ -94,7 +94,7 @@ _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
    if (!value)
      {
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
-        eo_do(idata->model, emodel_property_get(prop));
+        eo_do(idata->model, emodel_prop_fetch(prop));
         return NULL;
      }
 
@@ -137,7 +137,7 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         if (idata->parent)
-              eo_do(idata->parent->model, emodel_children_slice_get(_emodel_child_get, idata->index, 1, idata));
+              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get, idata->index, 1, idata));
         return NULL;
      }
 
@@ -158,7 +158,7 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         return NULL;
      }
 
-   eo_do(idata->model, emodel_property_get(prop));
+   eo_do(idata->model, emodel_prop_fetch(prop));
    eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
    return NULL;
 }
@@ -262,7 +262,7 @@ _get_parts_fn(const Eina_Hash *hash EINA_UNUSED, const void *key, void *data EIN
    View_List_ItemData *idata = fdata;
    const char *part = key;
 
-   eo_do(idata->model, emodel_property_get(part));
+   eo_do(idata->model, emodel_prop_fetch(part));
    return EINA_TRUE;
 }
 

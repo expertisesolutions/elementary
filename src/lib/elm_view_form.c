@@ -67,7 +67,7 @@ _update_model_properties(Elm_View_Form_Data *priv)
    for(Eina_List *l = priv->l; l; l = eina_list_next(l))
      {
         Elm_View_Form_Widget *w = eina_list_data_get(l);
-        eo_do(priv->model_obj, emodel_property_get(w->widget_propname));
+        eo_do(priv->model_obj, emodel_prop_fetch(w->widget_propname));
      }
 }
 
@@ -123,7 +123,7 @@ _elm_evas_object_text_changed_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *o
    value = eina_value_new(EINA_VALUE_TYPE_STRING);
    text = elm_object_text_get(obj);
    eina_value_set(value, text);
-   eo_do(priv->model_obj, emodel_property_set(w->widget_propname, value));
+   eo_do(priv->model_obj, emodel_prop_set(w->widget_propname, value));
    eina_value_free(value);
 }
 /**
@@ -163,7 +163,7 @@ _elm_view_widget_add(Elm_View_Form_Data *_pd, const char *propname, Evas_Object 
         EINA_SAFETY_ON_NULL_RETURN_VAL(NULL, EINA_FALSE);
      }
 
-   eo_do(priv->model_obj, emodel_property_get(propname));
+   eo_do(priv->model_obj, emodel_prop_fetch(propname));
 
    return EINA_TRUE;
 }
