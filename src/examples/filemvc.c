@@ -7,6 +7,7 @@
 #include <emodel_eio.h>
 #include <stdio.h>
 #include <Eio.h>
+#include <elm_view_form.h>
 
 #define EMODEL_TEST_FILENAME_PATH "/tmp"
 
@@ -14,7 +15,10 @@ struct _Emodel_Test_Filemvc_Data
 {
    Eo *fileview;
    Eo *treeview;
+   Eo *formview;
    Eo *treemodel;
+   Evas_Object *thumb;
+   char imagedefault_path[256];
 };
 typedef struct _Emodel_Test_Filemvc_Data Emodel_Test_Filemvc_Data;
 
@@ -24,6 +28,7 @@ _cleanup_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void 
    Emodel_Test_Filemvc_Data *priv = (Emodel_Test_Filemvc_Data *)data;
    eo_unref(priv->fileview);
    eo_unref(priv->treeview);
+   eo_unref(priv->formview);
    eo_unref(priv->treemodel);
 }
 
@@ -38,7 +43,12 @@ _filter_cb(void *data EINA_UNUSED, Eio_File *handler EINA_UNUSED, const Eina_Fil
 static Eina_Bool
 _list_selected_cb(void *data EINA_UNUSED, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info EINA_UNUSED)
 {
+   Emodel_Test_Filemvc_Data *priv = data;
+   Emodel_Children_EVT *evt = event_info;
+   ethumb_client_file_free(elm_thumb_ethumb_client_get());
+
    printf("LIST selected model\n");
+   eo_do(priv->formview, elm_view_form_model_set(evt->child));
    return EINA_TRUE;
 }
 
@@ -46,55 +56,82 @@ static Eina_Bool
 _tree_selected_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Description *desc EINA_UNUSED, void *event_info)
 {
    printf("TREE selected model\n");
-   Eo *model, *view = data;
+   Emodel_Test_Filemvc_Data *priv = data;
    Emodel_Children_EVT *evt = event_info;
    const char *path;
+   Eo *model;
 
    eo_do(evt->child, emodel_eio_path_get(&path));
    model = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(path));
-   eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _list_selected_cb, NULL));
+   eo_do(model, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _list_selected_cb, priv));
 
-   eo_do(view, elm_view_list_model_set(model));
+   eo_do(priv->fileview, elm_view_list_model_set(model));
    eo_unref(model);
    return EINA_TRUE;
 }
 
 static void
-_widget_init(Evas_Object *widget, Evas_Object *box)
+_widget_init(Evas_Object *widget)
 {
-   if (box != NULL) {
-     elm_box_pack_end(box, widget);
-     elm_object_text_set(widget, "content");
-   }
    evas_object_size_hint_weight_set(widget, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(widget);
+}
+
+Evas_Object *
+_label_init(Evas_Object *win, Evas_Object *box, const char *text)
+{
+   Evas_Object *widget = elm_label_add(win);
+   elm_label_line_wrap_set(widget, ELM_WRAP_CHAR);
+   elm_object_text_set(widget, text);
+   elm_box_pack_end(box, widget);
+   evas_object_size_hint_weight_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_size_hint_align_set(widget, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(widget);
+
+   return widget;
+}
+
+
+static void
+_thumb_error_cb(void *data, Evas_Object *o EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   Emodel_Test_Filemvc_Data *priv = data;
+   printf("thumbnail generation error.\n");
+   elm_thumb_file_set(priv->thumb, priv->imagedefault_path, NULL);
+   elm_thumb_reload(priv->thumb);
 }
 
 EAPI_MAIN int
 elm_main(int argc, char **argv)
 {
    Emodel_Test_Filemvc_Data priv;
-   //Eo *fileview, *treemodel, *treeview;
-   //Eo formview;
-   Evas_Object *win, *box, *genlist;
+   Evas_Object *win, *panes, *bxr, *genlist, *vpanes;
+   Evas_Object *entry;
+   char *dirname;
 
    memset(&priv, 0, sizeof(Emodel_Test_Filemvc_Data));
+   elm_app_info_set(elm_main, "elementary", "images/logo.png");
+   sprintf(priv.imagedefault_path, "%s/images/logo.png", elm_app_data_dir_get());
 
    //win
    win = elm_win_util_standard_add("viewlist", "Viewlist");
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_autodel_set(win, EINA_TRUE);
 
-   box = elm_box_add(win);
-   elm_box_horizontal_set(box, EINA_TRUE);
-   evas_object_size_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   elm_win_resize_object_add(win, box);
+   panes = elm_panes_add(win);
+//   elm_box_horizontal_set(box, EINA_TRUE);
+   evas_object_size_hint_weight_set(panes, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_win_resize_object_add(win, panes);
 
    ecore_init();
+   eio_init();
+
+   if(argv[1] != NULL) dirname = argv[1];
+   else dirname = EMODEL_TEST_FILENAME_PATH;
 
    //treemodel
-   priv.treemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(EMODEL_TEST_FILENAME_PATH));
+   priv.treemodel = eo_add_custom(EMODEL_EIO_CLASS, NULL, emodel_eio_constructor(dirname));
    eo_do(priv.treemodel, emodel_eio_children_filter_set(_filter_cb, NULL));
 
    //treeview
@@ -102,9 +139,13 @@ elm_main(int argc, char **argv)
    priv.treeview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(priv.treemodel, genlist, ELM_GENLIST_ITEM_TREE, NULL));
    eo_do(priv.treeview, elm_view_list_property_connect("filename", "elm.text"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
-   _widget_init(genlist, NULL);
-   elm_box_pack_end(box, genlist);
+   _widget_init(genlist);
+   elm_object_part_content_set(panes, "left", genlist);
+   eo_do(panes, elm_obj_panes_content_left_size_set(0.3));
 
+   vpanes = elm_panes_add(win);
+   _widget_init(vpanes);
+   elm_object_part_content_set(panes, "right", vpanes);
    //listview
    genlist = elm_genlist_add(win);
    priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(NULL, genlist, ELM_GENLIST_ITEM_NONE, "double_label"));
@@ -112,37 +153,46 @@ elm_main(int argc, char **argv)
                    elm_view_list_property_connect("path", "elm.text.sub"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
-   _widget_init(genlist, NULL);
-   elm_box_pack_end(box, genlist);
+   _widget_init(genlist);
+   elm_object_part_content_set(vpanes, "left", genlist);
 
-   eo_do(priv.treemodel, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _tree_selected_cb, priv.fileview));
-   Evas_Object *bxr, *rootpath_label, *size_label, *entry;
+   eo_do(priv.treemodel, eo_event_callback_add(EMODEL_EVENT_CHILD_SELECTED, _tree_selected_cb, &priv));
+
    //formview
    bxr = elm_box_add(win);
-   _widget_init(bxr, NULL);
-   elm_box_pack_end(box, bxr);
+   _widget_init(bxr);
+   elm_object_part_content_set(vpanes, "right", bxr);
+   priv.formview = eo_add_custom(ELM_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(NULL));
 
-   /* Rootpath Label widget */
-   rootpath_label = elm_label_add(win);
-   elm_label_line_wrap_set(rootpath_label, ELM_WRAP_CHAR);
-   _widget_init(rootpath_label, bxr);
+   /*Label widget */
+   eo_do(priv.formview, elm_view_form_widget_add("filename", _label_init(win, bxr, "File Name")));
+    _label_init(win, bxr, "Full Path:");
+   eo_do(priv.formview, elm_view_form_widget_add("path", _label_init(win, bxr, "")));
 
-   /* Size Label widget */
-   size_label = elm_label_add(win);
-   elm_label_line_wrap_set(size_label, ELM_WRAP_CHAR);
-   _widget_init(size_label, bxr);
+    _label_init(win, bxr, "Size of File:");
+   eo_do(priv.formview, elm_view_form_widget_add("size", _label_init(win, bxr, "")));
 
    /* Entry widget */
    entry = elm_entry_add(win);
    elm_entry_single_line_set(entry, EINA_TRUE);
-//   elm_entry_markup_filter_append(entry, elm_entry_filter_limit_size, &limit_size);
-   _widget_init(entry, bxr);
+   evas_object_size_hint_weight_set(entry, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   elm_box_pack_end(bxr, entry);
+   evas_object_show(entry);
+   eo_do(priv.formview, elm_view_form_widget_add("path", entry));
 
-//   formview = eo_add_custom(ELM_OBJ_VIEW_FORM_CLASS, NULL, elm_view_form_constructor(treemodel));
+   /* Thumb widget */
+   elm_need_ethumb();
+   priv.thumb = elm_thumb_add(win);
+   _widget_init(priv.thumb);
+   elm_box_pack_end(bxr, priv.thumb);
+   elm_thumb_editable_set(priv.thumb, EINA_FALSE);
+   eo_do(priv.formview, elm_view_form_widget_add("path", priv.thumb));
+   evas_object_smart_callback_add(priv.thumb, "generate,error", _thumb_error_cb, &priv);
+   evas_object_smart_callback_add(priv.thumb, "load,error", _thumb_error_cb, &priv);
 
    //showall
-   evas_object_resize(win, 600, 520);
-   evas_object_show(box);
+   evas_object_resize(win, 800, 400);
+   evas_object_show(panes);
    evas_object_show(win);
 
    elm_run();
