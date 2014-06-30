@@ -171,7 +171,7 @@ _expand_request_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void *e
    View_List_ItemData *idata = elm_object_item_data_get(item);
    if (idata->model)
      {
-        eo_do(idata->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_GET, _emodel_children_count_get_cb, idata));
+        eo_do(idata->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_CHANGE, _emodel_children_count_get_cb, idata));
         eo_do(idata->model, emodel_children_count_get());
      }
 }
@@ -283,6 +283,7 @@ _emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED, int error
 static void
 _priv_model_set(Elm_View_List_Data *priv, Eo *model)
 {
+   int count;
    if (priv->model != NULL)
      {
          eo_do(priv->genlist, elm_obj_genlist_clear());
@@ -303,8 +304,8 @@ _priv_model_set(Elm_View_List_Data *priv, Eo *model)
    priv->rootdata->priv = priv;
    priv->rootdata->model = priv->model;
 
-   eo_do(priv->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_GET, _emodel_children_count_get_cb, priv->rootdata));
-   eo_do(priv->model, emodel_children_count_get());
+   eo_do(priv->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_CHANGE, _emodel_children_count_get_cb, priv->rootdata));
+   eo_do(priv->model, count = emodel_children_count_get());
 }
 
 
