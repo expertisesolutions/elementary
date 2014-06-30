@@ -38,7 +38,7 @@ struct _View_List_ItemData
 };
 
 
-static void _emodel_child_get(void *data, Eo *child, void *event_info, int error);
+static void _emodel_child_get_cb(const void *data, Eo *child, void *event_info, int error);
 static Eina_Bool _emodel_children_count_get_cb(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info);
 
 /* --- Genlist Callbacks --- */
@@ -84,7 +84,7 @@ _item_content_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         if (idata->parent)
-              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get, idata->index, 1, idata));
+              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get_cb, idata->index, 1, idata));
         return NULL;
      }
 
@@ -138,7 +138,7 @@ _item_text_get(void *data, Evas_Object *obj EINA_UNUSED, const char *part)
         idata->parts = eina_hash_string_superfast_new(_hash_free);
         eina_hash_add(idata->parts, prop, eina_value_new(EINA_VALUE_TYPE_STRING));
         if (idata->parent)
-              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get, idata->index, 1, idata));
+              eo_do(idata->parent->model, emodel_children_slice_fetch(_emodel_child_get_cb, idata->index, 1, idata));
         return NULL;
      }
 
@@ -268,9 +268,9 @@ _get_parts_fn(const Eina_Hash *hash EINA_UNUSED, const void *key, void *data EIN
 }
 
 static void
-_emodel_child_get(void *data, Eo *child, void *event_info EINA_UNUSED, int error EINA_UNUSED)
+_emodel_child_get_cb(const void *data, Eo *child, void *event_info EINA_UNUSED, int error EINA_UNUSED)
 {
-   View_List_ItemData *idata = data;
+   View_List_ItemData *idata = (View_List_ItemData *)data;
    idata->model = child;
    eo_do(idata->model, eo_event_callback_add(EMODEL_EVENT_PROPERTY_CHANGE, _emodel_property_change_cb, idata));
    eo_do(idata->model, eo_event_callback_add(EMODEL_EVENT_PROPERTIES_CHANGE, _emodel_properties_change_cb, idata));
@@ -306,6 +306,7 @@ _priv_model_set(Elm_View_List_Data *priv, Eo *model)
 
    eo_do(priv->model, eo_event_callback_add(EMODEL_EVENT_CHILDREN_COUNT_CHANGE, _emodel_children_count_get_cb, priv->rootdata));
    eo_do(priv->model, count = emodel_children_count_get());
+   EINA_SAFETY_ON_FALSE_RETURN(count >= 0);
 }
 
 
