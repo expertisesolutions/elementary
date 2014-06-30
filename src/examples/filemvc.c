@@ -35,7 +35,7 @@ _cleanup_cb(void *data, Evas *e EINA_UNUSED, Evas_Object *obj EINA_UNUSED, void 
 static Eina_Bool
 _filter_cb(void *data EINA_UNUSED, Eio_File *handler EINA_UNUSED, const Eina_File_Direct_Info *info)
 {
-   if (info->type == EINA_FILE_DIR) return EINA_TRUE;
+   if (info->type == EINA_FILE_DIR && info->path[info->name_start] != '.')  return EINA_TRUE;
 
    return EINA_FALSE;
 }
@@ -150,7 +150,7 @@ elm_main(int argc, char **argv)
    genlist = elm_genlist_add(win);
    priv.fileview = eo_add_custom(ELM_VIEW_LIST_CLASS, NULL, elm_view_list_constructor(NULL, genlist, ELM_GENLIST_ITEM_NONE, "double_label"));
    eo_do(priv.fileview, elm_view_list_property_connect("filename", "elm.text"),
-                   elm_view_list_property_connect("path", "elm.text.sub"),
+                   elm_view_list_property_connect("mtime", "elm.text.sub"),
                    elm_view_list_property_connect("icon", "elm.swallow.icon"));
    evas_object_event_callback_add(win, EVAS_CALLBACK_DEL, _cleanup_cb, &priv);
    _widget_init(genlist);
@@ -166,11 +166,12 @@ elm_main(int argc, char **argv)
 
    /*Label widget */
    eo_do(priv.formview, elm_view_form_widget_add("filename", _label_init(win, bxr, "File Name")));
-    _label_init(win, bxr, "Full Path:");
-   eo_do(priv.formview, elm_view_form_widget_add("path", _label_init(win, bxr, "")));
 
-    _label_init(win, bxr, "Size of File:");
+    _label_init(win, bxr, "Size:");
    eo_do(priv.formview, elm_view_form_widget_add("size", _label_init(win, bxr, "")));
+
+    _label_init(win, bxr, "Modified:");
+   eo_do(priv.formview, elm_view_form_widget_add("mtime", _label_init(win, bxr, "")));
 
    /* Entry widget */
    entry = elm_entry_add(win);
