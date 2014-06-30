@@ -204,16 +204,16 @@ _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Descr
    value = eina_hash_find(idata->parts, property->prop);
    if (value)
      {
-        if (eina_value_type_get(property->value) == EINA_VALUE_TYPE_BLOB &&
+        if (eina_value_type_get(&property->value) == EINA_VALUE_TYPE_BLOB &&
                         eina_value_type_get(value) == EINA_VALUE_TYPE_BLOB)
           {
               Eina_Value_Blob blob;
-              eina_value_get(property->value, &blob);
+              eina_value_get(&property->value, &blob);
               eina_value_set(value, blob);
           }
         else
           {
-              eina_value_copy(property->value, value);
+              eina_value_copy(&property->value, value);
           }
 
         if (idata->item)

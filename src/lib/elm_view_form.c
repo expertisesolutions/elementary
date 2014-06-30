@@ -53,7 +53,7 @@ _emodel_property_change_cb(void *data, Eo *obj EINA_UNUSED, const Eo_Event_Descr
         Elm_View_Form_Widget *w = eina_list_data_get(l);
         if (strcmp(w->widget_propname, evt->prop) == 0)
           {
-              w->widget_obj_set_cb(priv->model_obj, w->widget_obj, evt->value, evt->prop);
+              w->widget_obj_set_cb(priv->model_obj, w->widget_obj, &evt->value, evt->prop);
           }
      }
 
