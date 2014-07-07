@@ -1,80 +1,65 @@
-class Elm_View_List (Eo_Base)
+class Elm.View.List (Eo.Base)
 {
     legacy_prefix: null;
     constructors {
         constructor {
-            /*@ Constructor wrapper */
-            /**
-             * @def elm_view_list_constructor
-             * @since 1.8
-             *
-             * @in model
-             * @in genlist
-             * @in item_type
-             * @in item_style
-             */
+            /*@ Constructor wrapper
+              @def elm_view_list_constructor
+              @since 1.8
+              @in model
+              @in genlist
+              @in item_type
+              @in item_style */
              params {
                  Eo *model; /*@ Emodel object */
                  Evas_Object *genlist; /*@ Genlist object */
                  Elm_Genlist_Item_Type item_type; /*@ Item type */
-                 const char *item_style; /*@ The current item style name. @c NULL would be default. */
+                 const(char)* item_style; /*@ The current item style name. @c NULL would be default. */
              }
         }
     }
     methods {
         evas_object_get {
-            /*@ Return evas object */
-            /**
-             * @def elm_view_list_evas_object_get
-             * @since 1.8
-             *
-             * @out widget
-             */
+            /*@ Return evas object
+              @def elm_view_list_evas_object_get
+              @since 1.8
+              @out widget */
              params {
                  Evas_Object **widget; /*@ Returned widget */
              }
         }
         property_connect {
-            /*@ Connect property */
-            /**
-             * @def elm_view_list_property_connect
-             * @since 1.8
-             *
-             * @in property
-             * @in part
-             */
+            /*@ Connect property
+              @def elm_view_list_property_connect
+              @since 1.8
+              @in property
+              @in part */
              params {
-                 const char *property; /*@ Property name */
-                 const char *part; /*@ Edje's theme part */
+                 const(char)* property; /*@ Property name */
+                 const(char)* part; /*@ Edje's theme part */
              }
         }
         model_set {
-            /*@ Set model */
-            /**
-             * @def elm_view_list_model_set
-             * @since 1.8
-             *
-             * @in model
-             */
+            /*@ Set model
+              @def elm_view_list_model_set
+              @since 1.8
+              @in model */
              params {
                  Eo *model; /*@ New Emodel to set */
              }
         }
         model_get {
-            /*@ Get model */
-            /**
-             * @def elm_view_list_model_get
-             * @since 1.8
-             *
-             * @out model
-             */
+            /*@ Get model
+            @def elm_view_list_model_get
+            @since 1.8
+            @out model */
              params {
                  Eo **model; /*@ Returned Emodel */
              }
         }
     }
    implements {
-      Eo_Base.constructor;
-      Eo_Base.destructor;
+      Eo.Base.constructor;
+      Eo.Base.destructor;
    }
 }

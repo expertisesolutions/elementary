@@ -1,15 +1,12 @@
-class Elm_View_Form (Eo_Base)
+class Elm.View.Form (Eo.Base)
 {
     legacy_prefix: null;
     constructors {
         constructor {
-            /*@ Constructor wrapper */
-            /**
-             * @def elm_view_form_constructor
-             * @since 1.8
-             *
-             * @in model
-             */
+            /*@ Constructor wrapper
+              @def elm_view_form_constructor
+              @since 1.8
+              @in model */
              params {
                  Eo *model; /*@ Emodel object */
              }
@@ -17,34 +14,28 @@ class Elm_View_Form (Eo_Base)
     }
     methods {
         model_set {
-            /*@ Set model */
-            /**
-             * @def elm_view_form_model_set
-             * @since 1.8
-             *
-             * @in model
-             */
+            /*@ Set model
+              @def elm_view_form_model_set
+              @since 1.8
+              @in model */
              params {
                  Eo *model; /*@ Emodel object */
              }
         }
         widget_add {
-            /*@ Add new widget */
-            /**
-             * @def elm_view_form_widget_add
-             * @since 1.8
-             *
-             * @in propname
-             * @in evas
-             */
+            /*@ Add new widget
+               @def elm_view_form_widget_add
+               @since 1.8
+               @in propname
+               @in evas */
              params {
-                 const char *propname; /*@ Property name */
+                 const(char)* propname; /*@ Property name */
                  Evas_Object *evas; /*@ Evas widget */
              }
         }
    }
    implements {
-      Eo_Base.destructor;
-      Eo_Base.constructor;
+      Eo.Base.destructor;
+      Eo.Base.constructor;
    }
 }
