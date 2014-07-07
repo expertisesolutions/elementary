@@ -422,7 +422,7 @@ _viewport_region_get(Evas_Object *obj)
    parent = elm_widget_parent_get(obj);
    while (parent)
      {
-        if (eo_isa(parent, ELM_INTERFACE_SCROLLABLE_CLASS))
+        if (eo_isa(parent, ELM_INTERFACE_SCROLLABLE_MIXIN))
           {
              Eina_Rectangle *pr = eina_rectangle_new(0, 0, 0, 0);
              evas_object_geometry_get(parent, &pr->x, &pr->y, &pr->w, &pr->h);
@@ -1711,7 +1711,10 @@ _mouse_down_cb(void *data,
    else if (ev->button == 3)
      {
         if (_elm_config->desktop_entry)
-          _menu_call(data);
+          {
+             sd->use_down = 1;
+             _menu_call(data);
+          }
      }
 }
 

@@ -18,6 +18,8 @@
 #include "elm_priv.h"
 #include <assert.h>
 
+#include "elm_atspi_app_object.eo.h"
+
 #include "elm_interface_atspi_accessible.h"
 #include "elm_interface_atspi_accessible.eo.h"
 #include "elm_interface_atspi_component.eo.h"
@@ -62,6 +64,7 @@ static unsigned long _object_property_broadcast_mask;
 static unsigned long _object_children_broadcast_mask;
 static unsigned long long _object_state_broadcast_mask;
 static unsigned long long _window_signal_broadcast_mask;
+static Ecore_Event_Handler *_key_hdl;
 
 static Eina_Bool _state_changed_signal_send(void *data, Eo *obj, const Eo_Event_Description *desc, void *event_info);
 static Eina_Bool _property_changed_signal_send(void *data, Eo *obj, const Eo_Event_Description *desc EINA_UNUSED, void *event_info);
@@ -79,6 +82,7 @@ static void _object_append_desktop_reference(Eldbus_Message_Iter *iter);
 static void _cache_build(void *obj);
 static void _object_register(Eo *obj, char *path);
 static void _iter_interfaces_append(Eldbus_Message_Iter *iter, const Eo *obj);
+static Eina_Bool _elm_atspi_bridge_key_down_event_notify(void *data, int type, void *event);
 
 EO_CALLBACKS_ARRAY_DEFINE(_events_cb,
    { ELM_INTERFACE_ATSPI_ACCESSIBLE_EVENT_PROPERTY_CHANGED, _property_changed_signal_send},
@@ -986,7 +990,7 @@ _action_action_do(const Eldbus_Service_Interface *iface, const Eldbus_Message *m
    ret = eldbus_message_method_return_new(msg);
    EINA_SAFETY_ON_NULL_RETURN_VAL(ret, NULL);
 
-   eo_do(obj, result = elm_interface_atspi_action_action_do(idx));
+   eo_do(obj, result = elm_interface_atspi_action_do(idx));
    eldbus_message_arguments_append(ret, "b", result);
 
    return ret;
@@ -1115,7 +1119,7 @@ _text_text_get(const Eldbus_Service_Interface *iface, const Eldbus_Message *msg)
    Eldbus_Message *ret = eldbus_message_method_return_new(msg);
    EINA_SAFETY_ON_NULL_RETURN_VAL(ret, NULL);
 
-   eo_do(obj, str = elm_interface_atspi_text_text_get(start, end));
+   eo_do(obj, str = elm_interface_atspi_text_get(start, end));
    str = str ? str : strdup("");
 
    eldbus_message_arguments_append(ret, "s", str);
@@ -1746,7 +1750,7 @@ _access_object_from_path(const char *path)
 
    sscanf(tmp, "%llu", &eo_ptr);
    eo = (Eo *) (uintptr_t) eo_ptr;
-   return eo_isa(eo, ELM_INTERFACE_ATSPI_ACCESSIBLE_CLASS) ? eo : NULL;
+   return eo_isa(eo, ELM_INTERFACE_ATSPI_ACCESSIBLE_MIXIN) ? eo : NULL;
 }
 
 static char *
@@ -1869,7 +1873,7 @@ _value_properties_set(const Eldbus_Service_Interface *interface, const char *pro
 
    if (!strcmp(property, "CurrentValue"))
      {
-        eo_do(obj, ret = elm_interface_atspi_value_value_and_text_set(value, NULL));
+        eo_do(obj, ret = elm_interface_atspi_value_and_text_set(value, NULL));
         Eldbus_Message *answer = eldbus_message_method_return_new(request_msg);
         eldbus_message_arguments_append(answer, "b", ret);
         return answer;
@@ -1891,7 +1895,7 @@ _value_properties_get(const Eldbus_Service_Interface *interface, const char *pro
 
    if (!strcmp(property, "CurrentValue"))
      {
-        eo_do(obj, elm_interface_atspi_value_value_and_text_get(&value, NULL));
+        eo_do(obj, elm_interface_atspi_value_and_text_get(&value, NULL));
         eldbus_message_iter_basic_append(iter, 'd', value);
         return EINA_TRUE;
      }
@@ -2074,21 +2078,21 @@ _iter_interfaces_append(Eldbus_Message_Iter *iter, const Eo *obj)
   iter_array = eldbus_message_iter_container_new(iter, 'a', "s");
   if (!iter_array) return;
 
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_MIXIN))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_ACCESSIBLE);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_COMPONENT_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_COMPONENT_MIXIN))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_COMPONENT);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACTION_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACTION_MIXIN))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_ACTION);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_VALUE_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_VALUE_INTERFACE))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_VALUE);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_IMAGE_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_IMAGE_MIXIN))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_IMAGE);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_INTERFACE))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_TEXT);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_EDITABLE_TEXT_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_EDITABLE_TEXT_INTERFACE))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_EDITABLE_TEXT);
-  if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_CLASS))
+  if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_INTERFACE))
     eldbus_message_iter_basic_append(iter_array, 's', ATSPI_DBUS_INTERFACE_SELECTION);
 
   eldbus_message_iter_container_close(iter, iter_array);
@@ -3102,6 +3106,8 @@ _event_handlers_register(void)
    // register signal handlers in order to update list of registered listeners of ATSPI-Clients
    _register_hdl = eldbus_signal_handler_add(_a11y_bus, ATSPI_DBUS_NAME_REGISTRY, ATSPI_DBUS_PATH_REGISTRY, ATSPI_DBUS_INTERFACE_REGISTRY, "EventListenerRegistered", _handle_listener_change, NULL);
    _unregister_hdl = eldbus_signal_handler_add(_a11y_bus, ATSPI_DBUS_NAME_REGISTRY, ATSPI_DBUS_PATH_REGISTRY, ATSPI_DBUS_INTERFACE_REGISTRY, "EventListenerDeregistered", _handle_listener_change, NULL);
+
+   _key_hdl = ecore_event_handler_add(ECORE_EVENT_KEY_DOWN, _elm_atspi_bridge_key_down_event_notify, NULL);
 }
 
 static Eina_Bool
@@ -3122,7 +3128,7 @@ _cache_build(void *obj)
    Eo *child;
    char *path = NULL;
 
-   if (!eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_CLASS))
+   if (!eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_MIXIN))
      return;
 
    path = _path_from_access_object(obj);
@@ -3178,7 +3184,7 @@ static void _object_register(Eo *obj, char *path)
 {
    Eldbus_Service_Interface *infc = NULL, *event_infc;
 
-   if (!eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_CLASS))
+   if (!eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_MIXIN))
      {
         WRN("Unable to register class w/o Elm_Interface_Atspi_Accessible!");
         return;
@@ -3192,31 +3198,31 @@ static void _object_register(Eo *obj, char *path)
         eo_do(obj, eo_key_data_set("event_interface", event_infc, NULL));
         eo_do(obj, eo_event_callback_array_add(_events_cb(), event_infc));
 
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_COMPONENT_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_COMPONENT_MIXIN))
           eldbus_service_interface_register(_a11y_bus, path, &component_iface_desc);
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_WINDOW_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_WINDOW_INTERFACE))
           {
              infc = eldbus_service_interface_register(_a11y_bus, path, &window_iface_desc);
              eo_do(obj, eo_key_data_set("window_interface", infc, NULL));
              eo_do(obj, eo_event_callback_array_add(_window_cb(), infc));
           }
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACTION_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACTION_MIXIN))
           eldbus_service_interface_register(_a11y_bus, path, &action_iface_desc);
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_VALUE_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_VALUE_INTERFACE))
           eldbus_service_interface_register(_a11y_bus, path, &value_iface_desc);
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_IMAGE_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_IMAGE_MIXIN))
           eldbus_service_interface_register(_a11y_bus, path, &image_iface_desc);
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_INTERFACE))
           {
              eldbus_service_interface_register(_a11y_bus, path, &selection_iface_desc);
              eo_do(obj, eo_event_callback_array_add(_selection_cb(), event_infc));
           }
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_INTERFACE))
           {
              eldbus_service_interface_register(_a11y_bus, path, &text_iface_desc);
              eo_do(obj, eo_event_callback_array_add(_text_cb(), event_infc));
           }
-        if (eo_isa(obj, ELM_INTERFACE_ATSPI_EDITABLE_TEXT_CLASS))
+        if (eo_isa(obj, ELM_INTERFACE_ATSPI_EDITABLE_TEXT_INTERFACE))
           eldbus_service_interface_register(_a11y_bus, path, &editable_text_iface_desc);
      }
 }
@@ -3234,16 +3240,16 @@ static void _object_unregister(void *obj)
 
    eo_do(obj, eo_event_callback_del(EO_EV_DEL, _on_cache_item_del, NULL));
 
-   if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_CLASS))
+   if (eo_isa(obj, ELM_INTERFACE_ATSPI_ACCESSIBLE_MIXIN))
       eo_do(obj, eo_event_callback_array_del(_events_cb(), event_infc));
-   if (eo_isa(obj, ELM_INTERFACE_ATSPI_WINDOW_CLASS))
+   if (eo_isa(obj, ELM_INTERFACE_ATSPI_WINDOW_INTERFACE))
      {
         eo_do(obj, infc = eo_key_data_get("window_interface"));
         eo_do(obj, eo_event_callback_array_del(_window_cb(), infc));
      }
-   if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_CLASS))
+   if (eo_isa(obj, ELM_INTERFACE_ATSPI_SELECTION_INTERFACE))
       eo_do(obj, eo_event_callback_array_del(_selection_cb(), event_infc));
-   if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_CLASS))
+   if (eo_isa(obj, ELM_INTERFACE_ATSPI_TEXT_INTERFACE))
       eo_do(obj, eo_event_callback_array_del(_text_cb(), event_infc));
 }
 
@@ -3253,14 +3259,12 @@ _elm_atspi_bridge_init(void)
    Eldbus_Message *msg;
    Eldbus_Connection *session_bus;
 
-   if (!_init_count && (_elm_config->atspi_mode != ELM_ATSPI_MODE_OFF))
+   if (!_init_count)
      {
-        _elm_atspi_init();
-
-        _root = _elm_atspi_root_get();
+        _root = eo_add(ELM_ATSPI_APP_OBJECT_CLASS, NULL);
         if (!_root)
           {
-             ERR("Unable to get root object");
+             ERR("Unable to create root object");
              return;
           }
 
@@ -3278,12 +3282,18 @@ _elm_atspi_bridge_init(void)
      }
 }
 
+EAPI Eo*
+_elm_atspi_bridge_root_get(void)
+{
+   return _root;
+}
+
 void
 _elm_atspi_bridge_shutdown(void)
 {
    if (_init_count)
      {
-        _elm_atspi_shutdown();
+        eo_unref(_root);
 
         if (_cache_update_idler)
           ecore_idler_del(_cache_update_idler);
@@ -3301,13 +3311,17 @@ _elm_atspi_bridge_shutdown(void)
           eldbus_connection_unref(_a11y_bus);
         _a11y_bus = NULL;
 
+        if (_key_hdl)
+          ecore_event_handler_del(_key_hdl);
+        _key_hdl = NULL;
+
         _init_count = 0;
         _root = NULL;
      }
 }
 
 static void
-_iter_marshall_key_event(Eldbus_Message_Iter *iter, Evas_Callback_Type type, void *event)
+_iter_marshall_key_down_event(Eldbus_Message_Iter *iter, Ecore_Event_Key *event)
 {
    Eldbus_Message_Iter *struct_iter;
 
@@ -3315,37 +3329,28 @@ _iter_marshall_key_event(Eldbus_Message_Iter *iter, Evas_Callback_Type type, voi
 
    struct_iter = eldbus_message_iter_container_new(iter, 'r', NULL);
 
-   if (type == EVAS_CALLBACK_KEY_DOWN)
-     {
-        Evas_Event_Key_Down *kde = event;
-        const char *str = kde->string ? kde->string : "";
-        int is_text = kde->string ? 1 : 0;
-        eldbus_message_iter_arguments_append(struct_iter, "uiiiisb", ATSPI_KEY_PRESSED_EVENT, 0, kde->keycode, 0, kde->timestamp, str, is_text);
-     }
-   else if (type == EVAS_CALLBACK_KEY_UP)
-     {
-        Evas_Event_Key_Up *kue = event;
-        const char *str = kue->string ? kue->string : "";
-        int is_text = kue->string ? 1 : 0;
-        eldbus_message_iter_arguments_append(struct_iter, "uiiiisb", ATSPI_KEY_RELEASED_EVENT, 0, kue->keycode, 0, kue->timestamp, str, is_text);
-     }
+   const char *str = event->keyname ? event->keyname : "";
+   int is_text = event->keyname? 1 : 0;
+   eldbus_message_iter_arguments_append(struct_iter, "uiiiisb", ATSPI_KEY_PRESSED_EVENT, 0, event->keycode, 0, event->timestamp, str, is_text);
 
    eldbus_message_iter_container_close(iter, struct_iter);
 }
 
-EAPI void
-_elm_atspi_bridge_key_event_notify(Evas_Callback_Type type, void *event)
+static Eina_Bool
+_elm_atspi_bridge_key_down_event_notify(void *data EINA_UNUSED, int type EINA_UNUSED, void *event)
 {
    Eldbus_Message *msg;
    Eldbus_Message_Iter *iter;
+   Ecore_Event_Key *key_event = event;
 
-   if (!_init_count) return;
-   if ((type != EVAS_CALLBACK_KEY_DOWN) && (type != EVAS_CALLBACK_KEY_UP)) return;
+   if (!_init_count) return EINA_TRUE;
 
    msg = eldbus_message_method_call_new(ATSPI_DBUS_NAME_REGISTRY, ATSPI_DBUS_PATH_DEC,
                                         ATSPI_DBUS_INTERFACE_DEC, "NotifyListenersSync");
    iter = eldbus_message_iter_get(msg);
-   _iter_marshall_key_event(iter, type, event);
+   _iter_marshall_key_down_event(iter, key_event);
 
    eldbus_connection_send(_a11y_bus, msg, NULL, NULL, -1);
+
+   return EINA_TRUE;
 }

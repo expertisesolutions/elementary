@@ -1,4 +1,4 @@
-class Elm_Image (Elm_Widget, Evas_Clickable_Interface, Elm_Interface_Atspi_Image)
+class Elm_Image (Elm_Widget, Evas.Clickable_Interface, Elm_Interface_Atspi_Image)
 {
    eo_prefix: elm_obj_image;
    properties {
@@ -265,8 +265,8 @@ class Elm_Image (Elm_Widget, Evas_Clickable_Interface, Elm_Interface_Atspi_Image
             @ingroup Image */
          }
          values {
-            const char *file; /*@ The path to file that will be used as image source */
-            const char *group; /*@ The group that the image belongs to, in case it's an
+            const(char)* file; /*@ The path to file that will be used as image source */
+            const(char)* group; /*@ The group that the image belongs to, in case it's an
             EET (including Edje case) file. This can be used as a key inside
             evas image cache if this is a normal image file not eet file. */
          }
@@ -437,8 +437,8 @@ class Elm_Image (Elm_Widget, Evas_Clickable_Interface, Elm_Interface_Atspi_Image
             legacy null;
          }
          values {
-            const Eina_File *file; /*@ The handler to an Eina_File that will be used as image source */
-            const char *group; /*@ The group that the image belongs to, in case it's an
+            const(Eina_File)* file; /*@ The handler to an Eina_File that will be used as image source */
+            const(char)* group; /*@ The group that the image belongs to, in case it's an
             EET (including Edje case) file. This can be used as a key inside
             evas image cache if this is a normal image file not eet file. */
          }
@@ -466,10 +466,10 @@ class Elm_Image (Elm_Widget, Evas_Clickable_Interface, Elm_Interface_Atspi_Image
             return Eina_Bool;
          }
          values {
-            const void *img; /*@ The binary data that will be used as image source */
+            const(void)* img; /*@ The binary data that will be used as image source */
             size_t size; /*@ The size of binary data blob @p img */
-            const char *format; /*@ (Optional) expected format of @p img bytes */
-            const char *key; /*@ Optional indexing key of @p img to be passed to the
+            const(char)* format; /*@ (Optional) expected format of @p img bytes */
+            const(char)* key; /*@ Optional indexing key of @p img to be passed to the
             image loader (eg. if @p img is a memory-mapped EET file) */
          }
       }
@@ -534,17 +534,17 @@ class Elm_Image (Elm_Widget, Evas_Clickable_Interface, Elm_Interface_Atspi_Image
    }
    implements {
       class.constructor;
-      Eo_Base.constructor;
-      Evas_Object_Smart.hide;
-      Evas_Object_Smart.clip.set;
-      Evas_Object_Smart.clip_unset;
-      Evas_Object_Smart.show;
-      Evas_Object_Smart.color.set;
-      Evas_Object_Smart.move;
-      Evas_Object_Smart.add;
-      Evas_Object_Smart.del;
-      Evas_Object_Smart.member_add;
-      Evas_Object_Smart.resize;
+      Eo.Base.constructor;
+      Evas.Object_Smart.hide;
+      Evas.Object_Smart.clip.set;
+      Evas.Object_Smart.clip_unset;
+      Evas.Object_Smart.show;
+      Evas.Object_Smart.color.set;
+      Evas.Object_Smart.move;
+      Evas.Object_Smart.add;
+      Evas.Object_Smart.del;
+      Evas.Object_Smart.member_add;
+      Evas.Object_Smart.resize;
       Elm_Widget.theme_apply;
       Elm_Widget.event;
       Elm_Interface_Atspi_Image.extents.get;

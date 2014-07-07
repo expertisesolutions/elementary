@@ -537,13 +537,9 @@ _resize_job(void *data)
    else
      {
         if (sd->vertical)
-          {
-             if ((vh >= mh) && (h != vh)) h = vh;
-          }
+          h = (vh >= mh) ? vh : mh;
         else
-          {
-             if ((vw >= mw) && (w != vw)) w = vw;
-          }
+          w = (vw >= mw) ? vw : mw;
         EINA_INLIST_FOREACH(sd->items, it)
           {
              if (it->selected)
@@ -644,7 +640,6 @@ _elm_toolbar_item_unfocused(Elm_Object_Item *it)
      return;
    if (sd->select_mode == ELM_OBJECT_SELECT_MODE_DISPLAY_ONLY)
      return;
-   sd->prev_focused_item = it;
    if (elm_widget_focus_highlight_enabled_get(obj))
      {
         edje_object_signal_emit
@@ -753,7 +748,6 @@ _elm_toolbar_elm_widget_on_focus(Eo *obj, Elm_Toolbar_Data *sd)
      }
    else
      {
-        sd->prev_focused_item = sd->focused_item;
         sd->last_focused_item = sd->focused_item;
         if (sd->focused_item)
           _elm_toolbar_item_unfocused(sd->focused_item);
@@ -1141,8 +1135,6 @@ _item_del(Elm_Toolbar_Item *it)
      sd->focused_item = NULL;
    if (sd->last_focused_item == (Elm_Object_Item *)it)
      sd->last_focused_item = NULL;
-   if (sd->prev_focused_item == (Elm_Object_Item *)it)
-     sd->prev_focused_item = NULL;
 
    evas_object_del(it->object);
    //TODO: See if checking for sd->menu_parent is necessary before
@@ -2961,7 +2953,7 @@ _elm_toolbar_coordinates_adjust(Elm_Object_Item *it,
 }
 
 EOLIAN static void
-_elm_toolbar_elm_widget_focus_highlight_geometry_get(Eo *obj EINA_UNUSED, Elm_Toolbar_Data *sd, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)
+_elm_toolbar_elm_widget_focus_highlight_geometry_get(Eo *obj, Elm_Toolbar_Data *sd, Evas_Coord *x, Evas_Coord *y, Evas_Coord *w, Evas_Coord *h)
 {
    if (sd->focused_item)
      {
@@ -2970,6 +2962,8 @@ _elm_toolbar_elm_widget_focus_highlight_geometry_get(Eo *obj EINA_UNUSED, Elm_To
         elm_widget_focus_highlight_focus_part_geometry_get
            (VIEW(sd->focused_item), x, y, w, h);
      }
+   else
+     evas_object_geometry_get(obj, x, y, w, h);
 }
 
 EAPI Evas_Object *

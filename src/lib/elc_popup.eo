@@ -149,18 +149,18 @@ class Elm_Popup (Elm_Layout)
 
          return Elm_Object_Item *;
          params {
-            @in const char *label; /*@ The Label of the new item */
+            @in const(char)* label; /*@ The Label of the new item */
             @in Evas_Object *icon; /*@ Icon to be set on new item */
             @in Evas_Smart_Cb func; /*@ Convenience function called when item selected */
-            @in const void *data; /*@ Data passed to @p func above */
+            @in const(void)* data; /*@ Data passed to @p func above */
          }
       }
    }
    implements {
       class.constructor;
-      Eo_Base.constructor;
-      Evas_Object_Smart.del;
-      Evas_Object_Smart.add;
+      Eo.Base.constructor;
+      Evas.Object_Smart.del;
+      Evas.Object_Smart.add;
       Elm_Widget.focus_direction;
       Elm_Widget.focus_next_manager_is;
       Elm_Widget.theme_apply;

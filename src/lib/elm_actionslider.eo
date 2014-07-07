@@ -71,14 +71,14 @@ class Elm_Actionslider (Elm_Layout)
             @return The selected label
 
             @ingroup Actionslider */
-            return const char *;
+            return const(char)*;
          }
       }
    }
    implements {
       class.constructor;
-      Eo_Base.constructor;
-      Evas_Object_Smart.add;
+      Eo.Base.constructor;
+      Evas.Object_Smart.add;
       Elm_Widget.focus_next_manager_is;
       Elm_Widget.focus_direction_manager_is;
       Elm_Widget.theme_apply;

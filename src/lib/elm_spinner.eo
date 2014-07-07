@@ -325,7 +325,7 @@ class Elm_Spinner (Elm_Layout)
             @ingroup Spinner */
          }
          values {
-            const char *fmt; /*@ The format string for the label display. */
+            const(char)* fmt; /*@ The format string for the label display. */
          }
       }
    }
@@ -357,15 +357,15 @@ class Elm_Spinner (Elm_Layout)
 
          params {
             @in double value; /*@ The value to be replaced. */
-            @in const char *label; /*@ The label to be used. */
+            @in const(char)* label; /*@ The label to be used. */
          }
       }
    }
    implements {
       class.constructor;
-      Eo_Base.constructor;
-      Evas_Object_Smart.add;
-      Evas_Object_Smart.del;
+      Eo.Base.constructor;
+      Evas.Object_Smart.add;
+      Evas.Object_Smart.del;
       Elm_Widget.theme_apply;
       Elm_Widget.focus_next_manager_is;
       Elm_Widget.focus_direction_manager_is;

@@ -2281,7 +2281,16 @@ _elm_win_focus_highlight_init(Elm_Win_Data *sd)
                            EVAS_CALLBACK_CANVAS_OBJECT_FOCUS_OUT,
                            _elm_win_object_focus_out, sd->obj);
 
-   sd->focus_highlight.cur.target = NULL;
+   sd->focus_highlight.cur.target = _elm_win_focus_target_get(evas_focus_get(sd->evas));
+   if (sd->focus_highlight.cur.target)
+     {
+        if (elm_widget_highlight_in_theme_get(sd->focus_highlight.cur.target))
+          sd->focus_highlight.cur.in_theme = EINA_TRUE;
+        else
+          _elm_win_focus_target_callbacks_add(sd);
+     }
+
+   sd->focus_highlight.prev.target = NULL;
    sd->focus_highlight.fobj = edje_object_add(sd->evas);
    sd->focus_highlight.theme_changed = EINA_TRUE;
 
@@ -3335,7 +3344,7 @@ _elm_win_constructor(Eo *obj, Elm_Win_Data *sd, const char *name, Elm_Win_Type t
    if (_elm_config->atspi_mode == ELM_ATSPI_MODE_ON)
      {
         eo_do(obj, elm_interface_atspi_accessible_role_set(ELM_ATSPI_ROLE_WINDOW));
-        elm_interface_atspi_accessible_children_changed_added_signal_emit(_elm_atspi_root_get(), obj);
+        elm_interface_atspi_accessible_children_changed_added_signal_emit(_elm_atspi_bridge_root_get(), obj);
         eo_do(obj, eo_event_callback_call(ELM_INTERFACE_ATSPI_WINDOW_EVENT_WINDOW_CREATED, NULL));
      }
 
@@ -4819,7 +4828,7 @@ EOLIAN static Eo*
 _elm_win_elm_interface_atspi_accessible_parent_get(Eo *obj EINA_UNUSED, Elm_Win_Data *sd EINA_UNUSED)
 {
    // attach all kinds of windows directly to ATSPI application root object
-   return _elm_atspi_root_get();
+   return _elm_atspi_bridge_root_get();
 }
 
 #include "elm_win.eo.c"
